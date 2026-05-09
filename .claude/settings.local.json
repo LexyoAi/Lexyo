@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"require\\('./pages/api/interroga-analizza.js'\\)\")",
+      "Bash(npm run *)",
+      "Bash(npx next *)"
+    ]
+  }
+}
