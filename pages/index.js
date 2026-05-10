@@ -94,6 +94,10 @@ export default function Home() {
   const [disdettaConfermata, setDisdettaConfermata] = useState(false);
   const [trialCheckLoading, setTrialCheckLoading] = useState(false);
   const [trialBlockMsg, setTrialBlockMsg] = useState("");
+  const [tema, setTema] = useState(() => {
+    if (typeof window !== "undefined") return localStorage.getItem("lexyo_tema") || "light";
+    return "light";
+  });
 
   const getFingerprint = () => {
     if (typeof window === "undefined") return "ssr";
@@ -484,19 +488,31 @@ export default function Home() {
     setFotoLoading(false);
   };
 
+  useEffect(() => {
+    if (typeof window !== "undefined") localStorage.setItem("lexyo_tema", tema);
+    if (typeof document !== "undefined") {
+      if (screen !== "landing" && tema === "light") {
+        document.documentElement.setAttribute("data-tema", "light");
+      } else {
+        document.documentElement.removeAttribute("data-tema");
+      }
+    }
+  }, [tema, screen]);
+
+  const luce = tema === "light";
   const S = {
-    app: { minHeight: "100vh", background: "#0F1028", color: "white", fontFamily: "'Nunito', sans-serif" },
+    app: { minHeight: "100vh", background: luce ? "#f0f4ff" : "#0F1028", color: luce ? "#0a0a20" : "white", fontFamily: "'Nunito', sans-serif" },
     center: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", padding: "24px" },
-    card: { background: "#1A1B3A", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "20px", padding: "20px" },
+    card: { background: luce ? "#ffffff" : "#1A1B3A", border: `1px solid ${luce ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.07)"}`, borderRadius: "20px", padding: "20px" },
     btn: { padding: "14px 24px", borderRadius: "14px", border: "none", color: "white", fontWeight: 800, fontSize: "15px", cursor: "pointer", fontFamily: "'Nunito', sans-serif", width: "100%" },
     btnP: { background: "linear-gradient(135deg, #6C47FF 0%, #9B3FD4 50%, #FF4B8B 100%)", boxShadow: "0 8px 28px rgba(108,71,255,0.45), inset 0 1px 0 rgba(255,255,255,0.15)" },
-    btnS: { background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" },
-    inp: { width: "100%", padding: "14px 18px", borderRadius: "14px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "white", fontSize: "15px", fontFamily: "'Nunito', sans-serif", fontWeight: 600, outline: "none", boxSizing: "border-box" },
+    btnS: { background: luce ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.07)", border: `1px solid ${luce ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)"}`, color: luce ? "#0a0a20" : "white" },
+    inp: { width: "100%", padding: "14px 18px", borderRadius: "14px", background: luce ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.05)", border: `1px solid ${luce ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.1)"}`, color: luce ? "#0a0a20" : "white", fontSize: "15px", fontFamily: "'Nunito', sans-serif", fontWeight: 600, outline: "none", boxSizing: "border-box" },
     title: { fontSize: "30px", fontWeight: 900, background: "linear-gradient(135deg, #a78bfa, #60a5fa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: "8px", textAlign: "center" },
-    gray: { color: "rgba(255,255,255,0.5)", fontSize: "14px", fontWeight: 600, textAlign: "center", lineHeight: 1.6 },
-    nav: { padding: "10px 20px 24px", borderTop: "1px solid rgba(255,255,255,0.07)", display: "flex", justifyContent: "space-around", background: "linear-gradient(180deg, #1A1B3A 0%, #141530 100%)", flexShrink: 0 },
-    hdr: { padding: "14px 20px", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: "12px", background: "linear-gradient(180deg, #1A1B3A 0%, #141530 100%)", flexShrink: 0 },
-    back: { background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", width: "36px", height: "36px", color: "white", fontSize: "18px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" },
+    gray: { color: luce ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.5)", fontSize: "14px", fontWeight: 600, textAlign: "center", lineHeight: 1.6 },
+    nav: { padding: "10px 20px 24px", borderTop: `1px solid ${luce ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.07)"}`, display: "flex", justifyContent: "space-around", background: luce ? "linear-gradient(180deg,#ffffff 0%,#f5f7ff 100%)" : "linear-gradient(180deg, #1A1B3A 0%, #141530 100%)", flexShrink: 0 },
+    hdr: { padding: "14px 20px", borderBottom: `1px solid ${luce ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.07)"}`, display: "flex", alignItems: "center", gap: "12px", background: luce ? "linear-gradient(180deg,#ffffff 0%,#f5f7ff 100%)" : "linear-gradient(180deg, #1A1B3A 0%, #141530 100%)", flexShrink: 0 },
+    back: { background: luce ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.07)", border: `1px solid ${luce ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)"}`, borderRadius: "10px", width: "36px", height: "36px", color: luce ? "#0a0a20" : "white", fontSize: "18px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" },
   };
 
   const prepColori = { non_studiato: { bg: "rgba(255,255,255,0.04)", border: "rgba(255,255,255,0.08)", dot: "rgba(255,255,255,0.25)", label: "Da studiare" }, in_corso: { bg: "rgba(245,158,11,0.15)", border: "rgba(245,158,11,0.4)", dot: "#f59e0b", label: "In corso" }, capito: { bg: "rgba(16,185,129,0.15)", border: "rgba(16,185,129,0.4)", dot: "#10b981", label: "Capito ✓" }, difficolta: { bg: "rgba(239,68,68,0.15)", border: "rgba(239,68,68,0.4)", dot: "#ef4444", label: "In difficoltà" } };
@@ -943,19 +959,19 @@ export default function Home() {
       {levelUpAnim && <div style={{ position:"fixed", inset:0, zIndex:10000, background:"rgba(0,0,0,0.82)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"16px" }}><div style={{ animation:"levelUpPop 0.6s cubic-bezier(0.175,0.885,0.32,1.275) forwards" }}><LexChar stato="happy" size={140} /></div><div style={{ textAlign:"center" }}><p style={{ fontSize:"40px", fontWeight:900, background:"linear-gradient(135deg,#fbbf24,#f59e0b)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>LIVELLO {figlioAttivo?.livello}!</p><p style={{ fontSize:"18px", color:"rgba(255,255,255,0.85)", fontWeight:700 }}>Sei cresciuto! Continua così 💪</p></div></div>}
 
       {/* HEADER */}
-      <div style={{ padding:"14px 20px", background:"linear-gradient(180deg, #1A1B3A 0%, #141530 100%)", borderBottom:"1px solid rgba(255,255,255,0.07)", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+      <div style={{ padding:"14px 20px", background: luce ? "linear-gradient(180deg,#ffffff 0%,#f5f7ff 100%)" : "linear-gradient(180deg, #1A1B3A 0%, #141530 100%)", borderBottom: luce ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.07)", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
         <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
           <div style={{ width:"42px", height:"42px", borderRadius:"14px", background:`linear-gradient(135deg,${prog?.colore||"#6C47FF"}99,${prog?.colore||"#6C47FF"}44)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", boxShadow:"0 4px 12px rgba(108,71,255,0.3), inset 0 1px 0 rgba(255,255,255,0.1)" }}>{prog?.emoji}</div>
-          <div><p style={{ fontWeight:900, fontSize:"16px" }}>{figlioAttivo.nome}</p><p style={{ fontSize:"11px", color:"rgba(255,255,255,0.4)", fontWeight:600 }}>{prog?.label}</p></div>
+          <div><p style={{ fontWeight:900, fontSize:"16px", color: luce ? "#0a0a20" : "white" }}>{figlioAttivo.nome}</p><p style={{ fontSize:"11px", color: luce ? "rgba(0,0,30,0.4)" : "rgba(255,255,255,0.4)", fontWeight:600 }}>{prog?.label}</p></div>
         </div>
         <div style={{ display:"flex", gap:"8px" }}>
-          <div style={{ background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:"20px", padding:"5px 12px", textAlign:"center" }}>
+          <div style={{ background: luce ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)", border: luce ? "1px solid rgba(0,0,0,0.1)" : "1px solid rgba(255,255,255,0.1)", borderRadius:"20px", padding:"5px 12px", textAlign:"center" }}>
             <p style={{ fontSize:"15px", fontWeight:900, color:"#fbbf24", lineHeight:1.2 }}>⭐{figlioAttivo.stelle}</p>
-            <p style={{ fontSize:"9px", color:"rgba(255,255,255,0.4)", fontWeight:800, textTransform:"uppercase", letterSpacing:"0.5px" }}>stelle</p>
+            <p style={{ fontSize:"9px", color: luce ? "rgba(0,0,30,0.4)" : "rgba(255,255,255,0.4)", fontWeight:800, textTransform:"uppercase", letterSpacing:"0.5px" }}>stelle</p>
           </div>
-          <div style={{ background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:"20px", padding:"5px 12px", textAlign:"center" }}>
+          <div style={{ background: luce ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)", border: luce ? "1px solid rgba(0,0,0,0.1)" : "1px solid rgba(255,255,255,0.1)", borderRadius:"20px", padding:"5px 12px", textAlign:"center" }}>
             <p style={{ fontSize:"15px", fontWeight:900, color:"#a78bfa", lineHeight:1.2 }}>Lv.{figlioAttivo.livello}</p>
-            <p style={{ fontSize:"9px", color:"rgba(255,255,255,0.4)", fontWeight:800, textTransform:"uppercase", letterSpacing:"0.5px" }}>livello</p>
+            <p style={{ fontSize:"9px", color: luce ? "rgba(0,0,30,0.4)" : "rgba(255,255,255,0.4)", fontWeight:800, textTransform:"uppercase", letterSpacing:"0.5px" }}>livello</p>
           </div>
         </div>
       </div>
@@ -967,8 +983,8 @@ export default function Home() {
           <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
             <span style={{ fontSize:"20px" }}>📱</span>
             <div>
-              <p style={{ fontSize:"13px", fontWeight:800, color:"white", margin:0 }}>Installa Lexyo</p>
-              <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.5)", margin:0 }}>Aggiungila alla schermata home — è gratis</p>
+              <p style={{ fontSize:"13px", fontWeight:800, color: luce ? "#0a0a20" : "white", margin:0 }}>Installa Lexyo</p>
+              <p style={{ fontSize:"11px", color: luce ? "rgba(0,0,30,0.5)" : "rgba(255,255,255,0.5)", margin:0 }}>Aggiungila alla schermata home — è gratis</p>
             </div>
           </div>
           <div style={{ display:"flex", gap:"8px", flexShrink:0 }}>
@@ -981,17 +997,17 @@ export default function Home() {
       <div style={{ flex:1, overflowY:"auto", padding:"16px 16px 8px" }}>
 
         {/* MATERIA */}
-        <p style={{ fontSize:"10px", fontWeight:800, color:"rgba(255,255,255,0.3)", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"8px" }}>Materia</p>
+        <p style={{ fontSize:"10px", fontWeight:800, color: luce ? "rgba(0,0,30,0.4)" : "rgba(255,255,255,0.3)", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"8px" }}>Materia</p>
         <div style={{ display:"flex", gap:"7px", marginBottom:"18px" }}>
           {Object.entries(MATERIE).map(([key, info]) => (
-            <button key={key} onClick={() => setMateria(key)} style={{ flex:1, padding:"9px 4px", borderRadius:"14px", background: materia===key?"linear-gradient(180deg,rgba(108,71,255,0.22),rgba(108,71,255,0.12))":"rgba(255,255,255,0.04)", border:`1.5px solid ${materia===key?"rgba(108,71,255,0.5)":"rgba(255,255,255,0.08)"}`, color:"white", fontFamily:"'Nunito', sans-serif", fontWeight:800, fontSize:"9px", cursor:"pointer", boxShadow:materia===key?"0 4px 12px rgba(108,71,255,0.2)":"none", transition:"all 0.15s" }}>
+            <button key={key} onClick={() => setMateria(key)} style={{ flex:1, padding:"9px 4px", borderRadius:"14px", background: materia===key?"linear-gradient(180deg,rgba(108,71,255,0.22),rgba(108,71,255,0.12))": luce ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.04)", border:`1.5px solid ${materia===key?"rgba(108,71,255,0.5)": luce ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.08)"}`, color: luce ? "#0a0a20" : "white", fontFamily:"'Nunito', sans-serif", fontWeight:800, fontSize:"9px", cursor:"pointer", boxShadow:materia===key?"0 4px 12px rgba(108,71,255,0.2)":"none", transition:"all 0.15s" }}>
               <div style={{ fontSize:"17px", marginBottom:"3px" }}>{info.emoji}</div>{info.label.split(" ")[0]}
             </button>
           ))}
         </div>
 
         {/* ATTIVITÀ */}
-        <p style={{ fontSize:"10px", fontWeight:800, color:"rgba(255,255,255,0.3)", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"10px" }}>Attività</p>
+        <p style={{ fontSize:"10px", fontWeight:800, color: luce ? "rgba(0,0,30,0.4)" : "rgba(255,255,255,0.3)", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"10px" }}>Attività</p>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px", marginBottom:"14px" }}>
           {[
             { label:"Foto Compiti", sub:"Scatta e impara", emoji:"📸", screen:"foto", bg:"linear-gradient(145deg,#FFE500,#FFCC00,#FFB300)", border:"linear-gradient(135deg,#FF8C00,#FF3D00)" },
@@ -1013,21 +1029,6 @@ export default function Home() {
           ))}
         </div>
 
-        {/* STREAK BAR */}
-        <div style={{ background:"linear-gradient(135deg,#1A1B3A,#161730)", border:"1px solid rgba(255,184,0,0.25)", borderRadius:"18px", padding:"14px 16px", marginBottom:"14px", display:"flex", alignItems:"center", justifyContent:"space-between", boxShadow:"0 4px 20px rgba(0,0,0,0.3)" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-            <span style={{ fontSize:"26px", filter:"drop-shadow(0 2px 8px rgba(255,140,0,0.5))" }}>🔥</span>
-            <div>
-              <p style={{ fontWeight:900, fontSize:"15px", color:"#fbbf24" }}>{streak > 0 ? `${streak} giorni di fila!` : "Inizia lo streak!"}</p>
-              <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.4)", fontWeight:600 }}>{streak >= 7 ? "Sei inarrestabile 🚀" : streak >= 3 ? "Continua così! 💪" : "Studia ogni giorno"}</p>
-            </div>
-          </div>
-          <div style={{ background:"rgba(255,184,0,0.15)", border:"1px solid rgba(255,184,0,0.3)", borderRadius:"20px", padding:"6px 12px", textAlign:"center" }}>
-            <p style={{ fontSize:"15px", fontWeight:900, color:"#FFB800", lineHeight:1.2 }}>⭐{figlioAttivo.stelle}</p>
-            <p style={{ fontSize:"9px", color:"rgba(255,184,0,0.6)", fontWeight:800, textTransform:"uppercase", letterSpacing:"0.5px" }}>stelle</p>
-          </div>
-        </div>
-
         {/* GIOCA */}
         <button onClick={() => goScreen("gioca")} style={{ width:"100%", padding:"16px 18px", borderRadius:"18px", background:"linear-gradient(135deg,#6C47FF 0%,#9B3FD4 50%,#FF4B8B 100%)", boxShadow:"0 8px 28px rgba(108,71,255,0.45), inset 0 1px 0 rgba(255,255,255,0.15)", border:"none", color:"white", fontFamily:"'Nunito'", textAlign:"left", cursor:"pointer", display:"flex", alignItems:"center", gap:"14px", marginBottom:"10px" }}>
           <span style={{ fontSize:"26px" }}>🎮</span>
@@ -1038,13 +1039,13 @@ export default function Home() {
           <span style={{ fontSize:"18px", opacity:0.8 }}>→</span>
         </button>
 
-        <button onClick={() => goScreen("badge")} style={{ width:"100%", padding:"14px 18px", borderRadius:"16px", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", color:"white", fontFamily:"'Nunito'", textAlign:"left", cursor:"pointer", display:"flex", alignItems:"center", gap:"12px", marginBottom:"16px" }}>
+        <button onClick={() => goScreen("badge")} style={{ width:"100%", padding:"14px 18px", borderRadius:"16px", background: luce ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.04)", border: luce ? "1px solid rgba(0,0,0,0.08)" : "1px solid rgba(255,255,255,0.08)", color: luce ? "#0a0a20" : "white", fontFamily:"'Nunito'", textAlign:"left", cursor:"pointer", display:"flex", alignItems:"center", gap:"12px", marginBottom:"16px" }}>
           <span style={{ fontSize:"22px" }}>🏆</span>
           <div style={{ flex:1 }}>
-            <p style={{ fontSize:"13px", fontWeight:800 }}>Badge e Traguardi</p>
+            <p style={{ fontSize:"13px", fontWeight:800, color: luce ? "#0a0a20" : "white" }}>Badge e Traguardi</p>
             <p style={{ fontSize:"11px", color:"#fbbf24", fontWeight:700 }}>{figlioAttivo.badge?.length||0} badge sbloccati</p>
           </div>
-          <span style={{ fontSize:"14px", color:"rgba(255,255,255,0.3)" }}>→</span>
+          <span style={{ fontSize:"14px", color: luce ? "rgba(0,0,30,0.3)" : "rgba(255,255,255,0.3)" }}>→</span>
         </button>
 
       </div>
@@ -1941,12 +1942,12 @@ export default function Home() {
             </div>
           </div>
 
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"10px", marginBottom:"14px" }}>
-            {[{ label:"Sessioni", value:sessioniTotali, emoji:"📚", colore:"#6366f1" },{ label:"Badge", value:badgeSbloccati, emoji:"🏆", colore:"#f59e0b" },{ label:"Capiti", value:capiti, emoji:"🟢", colore:"#10b981" }].map(k => (
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", marginBottom:"14px" }}>
+            {[{ label:"Giorni di studio", value:streak, emoji:"🔥", colore:"#f59e0b" },{ label:"Sessioni", value:sessioniTotali, emoji:"📚", colore:"#6366f1" },{ label:"Badge", value:badgeSbloccati, emoji:"🏆", colore:"#a78bfa" },{ label:"Capiti", value:capiti, emoji:"🟢", colore:"#10b981" }].map(k => (
               <div key={k.label} style={{ ...S.card, textAlign:"center", padding:"14px 8px" }}>
                 <p style={{ fontSize:"22px", marginBottom:"4px" }}>{k.emoji}</p>
                 <p style={{ fontSize:"24px", fontWeight:900, color:k.colore }}>{k.value}</p>
-                <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.5)", fontWeight:700 }}>{k.label}</p>
+                <p style={{ fontSize:"11px", color: luce ? "rgba(0,0,30,0.45)" : "rgba(255,255,255,0.5)", fontWeight:700 }}>{k.label}</p>
               </div>
             ))}
           </div>
@@ -2434,13 +2435,27 @@ export default function Home() {
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
             <div>
               <p style={{ fontWeight:900, fontSize:"15px", marginBottom:"4px" }}>{piano==="trial"?"🎁 Trial Gratuito":"💎 Piano Premium"}</p>
-              <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.5)", fontWeight:600 }}>{piano==="trial"?`${trialGiorni} giorni rimasti`:"Accesso completo"}</p>
+              <p style={{ fontSize:"13px", color: luce ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.5)", fontWeight:600 }}>{piano==="trial"?`${trialGiorni} giorni rimasti`:"Accesso completo"}</p>
             </div>
             {piano==="trial"
               ? <button onClick={() => setScreen("scegli_piano")} style={{ ...S.btn, ...S.btnP, width:"auto", padding:"10px 18px", fontSize:"13px" }}>Abbonati</button>
               : <button onClick={() => { setShowGestisciAbb(true); setDisdettaConfermata(false); }} style={{ background:"rgba(139,92,246,0.15)", border:"1px solid rgba(139,92,246,0.35)", borderRadius:"12px", padding:"10px 16px", color:"#a78bfa", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", cursor:"pointer" }}>Gestisci →</button>
             }
           </div>
+        </div>
+
+        {/* Tema chiaro / scuro */}
+        <div style={{ ...S.card, marginTop:"14px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <div>
+            <p style={{ fontWeight:800, fontSize:"14px", marginBottom:"2px" }}>{luce ? "☀️ Tema Chiaro" : "🌙 Tema Scuro"}</p>
+            <p style={{ fontSize:"12px", color: luce ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.4)", fontWeight:600 }}>{luce ? "Sfondo bianco · testo scuro" : "Sfondo scuro · testo chiaro"}</p>
+          </div>
+          <button
+            onClick={() => setTema(t => t === "dark" ? "light" : "dark")}
+            style={{ position:"relative", width:"52px", height:"28px", borderRadius:"14px", background: luce ? "linear-gradient(135deg,#a78bfa,#6366f1)" : "rgba(255,255,255,0.12)", border: luce ? "none" : "1px solid rgba(255,255,255,0.15)", cursor:"pointer", transition:"all 0.3s ease", flexShrink:0 }}
+          >
+            <div style={{ position:"absolute", top:"3px", left: luce ? "27px" : "3px", width:"22px", height:"22px", borderRadius:"50%", background:"white", boxShadow:"0 2px 6px rgba(0,0,0,0.25)", transition:"left 0.3s ease" }} />
+          </button>
         </div>
       </div>
 

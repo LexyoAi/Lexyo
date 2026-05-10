@@ -163,17 +163,31 @@ export default function Landing({ onEntra }) {
         .dot-pulse { animation:glow 1.8s ease-in-out infinite; }
         .spot-grid { display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:center; }
         @media(max-width:720px){ .spot-grid { grid-template-columns:1fr !important; gap:32px; } }
+
+        html { overflow-x:hidden; }
+        @media(max-width:640px){
+          .nav-install-btn { display:none !important; }
+          .nav-wrap { padding:0 14px !important; }
+          .hero-section { padding:80px 16px 48px !important; }
+          .trasforma-grid { grid-template-columns:1fr !important; gap:16px !important; }
+          .trasforma-arrow { transform:rotate(90deg); margin:0 auto; }
+          .confronto-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:6px; }
+          .sticky-sub { display:none; }
+          section { padding-left:16px !important; padding-right:16px !important; }
+          .mob-font-up { font-size:15px !important; }
+          .feature-card p { font-size:14px !important; }
+        }
       `}</style>
 
       {/* NAV */}
-      <nav style={{ position:"fixed", top:0, left:0, right:0, zIndex:100, padding:"0 28px", height:"64px", display:"flex", justifyContent:"space-between", alignItems:"center", background:scrollY>40?"rgba(6,6,15,0.94)":"transparent", backdropFilter:scrollY>40?"blur(20px)":"none", borderBottom:scrollY>40?"1px solid rgba(255,255,255,0.06)":"none", transition:"all 0.3s ease" }}>
+      <nav className="nav-wrap" style={{ position:"fixed", top:0, left:0, right:0, zIndex:100, padding:"0 28px", height:"64px", display:"flex", justifyContent:"space-between", alignItems:"center", background:scrollY>40?"rgba(6,6,15,0.94)":"transparent", backdropFilter:scrollY>40?"blur(20px)":"none", borderBottom:scrollY>40?"1px solid rgba(255,255,255,0.06)":"none", transition:"all 0.3s ease" }}>
         <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
           <img src="/lex.png" alt="Lex" style={{ width:"36px", height:"36px", objectFit:"contain" }} />
           <span style={{ fontWeight:900, fontSize:"22px", letterSpacing:"-0.5px" }}>Lexyo</span>
           <span style={{ background:"rgba(99,102,241,0.2)", border:"1px solid rgba(99,102,241,0.35)", borderRadius:"20px", padding:"2px 10px", fontSize:"11px", fontWeight:700, color:"#a78bfa" }}>🇮🇹 Made in Italy</span>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-          <button onClick={() => document.getElementById("install-app")?.scrollIntoView({ behavior:"smooth" })} style={{ background:"linear-gradient(135deg,#a855f7,#6366f1)", border:"none", borderRadius:"10px", padding:"10px 20px", color:"white", fontFamily:"'Plus Jakarta Sans'", fontWeight:800, fontSize:"14px", cursor:"pointer", display:"flex", alignItems:"center", gap:"6px" }}>
+          <button className="nav-install-btn" onClick={() => document.getElementById("install-app")?.scrollIntoView({ behavior:"smooth" })} style={{ background:"linear-gradient(135deg,#a855f7,#6366f1)", border:"none", borderRadius:"10px", padding:"10px 20px", color:"white", fontFamily:"'Plus Jakarta Sans'", fontWeight:800, fontSize:"14px", cursor:"pointer", display:"flex", alignItems:"center", gap:"6px" }}>
             📲 Installa l'App
           </button>
           <button onClick={onEntra} className="btn-cta" style={{ background:"linear-gradient(135deg,#6366f1,#8b5cf6)", border:"none", borderRadius:"12px", padding:"10px 24px", color:"white", fontFamily:"'Plus Jakarta Sans'", fontWeight:700, fontSize:"14px" }}>
@@ -183,7 +197,7 @@ export default function Landing({ onEntra }) {
       </nav>
 
       {/* ── HERO con Lex Professore ── */}
-      <section style={{ minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"100px 24px 60px", position:"relative", overflow:"hidden" }}>
+      <section className="hero-section" style={{ minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"100px 24px 60px", position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", inset:0, background:"radial-gradient(ellipse 70% 50% at 50% 0%, rgba(99,102,241,0.14) 0%, transparent 70%)", pointerEvents:"none" }} />
 
         {/* Nome */}
@@ -302,7 +316,7 @@ export default function Landing({ onEntra }) {
           </div>
 
           {/* Le due versioni affiancate */}
-          <div style={{ display:"grid", gridTemplateColumns:"1fr auto 1fr", gap:"24px", alignItems:"center", marginBottom:"56px" }}>
+          <div className="trasforma-grid" style={{ display:"grid", gridTemplateColumns:"1fr auto 1fr", gap:"24px", alignItems:"center", marginBottom:"56px" }}>
 
             {/* Lex Professore */}
             <div style={{ textAlign:"center", opacity: trasformazione ? 1 : 0, transform: trasformazione ? "translateX(0)" : "translateX(-60px)", transition:"all 0.8s cubic-bezier(0.34,1.56,0.64,1)" }}>
@@ -322,7 +336,7 @@ export default function Landing({ onEntra }) {
             </div>
 
             {/* Freccia trasformazione */}
-            <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"8px", opacity: trasformazione ? 1 : 0, transition:"opacity 0.5s ease 0.6s" }}>
+            <div className="trasforma-arrow" style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"8px", opacity: trasformazione ? 1 : 0, transition:"opacity 0.5s ease 0.6s" }}>
               {/* Anelli energia */}
               {trasformazione && (
                 <div style={{ position:"relative", width:"60px", height:"60px" }}>
@@ -627,7 +641,8 @@ export default function Landing({ onEntra }) {
               <span style={{ color:"rgba(255,255,255,0.35)" }}>Il supporto scolastico che i genitori italiani aspettavano.</span>
             </h2>
           </div>
-          <div style={{ background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:"22px", overflow:"hidden" }}>
+          <div className="confronto-scroll">
+          <div style={{ background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:"22px", overflow:"hidden", minWidth:"560px" }}>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 110px 110px 110px", background:"rgba(99,102,241,0.08)", padding:"14px 24px", borderBottom:"1px solid rgba(255,255,255,0.05)" }}>
               <p style={{ fontSize:"11px", fontWeight:800, color:"rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"1.5px" }}>Caratteristica</p>
               <p style={{ fontSize:"13px", fontWeight:900, color:"#a78bfa", textAlign:"center" }}>Lexyo</p>
@@ -654,6 +669,7 @@ export default function Landing({ onEntra }) {
               </div>
             ))}
           </div>
+          </div>{/* fine confronto-scroll */}
         </div>
       </section>
 
@@ -829,7 +845,7 @@ export default function Landing({ onEntra }) {
             <img src="/lex.png" alt="Lexyo" style={{ width:"36px", height:"36px", objectFit:"contain", flexShrink:0 }} />
             <div>
               <p style={{ fontWeight:900, fontSize:"14px", margin:0 }}>📱 Installa Lexyo — è gratis</p>
-              <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.4)", margin:0 }}>Nessun App Store · Funziona offline</p>
+              <p className="sticky-sub" style={{ fontSize:"11px", color:"rgba(255,255,255,0.4)", margin:0 }}>Nessun App Store · Funziona offline</p>
             </div>
           </div>
           <div style={{ display:"flex", gap:"8px", flexShrink:0 }}>

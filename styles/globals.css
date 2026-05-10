@@ -24,3 +24,98 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* ═══════════════════════════════════════
+   LEXYO — TEMA CHIARO
+   Sovrascrive tutti gli stili inline bianchi
+   con !important per garantire leggibilità
+   ═══════════════════════════════════════ */
+
+/* Body base */
+html[data-tema="light"] body {
+  background: #f0f4ff;
+  color: #0a0a20;
+}
+
+/* ── Tutto il testo diventa scuro ──
+   Copre: p, span, h*, label, small, li, td, th.
+   I button con gradiente colorato (Gioca, hcard) mantengono il testo bianco
+   perché vengono gestiti direttamente nel JSX tramite la variabile luce. */
+html[data-tema="light"] p,
+html[data-tema="light"] span,
+html[data-tema="light"] h1,
+html[data-tema="light"] h2,
+html[data-tema="light"] h3,
+html[data-tema="light"] h4,
+html[data-tema="light"] h5,
+html[data-tema="light"] label,
+html[data-tema="light"] small,
+html[data-tema="light"] li,
+html[data-tema="light"] td,
+html[data-tema="light"] th {
+  color: rgba(10, 10, 32, 0.87) !important;
+}
+
+/* Button senza gradiente → testo scuro (quelli con gradiente es. Gioca/hcard restano bianchi) */
+html[data-tema="light"] button:not([style*="linear-gradient"]) {
+  color: rgba(10, 10, 32, 0.87) !important;
+}
+
+/* I div che contengono testo (overflow: nasconde il colore bianco ereditato) */
+html[data-tema="light"] div {
+  color: rgba(10, 10, 32, 0.87);
+}
+/* !! NON mettere !important su div: le card accent (orange, green, ecc.)
+   hanno color inline che deve sovrascrivere questo. Il !important su p/span
+   basta per il 99% dei casi, il div senza !important copre l'eredità. */
+
+/* ── Card e container scuri → bianchi/chiari ── */
+/* Corrispondenza sia su background: #HEX sia dentro gradienti linear-gradient(...,#HEX,...) */
+html[data-tema="light"] [style*="#1A1B3A"] {
+  background: #ffffff !important;
+  box-shadow: 0 1px 14px rgba(0, 0, 30, 0.07) !important;
+}
+html[data-tema="light"] [style*="#0F1028"] {
+  background: #f0f4ff !important;
+}
+html[data-tema="light"] [style*="#12121f"] {
+  background: #f8f9ff !important;
+}
+html[data-tema="light"] [style*="#0a0a1a"] {
+  background: #f0f4ff !important;
+}
+html[data-tema="light"] [style*="#141530"] {
+  background: #f5f7ff !important;
+}
+html[data-tema="light"] [style*="#161730"] {
+  background: #f5f7ff !important;
+}
+html[data-tema="light"] [style*="#0a0a0f"],
+html[data-tema="light"] [style*="#06060f"] {
+  background: #f0f4ff !important;
+}
+
+/* ── Sfondi rgba(255,255,255,X) → grigio chiarissimo
+   :not(linear-gradient) preserva le card accent colorate ── */
+html[data-tema="light"] [style*="rgba(255,255,255,0."]:not([style*="linear-gradient"]) {
+  background: rgba(0, 0, 30, 0.038) !important;
+}
+
+/* ── Bordi bianchi semi-trasparenti → bordi scuri leggeri ── */
+html[data-tema="light"] [style*="solid rgba(255,255,255"] {
+  border-color: rgba(0, 0, 30, 0.1) !important;
+}
+
+/* ── Gradienti nav/header scuri → bianco ── */
+html[data-tema="light"] [style*="linear-gradient(180deg, #1A1B3A"],
+html[data-tema="light"] [style*="linear-gradient(180deg,#1A1B3A"],
+html[data-tema="light"] [style*="linear-gradient(180deg, #141530"],
+html[data-tema="light"] [style*="linear-gradient(180deg,#141530"] {
+  background: linear-gradient(180deg, #ffffff 0%, #f5f7ff 100%) !important;
+}
+
+/* ── Placeholder input ── */
+html[data-tema="light"] input::placeholder,
+html[data-tema="light"] textarea::placeholder {
+  color: rgba(10, 10, 32, 0.35) !important;
+}
