@@ -170,7 +170,7 @@ export default function Landing({ onEntra }) {
           .nav-wrap { padding:0 14px !important; }
           .hero-section { padding:80px 16px 48px !important; }
           .trasforma-grid { grid-template-columns:1fr !important; gap:16px !important; }
-          .trasforma-arrow { transform:rotate(90deg); margin:0 auto; }
+          .trasforma-arrow { margin:0 auto; }
           .confronto-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:6px; }
           .sticky-sub { display:none; }
           section { padding-left:16px !important; padding-right:16px !important; }
