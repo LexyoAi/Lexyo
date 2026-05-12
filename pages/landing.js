@@ -10,6 +10,17 @@ export default function Landing({ onEntra }) {
   const trasformaRef = useRef(null);
   const [showIosModal, setShowIosModal] = useState(false);
   const [pwaPromptReady, setPwaPromptReady] = useState(false);
+  const [refBanner, setRefBanner] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    if (ref) {
+      localStorage.setItem("lexyo_referral_code", ref.toUpperCase());
+      setRefBanner(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.__pwaInstallPrompt) setPwaPromptReady(true);
@@ -197,6 +208,12 @@ export default function Landing({ onEntra }) {
       </nav>
 
       {/* ── HERO con Lex Professore ── */}
+      {refBanner && (
+        <div style={{ background:"linear-gradient(135deg,#6C47FF,#FF4B8B)", padding:"12px 20px", textAlign:"center", borderRadius:"0 0 12px 12px", marginBottom:"0" }}>
+          <p style={{ color:"white", fontWeight:800, fontSize:"15px" }}>👋 Il tuo amico ti ha invitato! Inizia gratis per 3 giorni 🎁</p>
+        </div>
+      )}
+
       <section className="hero-section" style={{ minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"100px 24px 60px", position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", inset:0, background:"radial-gradient(ellipse 70% 50% at 50% 0%, rgba(99,102,241,0.14) 0%, transparent 70%)", pointerEvents:"none" }} />
 

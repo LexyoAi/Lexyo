@@ -128,6 +128,12 @@ export default function Home() {
   const [compitoCompletamentoAnim, setCompitoCompletamentoAnim] = useState(null);
   const [chatMeseChip, setChatMeseChip] = useState(null);
   const [dettatoMeseChip, setDettatoMeseChip] = useState(null);
+  const [referralCode, setReferralCode] = useState(null);
+  const [referralCount, setReferralCount] = useState(0);
+  const [mesiGratisGuadagnati, setMesiGratisGuadagnati] = useState(0);
+  const [referralCopiato, setReferralCopiato] = useState("");
+  const [toastReferral, setToastReferral] = useState("");
+  const isAdmin = profiloUtente?.is_admin === true;
 
   const getFingerprint = () => {
     if (typeof window === "undefined") return "ssr";
@@ -186,6 +192,23 @@ export default function Home() {
     const onReady = () => setPwaPromptReady(true);
     window.addEventListener("pwaPromptReady", onReady);
     return () => window.removeEventListener("pwaPromptReady", onReady);
+  }, []);
+
+  const generateReferralCode = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let code = "LEX-";
+    for (let i = 0; i < 5; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    return code;
+  };
+
+  // Legge ?ref=CODICE e lo salva in localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    if (ref) {
+      localStorage.setItem("lexyo_referral_code", ref.toUpperCase());
+    }
   }, []);
 
   // Legge ?pagamento=successo/annullato al ritorno da Stripe
@@ -361,15 +384,28 @@ export default function Home() {
             setFigli(ff);
             setFiglioAttivo(ff[0]);
           }
-          // Carica profilo Stripe/abbonamento
+          // Carica profilo Stripe/abbonamento/referral
           const { data: profilo } = await supabase
             .from("profili")
-            .select("abbonamento_attivo,abbonamento_scadenza,stripe_customer_id,trial_scade_presto,pagamento_fallito")
+            .select("abbonamento_attivo,abbonamento_scadenza,stripe_customer_id,trial_scade_presto,pagamento_fallito,is_admin,referral_code,referral_count,mesi_gratis_guadagnati")
             .eq("email", session.user.email)
             .maybeSingle();
           if (profilo) {
             setProfiloUtente(profilo);
             if (profilo.abbonamento_attivo) setPiano("premium");
+            setReferralCount(profilo.referral_count || 0);
+            setMesiGratisGuadagnati(profilo.mesi_gratis_guadagnati || 0);
+            if (profilo.referral_code) {
+              setReferralCode(profilo.referral_code);
+            } else {
+              const code = generateReferralCode();
+              await supabase.from("profili").upsert({ email: session.user.email, referral_code: code }, { onConflict: "email" });
+              setReferralCode(code);
+            }
+          } else {
+            const code = generateReferralCode();
+            await supabase.from("profili").upsert({ email: session.user.email, referral_code: code }, { onConflict: "email" });
+            setReferralCode(code);
           }
           setScreen("home");
         } else {
@@ -429,7 +465,20 @@ export default function Home() {
       if (authMode === "register") {
         const { error } = await supabase.auth.signUp({ email: email.trim(), password: password.trim() });
         if (error) { setAuthError(error.message === "User already registered" ? "Email già registrata. Accedi." : error.message); }
-        else { setAuthSuccess("Account creato! Controlla l'email per confermare."); setAuthMode("login"); }
+        else {
+          setAuthSuccess("Account creato! Controlla l'email per confermare."); setAuthMode("login");
+          // Associa referral: aggiorna contatore del referente
+          const refCode = typeof window !== "undefined" ? localStorage.getItem("lexyo_referral_code") : null;
+          if (refCode) {
+            const { data: referente } = await supabase.from("profili").select("referral_count,mesi_gratis_guadagnati").eq("referral_code", refCode).maybeSingle();
+            if (referente) {
+              const nuovoCount = (referente.referral_count || 0) + 1;
+              const nuoviMesi = Math.floor(nuovoCount / 5);
+              await supabase.from("profili").update({ referral_count: nuovoCount, mesi_gratis_guadagnati: nuoviMesi }).eq("referral_code", refCode);
+            }
+            localStorage.removeItem("lexyo_referral_code");
+          }
+        }
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: password.trim() });
         if (error) { setAuthError("Email o password errati."); }
@@ -437,15 +486,28 @@ export default function Home() {
           setUtente(data.user);
           // Carica figli dal database
           const { data: figliDB } = await supabase.from("figli").select("*").eq("genitore_id", data.user.id);
-          // Carica profilo abbonamento
+          // Carica profilo abbonamento/referral
           const { data: profilo } = await supabase
             .from("profili")
-            .select("abbonamento_attivo,abbonamento_scadenza,stripe_customer_id,trial_scade_presto,pagamento_fallito")
+            .select("abbonamento_attivo,abbonamento_scadenza,stripe_customer_id,trial_scade_presto,pagamento_fallito,is_admin,referral_code,referral_count,mesi_gratis_guadagnati")
             .eq("email", data.user.email)
             .maybeSingle();
           if (profilo) {
             setProfiloUtente(profilo);
             if (profilo.abbonamento_attivo) setPiano("premium");
+            setReferralCount(profilo.referral_count || 0);
+            setMesiGratisGuadagnati(profilo.mesi_gratis_guadagnati || 0);
+            if (profilo.referral_code) {
+              setReferralCode(profilo.referral_code);
+            } else {
+              const code = generateReferralCode();
+              await supabase.from("profili").upsert({ email: data.user.email, referral_code: code }, { onConflict: "email" });
+              setReferralCode(code);
+            }
+          } else {
+            const code = generateReferralCode();
+            await supabase.from("profili").upsert({ email: data.user.email, referral_code: code }, { onConflict: "email" });
+            setReferralCode(code);
           }
           if (figliDB && figliDB.length > 0) {
             const figliFormattati = figliDB.map(f => ({ ...f, badge: f.badge || [], preparazione: f.preparazione || {} }));
@@ -652,7 +714,7 @@ export default function Home() {
 
   const sendChat = async () => {
     if (!chatInput.trim() || chatLoading) return;
-    if (isTrial) {
+    if (isTrial && !isAdmin) {
       const usate = parseInt(localStorage.getItem("lexyo_trial_chat") || "0", 10);
       if (usate >= TRIAL_CHAT_MAX) return;
       localStorage.setItem("lexyo_trial_chat", String(usate + 1));
@@ -1204,7 +1266,7 @@ export default function Home() {
         </div>
       </div>
 
-      {piano === "trial" && <div style={{ padding:"7px 20px", background:"rgba(245,158,11,0.12)", borderBottom:"1px solid rgba(245,158,11,0.2)", display:"flex", justifyContent:"space-between", alignItems:"center" }}><p style={{ fontSize:"12px", color:"#fbbf24", fontWeight:700 }}>🎁 Trial — {trialGiorni} giorni rimasti</p><button onClick={() => setScreen("scegli_piano")} style={{ background:"rgba(245,158,11,0.2)", border:"1px solid rgba(245,158,11,0.4)", borderRadius:"20px", padding:"4px 12px", color:"#fbbf24", fontSize:"11px", fontWeight:800, cursor:"pointer" }}>Abbonati</button></div>}
+      {piano === "trial" && !isAdmin && <div style={{ padding:"7px 20px", background:"rgba(245,158,11,0.12)", borderBottom:"1px solid rgba(245,158,11,0.2)", display:"flex", justifyContent:"space-between", alignItems:"center" }}><p style={{ fontSize:"12px", color:"#fbbf24", fontWeight:700 }}>🎁 Trial — {trialGiorni} giorni rimasti</p><button onClick={() => setScreen("scegli_piano")} style={{ background:"rgba(245,158,11,0.2)", border:"1px solid rgba(245,158,11,0.4)", borderRadius:"20px", padding:"4px 12px", color:"#fbbf24", fontSize:"11px", fontWeight:800, cursor:"pointer" }}>Abbonati</button></div>}
 
       {pwaPromptReady && !installBannerDismissed && (
         <div style={{ padding:"10px 20px", background:"linear-gradient(135deg,rgba(168,85,247,0.15),rgba(99,102,241,0.1))", borderBottom:"1px solid rgba(168,85,247,0.25)", display:"flex", justifyContent:"space-between", alignItems:"center", gap:"12px" }}>
@@ -1243,11 +1305,20 @@ export default function Home() {
           ))}
         </div>
 
-        <button onClick={() => goScreen("badge")} style={{ width:"100%", padding:"14px 18px", borderRadius:"16px", background: luce ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.04)", border: luce ? "1px solid rgba(0,0,0,0.08)" : "1px solid rgba(255,255,255,0.08)", color: luce ? "#0a0a20" : "white", fontFamily:"'Nunito'", textAlign:"left", cursor:"pointer", display:"flex", alignItems:"center", gap:"12px", marginBottom:"16px" }}>
+        <button onClick={() => goScreen("badge")} style={{ width:"100%", padding:"14px 18px", borderRadius:"16px", background: luce ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.04)", border: luce ? "1px solid rgba(0,0,0,0.08)" : "1px solid rgba(255,255,255,0.08)", color: luce ? "#0a0a20" : "white", fontFamily:"'Nunito'", textAlign:"left", cursor:"pointer", display:"flex", alignItems:"center", gap:"12px", marginBottom:"10px" }}>
           <span style={{ fontSize:"22px" }}>🏆</span>
           <div style={{ flex:1 }}>
             <p style={{ fontSize:"13px", fontWeight:800, color: luce ? "#0a0a20" : "white" }}>Badge e Traguardi</p>
             <p style={{ fontSize:"11px", color:"#fbbf24", fontWeight:700 }}>{figlioAttivo.badge?.length||0} badge sbloccati</p>
+          </div>
+          <span style={{ fontSize:"14px", color: luce ? "rgba(0,0,30,0.3)" : "rgba(255,255,255,0.3)" }}>→</span>
+        </button>
+
+        <button onClick={() => goScreen("famiglia")} style={{ width:"100%", padding:"14px 18px", borderRadius:"16px", background:"linear-gradient(135deg,rgba(108,71,255,0.15),rgba(155,63,212,0.1))", border:"1px solid rgba(108,71,255,0.25)", color: luce ? "#0a0a20" : "white", fontFamily:"'Nunito'", textAlign:"left", cursor:"pointer", display:"flex", alignItems:"center", gap:"12px", marginBottom:"16px" }}>
+          <span style={{ fontSize:"22px" }}>📊</span>
+          <div style={{ flex:1 }}>
+            <p style={{ fontSize:"13px", fontWeight:800, color: luce ? "#0a0a20" : "white" }}>Dashboard Genitore</p>
+            <p style={{ fontSize:"11px", color:"#a78bfa", fontWeight:700 }}>Statistiche, abbonamento e referral</p>
           </div>
           <span style={{ fontSize:"14px", color: luce ? "rgba(0,0,30,0.3)" : "rgba(255,255,255,0.3)" }}>→</span>
         </button>
@@ -1458,7 +1529,7 @@ export default function Home() {
         <div><p style={{ fontWeight:900, fontSize:"15px" }}>Foto Compiti</p><p style={{ fontSize:"11px", color:t.primario, fontWeight:700 }}>{mat.emoji} {mat.label} · {prog?.label}</p></div>
       </div>
       <div style={{ flex:1, overflowY:"auto", padding:"18px" }}>
-        {fotoBloccata && (
+        {fotoBloccata && !isAdmin && (
           <div style={{ ...S.card, background:"rgba(245,158,11,0.1)", border:"1px solid rgba(245,158,11,0.35)", textAlign:"center", padding:"28px 20px", marginBottom:"14px" }}>
             <p style={{ fontSize:"36px", marginBottom:"10px" }}>🔒</p>
             <p style={{ fontWeight:900, fontSize:"16px", marginBottom:"6px", color:"#fbbf24" }}>Limite foto raggiunto</p>
@@ -1466,7 +1537,7 @@ export default function Home() {
             <button onClick={() => setScreen("scegli_piano")} style={{ ...S.btn, ...S.btnP }}>Abbonati ora →</button>
           </div>
         )}
-        {!fotoBloccata && fotoFase === "carica" && (
+        {(!fotoBloccata || isAdmin) && fotoFase === "carica" && (
           <>
             <label style={{ display:"flex", border:`2px dashed ${photo?`${t.primario}88`:`${t.secondario}44`}`, borderRadius:"18px", padding:"24px", textAlign:"center", cursor:"pointer", marginBottom:"14px", background:photo?"transparent":`${t.secondario}08`, minHeight:"170px", alignItems:"center", justifyContent:"center" }}>
               {photo ? <img src={photo} alt="Compito" style={{ maxWidth:"100%", maxHeight:"250px", borderRadius:"12px", objectFit:"contain" }} /> : <div><div style={{ fontSize:"44px", marginBottom:"10px" }}>📷</div><p style={{ fontWeight:800, fontSize:"15px", marginBottom:"5px", color:"white" }}>{isMobile ? "Fotografa l'esercizio" : "Carica foto dell'esercizio"}</p><p style={{ fontSize:"12px", color:"rgba(255,255,255,0.4)", fontWeight:600 }}>{isMobile ? "Tocca per aprire la fotocamera" : "Clicca per scegliere una foto"}</p><p style={{ fontSize:"11px", color:"rgba(255,255,255,0.3)", fontWeight:600, marginTop:"4px" }}>🚫 Vietato fotografare persone</p></div>}
@@ -1476,7 +1547,7 @@ export default function Home() {
               <div style={{ display:"flex", gap:"10px" }}>
                 <button onClick={() => setPhoto(null)} style={{ ...S.btn, ...S.btnS, flex:1 }}>🔄 Cambia</button>
                 <button onClick={async () => {
-                  if (isTrial) {
+                  if (isTrial && !isAdmin) {
                     const usate = parseInt(localStorage.getItem("lexyo_trial_foto") || "0", 10);
                     if (usate >= TRIAL_FOTO_MAX) return;
                     localStorage.setItem("lexyo_trial_foto", String(usate + 1));
@@ -1492,7 +1563,7 @@ export default function Home() {
                 }} style={{ ...S.btn, flex:2, background:t.gradiente, boxShadow:`0 6px 20px ${t.glow}`, border:"none" }}>✨ Analizza</button>
               </div>
             )}
-            {isTrial && <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.3)", fontWeight:700, textAlign:"center", marginTop:"10px" }}>📸 {TRIAL_FOTO_MAX - trialFotoUsate} foto rimaste nel periodo di prova</p>}
+            {isTrial && !isAdmin && <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.3)", fontWeight:700, textAlign:"center", marginTop:"10px" }}>📸 {TRIAL_FOTO_MAX - trialFotoUsate} foto rimaste nel periodo di prova</p>}
           </>
         )}
         {fotoBloccata && fotoFase !== "carica" && null}
@@ -1596,7 +1667,7 @@ export default function Home() {
         {chatLoading && <div style={{ display:"flex", gap:"8px", alignItems:"flex-end" }}><div style={{ width:"28px", height:"28px", borderRadius:"9px", background:`${t.secondario}33`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"14px", flexShrink:0 }}>🧑‍🏫</div><div style={{ ...S.card, padding:"14px 16px", display:"flex", gap:"6px", alignItems:"center" }}>{[0,1,2].map(i=><div key={i} style={{ width:"8px", height:"8px", borderRadius:"50%", background:t.primario, animation:`lexBounce 0.6s ease-in-out ${i*0.15}s infinite` }} />)}</div></div>}
         <div ref={chatEndRef} />
       </div>
-      {chatBloccata ? (
+      {chatBloccata && !isAdmin ? (
         <div style={{ padding:"16px 18px 26px", borderTop:`1px solid ${t.secondario}44`, background: luce ? "#f5f7ff" : "#181530", flexShrink:0 }}>
           <div style={{ background:"rgba(245,158,11,0.1)", border:"1px solid rgba(245,158,11,0.3)", borderRadius:"14px", padding:"14px 16px", display:"flex", alignItems:"center", gap:"12px" }}>
             <span style={{ fontSize:"22px" }}>🔒</span>
@@ -1613,7 +1684,7 @@ export default function Home() {
           <button onClick={sendChat} disabled={!chatInput.trim()||chatLoading} style={{ width:"46px", height:"46px", borderRadius:"13px", border:"none", background:chatInput.trim()?t.gradiente:"rgba(255,255,255,0.07)", boxShadow:chatInput.trim()?`0 4px 12px ${t.glow}`:"none", color:"white", fontSize:"18px", flexShrink:0, cursor:"pointer" }}>→</button>
         </div>
       )}
-      {isTrial && !chatBloccata && (
+      {isTrial && !isAdmin && !chatBloccata && (
         <p style={{ fontSize:"10px", color: luce ? "rgba(0,0,30,0.3)" : "rgba(255,255,255,0.25)", fontWeight:700, textAlign:"center", padding:"0 0 8px", background: luce ? "#f5f7ff" : "#181530" }}>💬 {TRIAL_CHAT_MAX - trialChatUsate} messaggi rimasti nella prova</p>
       )}
     </div>
@@ -2653,10 +2724,10 @@ export default function Home() {
             ) : <p style={{ fontSize:"14px", color:"rgba(255,255,255,0.4)", fontWeight:600, textAlign:"center", padding:"10px" }}>Nessuna attività ancora</p>}
           </div>
 
-          <div style={{ ...S.card, background:piano==="trial"?"rgba(245,158,11,0.1)":"rgba(124,58,237,0.15)", border:`1px solid ${piano==="trial"?"rgba(245,158,11,0.3)":"rgba(124,58,237,0.4)"}` }}>
-            <p style={{ fontWeight:900, fontSize:"15px", marginBottom:"6px" }}>{piano==="trial"?"🎁 Trial Gratuito":"💎 Piano Premium"}</p>
-            <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.5)", fontWeight:600, marginBottom:piano==="trial"?"12px":"0" }}>{piano==="trial"?`${trialGiorni} giorni rimasti`:"Accesso completo"}</p>
-            {piano==="trial" && <button onClick={() => setScreen("scegli_piano")} style={{ ...S.btn, ...S.btnP }}>Abbonati ora</button>}
+          <div style={{ ...S.card, background:piano==="trial"&&!isAdmin?"rgba(245,158,11,0.1)":"rgba(124,58,237,0.15)", border:`1px solid ${piano==="trial"&&!isAdmin?"rgba(245,158,11,0.3)":"rgba(124,58,237,0.4)"}` }}>
+            <p style={{ fontWeight:900, fontSize:"15px", marginBottom:"6px" }}>{piano==="trial"&&!isAdmin?"🎁 Trial Gratuito":isAdmin?"👑 Admin":"💎 Piano Premium"}</p>
+            <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.5)", fontWeight:600, marginBottom:piano==="trial"&&!isAdmin?"12px":"0" }}>{piano==="trial"&&!isAdmin?`${trialGiorni} giorni rimasti`:"Accesso completo"}</p>
+            {piano==="trial"&&!isAdmin && <button onClick={() => setScreen("scegli_piano")} style={{ ...S.btn, ...S.btnP }}>Abbonati ora</button>}
           </div>
 
           <button onClick={() => { setEditFiglioData({ id: f.id, nome: f.nome, classe: f.classe, avatar: f.avatar || "" }); setEditFiglioMsg(""); setScreen("modifica_figlio"); }} style={{ ...S.btn, ...S.btnS, marginTop:"6px" }}>
@@ -3202,7 +3273,7 @@ export default function Home() {
             <div>
               <p style={{ fontWeight:900, fontSize:"16px" }}>👤 Area Genitore</p>
               <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.5)", fontWeight:600 }}>{email}</p>
-              <p style={{ fontSize:"12px", color:piano==="trial"?"#f59e0b":"#a78bfa", fontWeight:700, marginTop:"2px" }}>{piano==="trial"?`🎁 Trial — ${trialGiorni} giorni`:"💎 Premium"}</p>
+              <p style={{ fontSize:"12px", color:piano==="trial"&&!isAdmin?"#f59e0b":isAdmin?"#10b981":"#a78bfa", fontWeight:700, marginTop:"2px" }}>{piano==="trial"&&!isAdmin?`🎁 Trial — ${trialGiorni} giorni`:isAdmin?"👑 Admin — Accesso completo":"💎 Premium"}</p>
           </div>
           <button onClick={async () => { await supabase.auth.signOut(); setUtente(null); setFigli([]); setFiglioAttivo(null); setScreen("landing"); }} style={{ background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.2)", borderRadius:"10px", padding:"8px 14px", color:"#ef4444", fontFamily:"'Nunito'", fontWeight:700, fontSize:"12px", cursor:"pointer" }}>
             Esci
@@ -3260,18 +3331,91 @@ export default function Home() {
         })}
         <button onClick={() => goScreen("aggiungi_figlio")} style={{ ...S.btn, ...S.btnS, marginBottom:"16px" }}>+ Aggiungi Figlio/a</button>
 
-        <div style={{ ...S.card, background:piano==="trial"?"rgba(245,158,11,0.1)":"rgba(124,58,237,0.15)", border:`1px solid ${piano==="trial"?"rgba(245,158,11,0.3)":"rgba(124,58,237,0.4)"}` }}>
+        <div style={{ ...S.card, background:piano==="trial"&&!isAdmin?"rgba(245,158,11,0.1)":isAdmin?"rgba(16,185,129,0.1)":"rgba(124,58,237,0.15)", border:`1px solid ${piano==="trial"&&!isAdmin?"rgba(245,158,11,0.3)":isAdmin?"rgba(16,185,129,0.3)":"rgba(124,58,237,0.4)"}` }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
             <div>
-              <p style={{ fontWeight:900, fontSize:"15px", marginBottom:"4px" }}>{piano==="trial"?"🎁 Trial Gratuito":"💎 Piano Premium"}</p>
-              <p style={{ fontSize:"13px", color: luce ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.5)", fontWeight:600 }}>{piano==="trial"?`${trialGiorni} giorni rimasti`:"Accesso completo"}</p>
+              <p style={{ fontWeight:900, fontSize:"15px", marginBottom:"4px" }}>{piano==="trial"&&!isAdmin?"🎁 Trial Gratuito":isAdmin?"👑 Admin":"💎 Piano Premium"}</p>
+              <p style={{ fontSize:"13px", color: luce ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.5)", fontWeight:600 }}>{piano==="trial"&&!isAdmin?`${trialGiorni} giorni rimasti`:"Accesso completo"}</p>
             </div>
-            {piano==="trial"
+            {piano==="trial"&&!isAdmin
               ? <button onClick={() => setScreen("scegli_piano")} style={{ ...S.btn, ...S.btnP, width:"auto", padding:"10px 18px", fontSize:"13px" }}>Abbonati</button>
-              : <button onClick={() => { setShowGestisciAbb(true); setDisdettaConfermata(false); }} style={{ background:"rgba(139,92,246,0.15)", border:"1px solid rgba(139,92,246,0.35)", borderRadius:"12px", padding:"10px 16px", color:"#a78bfa", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", cursor:"pointer" }}>Gestisci →</button>
+              : !isAdmin && <button onClick={() => { setShowGestisciAbb(true); setDisdettaConfermata(false); }} style={{ background:"rgba(139,92,246,0.15)", border:"1px solid rgba(139,92,246,0.35)", borderRadius:"12px", padding:"10px 16px", color:"#a78bfa", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", cursor:"pointer" }}>Gestisci →</button>
             }
           </div>
         </div>
+
+        {/* ── CARD REFERRAL ─────────────────────────────────────── */}
+        {referralCode && (() => {
+          const testoCondivisione = `Ho scoperto Lexyo, il professore AI per i bambini italiani! 🦁 Usa il mio codice ${referralCode} e inizia gratis per 3 giorni. Provalo su https://app.lexyo.it?ref=${referralCode}`;
+          const linkReferral = `https://app.lexyo.it?ref=${referralCode}`;
+          const copiaNegliAppunti = (testo, tipo) => {
+            navigator.clipboard.writeText(testo).catch(() => {
+              const ta = document.createElement("textarea"); ta.value = testo; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
+            });
+            setReferralCopiato(tipo);
+            setTimeout(() => setReferralCopiato(""), 2000);
+          };
+          const mostraToast = (msg) => { setToastReferral(msg); setTimeout(() => setToastReferral(""), 3500); };
+          const socialButtons = [
+            { label:"WhatsApp", bg:"#25D366", icon:"https://cdn.simpleicons.org/whatsapp/ffffff", onClick:() => window.open("https://wa.me/?text=" + encodeURIComponent(testoCondivisione)) },
+            { label:"Facebook", bg:"#1877F2", icon:"https://cdn.simpleicons.org/facebook/ffffff", onClick:() => window.open("https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(linkReferral) + "&quote=" + encodeURIComponent(testoCondivisione)) },
+            { label:"Instagram", bg:"linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)", icon:"https://cdn.simpleicons.org/instagram/ffffff", onClick:() => { copiaNegliAppunti(testoCondivisione, ""); mostraToast("Testo copiato! Apri Instagram e incollalo nelle stories 📱"); } },
+            { label:"TikTok", bg:"#010101", border:"1px solid rgba(255,255,255,0.3)", icon:"https://cdn.simpleicons.org/tiktok/ffffff", onClick:() => { copiaNegliAppunti(testoCondivisione, ""); mostraToast("Testo copiato! Incollalo nella bio TikTok 🎵"); } },
+            { label:"YouTube", bg:"#FF0000", icon:"https://cdn.simpleicons.org/youtube/ffffff", onClick:() => { copiaNegliAppunti(testoCondivisione, ""); mostraToast("Testo copiato! Incollalo in un post Community YouTube ▶"); } },
+          ];
+          return (
+            <div style={{ marginTop:"16px", marginBottom:"16px", borderRadius:"20px", background:"linear-gradient(135deg,#6C47FF,#FF4B8B)", padding:"20px", boxShadow:"0 8px 24px rgba(108,71,255,0.4)" }}>
+              <p style={{ fontWeight:900, fontSize:"16px", color:"white", marginBottom:"4px" }}>🎁 Invita un amico, guadagna un mese gratis!</p>
+              <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.75)", fontWeight:600, marginBottom:"14px" }}>Ogni 5 amici abbonati = 1 mese gratis per te</p>
+
+              {/* Barra progresso */}
+              <div style={{ marginBottom:"14px" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"5px" }}>
+                  <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.8)", fontWeight:700 }}>{referralCount}/5 amici invitati</p>
+                  {mesiGratisGuadagnati > 0 && <p style={{ fontSize:"12px", color:"#fbbf24", fontWeight:800 }}>🎉 {mesiGratisGuadagnati} {mesiGratisGuadagnati === 1 ? "mese" : "mesi"} guadagnati</p>}
+                </div>
+                <div style={{ height:"6px", background:"rgba(0,0,0,0.25)", borderRadius:"6px", overflow:"hidden" }}>
+                  <div style={{ height:"100%", width:`${Math.min((referralCount % 5) / 5 * 100, 100)}%`, background:"linear-gradient(90deg,#a78bfa,#c084fc)", borderRadius:"6px", transition:"width 0.5s ease" }} />
+                </div>
+              </div>
+
+              {/* Box codice */}
+              <div style={{ background:"rgba(0,0,0,0.3)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:"14px", padding:"12px 16px", marginBottom:"10px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"10px" }}>
+                <p style={{ fontSize:"22px", fontWeight:900, color:"white", letterSpacing:"2px", fontFamily:"monospace" }}>{referralCode}</p>
+                <button onClick={() => copiaNegliAppunti(referralCode, "code")} style={{ background:"rgba(255,255,255,0.15)", border:"1px solid rgba(255,255,255,0.3)", borderRadius:"10px", padding:"7px 12px", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"12px", cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
+                  {referralCopiato === "code" ? "Copiato! ✓" : "📋 Copia codice"}
+                </button>
+              </div>
+
+              {/* Link */}
+              <div style={{ display:"flex", gap:"8px", marginBottom:"14px" }}>
+                <div style={{ flex:1, background:"rgba(0,0,0,0.2)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:"10px", padding:"8px 12px", overflow:"hidden" }}>
+                  <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.55)", fontWeight:600, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{linkReferral}</p>
+                </div>
+                <button onClick={() => copiaNegliAppunti(linkReferral, "link")} style={{ background:"rgba(255,255,255,0.15)", border:"1px solid rgba(255,255,255,0.3)", borderRadius:"10px", padding:"8px 14px", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"12px", cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
+                  {referralCopiato === "link" ? "Copiato! ✓" : "🔗 Copia link"}
+                </button>
+              </div>
+
+              {/* Social buttons */}
+              <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.6)", fontWeight:700, marginBottom:"8px" }}>Condividi su:</p>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:"8px" }}>
+                {socialButtons.map(b => (
+                  <button key={b.label} onClick={b.onClick} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"4px", padding:"10px 14px", borderRadius:"14px", background:b.bg, border:b.border||"none", cursor:"pointer", minWidth:"58px" }}>
+                    <img src={b.icon} width="22" height="22" alt={b.label} style={{ display:"block" }} />
+                    <span style={{ fontSize:"10px", fontWeight:700, color:"white" }}>{b.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {toastReferral && (
+                <div style={{ marginTop:"12px", background:"rgba(0,0,0,0.4)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:"10px", padding:"10px 14px" }}>
+                  <p style={{ fontSize:"12px", color:"white", fontWeight:700 }}>{toastReferral}</p>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Tema chiaro / scuro */}
         <div style={{ ...S.card, marginTop:"14px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
