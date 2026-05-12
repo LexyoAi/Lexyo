@@ -117,6 +117,17 @@ export default function Home() {
   const [stripeLoading, setStripeLoading] = useState(false);
   const [pagamentoFlash, setPagamentoFlash] = useState(null); // "successo" | "annullato" | null
   const [profiloUtente, setProfiloUtente] = useState(null);
+  // ── Compiti estivi gestiti dal bambino ──
+  const [compitiEstivi, setCompitiEstivi] = useState([]);
+  const [compitiLoading, setCompitiLoading] = useState(false);
+  const [showFormCompito, setShowFormCompito] = useState(false);
+  const [nuovoCompito, setNuovoCompito] = useState({ testo:"", materia:"italiano", scadenza:"" });
+  const [fotoCompitoFase, setFotoCompitoFase] = useState("idle"); // "idle"|"analisi"|"risposta"
+  const [fotoCompitoRisposta, setFotoCompitoRisposta] = useState(null);
+  const [fotoCompitoPhoto, setFotoCompitoPhoto] = useState(null);
+  const [compitoCompletamentoAnim, setCompitoCompletamentoAnim] = useState(null);
+  const [chatMeseChip, setChatMeseChip] = useState(null);
+  const [dettatoMeseChip, setDettatoMeseChip] = useState(null);
 
   const getFingerprint = () => {
     if (typeof window === "undefined") return "ssr";
@@ -212,6 +223,79 @@ export default function Home() {
       setStripeLoading(false);
     }
   };
+
+  // ── Helpers compiti estivi ──────────────────────────────────────────────
+  const caricaCompitiEstivi = async (figlioId) => {
+    if (!figlioId) return;
+    setCompitiLoading(true);
+    try {
+      const { data } = await supabase
+        .from("compiti_estivi")
+        .select("*")
+        .eq("figlio_id", figlioId)
+        .order("created_at", { ascending: false });
+      setCompitiEstivi(data || []);
+    } catch { /* fail silently */ }
+    setCompitiLoading(false);
+  };
+
+  const aggiungiCompito = async () => {
+    if (!nuovoCompito.testo.trim() || !figlioAttivo) return;
+    const record = {
+      figlio_id: figlioAttivo.id,
+      testo: nuovoCompito.testo.trim(),
+      materia: nuovoCompito.materia || "altro",
+      scadenza: nuovoCompito.scadenza || null,
+      completato: false,
+    };
+    const { data, error } = await supabase.from("compiti_estivi").insert([record]).select().single();
+    if (!error && data) {
+      setCompitiEstivi(prev => [data, ...prev]);
+      setNuovoCompito({ testo:"", materia:"italiano", scadenza:"" });
+      setShowFormCompito(false);
+    }
+  };
+
+  const toggleCompito = async (c) => {
+    const nuovoStato = !c.completato;
+    setCompitiEstivi(prev => prev.map(x => x.id === c.id ? { ...x, completato: nuovoStato } : x));
+    await supabase.from("compiti_estivi").update({ completato: nuovoStato }).eq("id", c.id);
+    if (nuovoStato) {
+      setCompitoCompletamentoAnim(c.id);
+      addStelle(3); // stelle doppie in estate = 6 effettive
+      setTimeout(() => setCompitoCompletamentoAnim(null), 1800);
+    }
+  };
+
+  const eliminaCompito = async (id) => {
+    setCompitiEstivi(prev => prev.filter(x => x.id !== id));
+    await supabase.from("compiti_estivi").delete().eq("id", id);
+  };
+
+  const fotografaCompitoEstivo = (file, faseChiamata) => {
+    setFotoCompitoFase("analisi");
+    setFotoCompitoRisposta(null);
+    compressPhoto(file, async (compressed) => {
+      setFotoCompitoPhoto(compressed);
+      try {
+        const res = await fetch("/api/analizza-foto", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            photo: compressed,
+            materia: mat.label,
+            classe: prog?.label,
+            fase: faseChiamata || "compito_estivo",
+          }),
+        });
+        const d = await res.json();
+        if (d.bloccata) { setFotoCompitoFase("idle"); return; }
+        setFotoCompitoRisposta(d.risposta);
+        setFotoCompitoFase("risposta");
+      } catch { setFotoCompitoFase("idle"); }
+    });
+  };
+
 
   const handleInstallApp = async () => {
     if (window.__pwaInstallPrompt) {
@@ -452,10 +536,10 @@ export default function Home() {
   const goScreen = (s) => {
     if (s === "foto") { setPhoto(null); setSbloccato(false); setFotoFase("carica"); setFotoMsgs([]); setFotoInput(""); setPhotoOriginale(null); }
     if (s === "famiglia") setPinScreen("chiuso");
-    if (s === "dettato") { setDettatoFase("menu"); setDettatoTesto(""); setDettatoAudio(null); setDettatoCorrezione(null); }
-    if (s === "estate") { setEstaTab("ripasso"); setEstaSezione("compiti"); }
+    if (s === "dettato") { setDettatoFase("menu"); setDettatoTesto(""); setDettatoAudio(null); setDettatoCorrezione(null); setDettatoMeseChip(null); }
+    if (s === "estate") { setEstaTab("ripasso"); setEstaSezione("miei_compiti"); setFotoCompitoFase("idle"); setFotoCompitoRisposta(null); caricaCompitiEstivi(figlioAttivo?.id); }
     if (s === "ripasso_estate") { setRipassoEstateState(null); }
-    if (s === "chat" && s !== screen) { setChatMsgs([]); setChatContesto(null); }
+    if (s === "chat" && s !== screen) { setChatMsgs([]); setChatContesto(null); setChatMeseChip(null); }
     if (s === "calendario") setMeseAperto(null);
     if (s === "interrogazione") { setInterrogFase("carica"); setInterrogArgomenti([]); setInterrogConv([]); setInterrogDomanda(""); setInterrogAudio(null); setInterrogVoto(null); setInterrogFeedback(""); setInterrogTrascrizione(""); setInterrogValutazione(""); setInterrogLexParla(false); setInterrogTopicScelto(""); setInterrogMeseChip(null); if (window._interrogAudio) { window._interrogAudio.pause(); window._interrogAudio = null; } }
     if (s === "studia") { /* sub-screens reset on their own entry */ }
@@ -827,7 +911,7 @@ export default function Home() {
           </div>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"12px", marginTop:"8px" }}>
             <div>
-              <p style={{ fontWeight:900, fontSize:"22px" }}>0€ <span style={{ fontSize:"14px", color:"rgba(255,255,255,0.4)", fontWeight:600 }}>per 5 giorni</span></p>
+              <p style={{ fontWeight:900, fontSize:"22px" }}>0€ <span style={{ fontSize:"14px", color:"rgba(255,255,255,0.4)", fontWeight:600 }}>per 3 giorni</span></p>
               <p style={{ color:"#34d399", fontSize:"13px", fontWeight:700 }}>Accesso completo — nessuna carta</p>
             </div>
             <span style={{ fontSize:"28px" }}>🎁</span>
@@ -1453,10 +1537,9 @@ export default function Home() {
   );
 
   if (screen === "chat") {
-    const chatMeseIdx = (() => { const m = new Date().getMonth(); return Math.min(m >= 8 ? m - 8 : m + 4, 9); })();
     const chatMesiProg = PROGRAMMA[figlioAttivo.classe]?.materie[materia] || [];
-    const chatArgomentiMese = chatMesiProg[chatMeseIdx]?.temi || [];
-    const chatMeseLabel = chatMesiProg[chatMeseIdx]?.mese || "";
+    const mesiShortC = ["Set","Ott","Nov","Dic","Gen","Feb","Mar","Apr","Mag"];
+    const temiChatMese = chatMeseChip !== null ? (chatMesiProg[chatMeseChip]?.temi || []) : [];
     return (
     <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
       <Head><title>Lexyo — Chat</title></Head>
@@ -1468,16 +1551,33 @@ export default function Home() {
           {chatContesto ? <p style={{ fontSize:"11px", color:t.primario, fontWeight:700 }}>📌 {chatContesto.argomento}</p> : <p style={{ fontSize:"11px", color:t.primario, fontWeight:700 }}>● Online · {prog?.label}</p>}
         </div>
       </div>
-      {chatArgomentiMese.length > 0 && (
-        <div style={{ padding:"8px 14px 8px", borderBottom:`1px solid ${t.secondario}33`, background: luce ? "#f5f7ff" : "#12122a", flexShrink:0, overflowX:"auto" }}>
-          <p style={{ fontSize:"9px", fontWeight:800, color: luce ? "rgba(0,0,30,0.35)" : "rgba(255,255,255,0.3)", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"6px" }}>📅 {chatMeseLabel} — scegli argomento:</p>
-          <div style={{ display:"flex", gap:"6px", flexWrap:"nowrap" }}>
-            {chatArgomentiMese.map((arg, i) => (
-              <button key={i} onClick={() => { setChatMsgs([]); setChatContesto({ argomento: arg, materia }); }} style={{ padding:"5px 12px", borderRadius:"20px", background: chatContesto?.argomento === arg ? `${t.primario}33` : luce ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.07)", border:`1px solid ${chatContesto?.argomento === arg ? t.primario : luce ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)"}`, color: chatContesto?.argomento === arg ? t.primario : luce ? "#0a0a20" : "rgba(255,255,255,0.8)", fontFamily:"'Nunito'", fontWeight:700, fontSize:"11px", cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
-                {arg}
-              </button>
-            ))}
+      {chatMesiProg.some(m => m?.temi?.length > 0) && (
+        <div style={{ padding:"10px 14px 10px", borderBottom:`1px solid ${t.secondario}33`, background: luce ? "#f5f7ff" : "#12122a", flexShrink:0 }}>
+          <p style={{ fontSize:"9px", fontWeight:800, color: luce ? "rgba(0,0,30,0.35)" : "rgba(255,255,255,0.3)", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"8px" }}>📅 Scegli mese e argomento</p>
+          <div style={{ display:"flex", gap:"6px", marginBottom: chatMeseChip !== null ? "10px" : "0", overflowX:"auto", paddingBottom:"2px", WebkitOverflowScrolling:"touch" }}>
+            {mesiShortC.map((nome, idx) => {
+              const temi = chatMesiProg[idx]?.temi || [];
+              if (temi.length === 0) return null;
+              const sel = chatMeseChip === idx;
+              return (
+                <button key={idx} className="chip-mese" onClick={() => { setChatMeseChip(sel ? null : idx); if (sel) setChatContesto(null); }} style={{ padding:"7px 14px", borderRadius:"20px", background:sel?`${t.primario}33`: luce?"rgba(0,0,0,0.06)":"rgba(255,255,255,0.06)", border:`2px solid ${sel?t.primario: luce?"rgba(0,0,0,0.1)":"rgba(255,255,255,0.1)"}`, color:sel? t.primario : luce?"#0a0a20":"rgba(255,255,255,0.65)", fontFamily:"'Nunito'", fontWeight:800, fontSize:"12px", cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
+                  {nome}
+                </button>
+              );
+            })}
           </div>
+          {chatMeseChip !== null && temiChatMese.length > 0 && (
+            <div className="vfade" style={{ display:"flex", flexWrap:"wrap", gap:"7px" }}>
+              {temiChatMese.map(tema => {
+                const sel = chatContesto?.argomento === tema;
+                return (
+                  <button key={tema} className="chip-tema" onClick={() => { setChatMsgs([]); setChatContesto({ argomento: tema, materia }); }} style={{ padding:"8px 14px", borderRadius:"14px", background:sel?`${t.primario}28`: luce?"rgba(0,0,0,0.06)":"rgba(255,255,255,0.07)", border:`2px solid ${sel?t.primario: luce?"rgba(0,0,0,0.1)":"rgba(255,255,255,0.1)"}`, color:sel? t.primario : luce?"#0a0a20":"rgba(255,255,255,0.75)", fontFamily:"'Nunito'", fontWeight:700, fontSize:"12px", cursor:"pointer" }}>
+                    {sel && <span style={{ marginRight:"4px" }}>✅</span>}{tema}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
       <div style={{ flex:1, overflowY:"auto", padding:"14px 18px", display:"flex", flexDirection:"column", gap:"12px" }}>
@@ -1524,8 +1624,8 @@ export default function Home() {
 
   if (screen === "dettato") {
     const mesiProg = PROGRAMMA[figlioAttivo.classe]?.materie[materia] || [];
-    const meseIdx = (() => { const m = new Date().getMonth(); return Math.min(m >= 8 ? m - 8 : m + 4, 9); })();
-    const argomentiMese = mesiProg[meseIdx]?.temi || [];
+    const mesiShortD = ["Set","Ott","Nov","Dic","Gen","Feb","Mar","Apr","Mag"];
+    const temiDettatoMese = dettatoMeseChip !== null ? (mesiProg[dettatoMeseChip]?.temi || []) : [];
 
     const riproduciAudio = (base64Audio) => {
       if (window._lexAudio) { window._lexAudio.pause(); }
@@ -1680,17 +1780,38 @@ export default function Home() {
               </div>
               {dettatoTipo !== "foto" && (
                 <div style={S.card}>
-                  <p style={{ fontSize:"12px", fontWeight:800, color:"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"12px" }}>📅 Argomenti del mese — {mat.label}</p>
-                  <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
-                    {argomentiMese.length > 0 ? argomentiMese.map((arg, i) => (
-                      <button key={i} onClick={() => generaTesto(dettatoTipo === "storia" ? "storia" : "dettato", arg)} style={{ padding:"12px 16px", borderRadius:"12px", background:`${mat.colore}15`, border:`1px solid ${mat.colore}35`, color:"white", fontFamily:"'Nunito'", textAlign:"left", fontWeight:700, fontSize:"13px", cursor:"pointer", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                        <span>{arg}</span>
-                        <span style={{ color:mat.colore, fontSize:"12px" }}>{dettatoTipo === "storia" ? "📖 Storia →" : "✍️ Dettato →"}</span>
-                      </button>
-                    )) : (
-                      <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.4)", fontWeight:600, textAlign:"center" }}>Seleziona una materia 👆</p>
-                    )}
-                  </div>
+                  <p style={{ fontSize:"12px", fontWeight:800, color:"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px" }}>📅 Scegli mese e argomento — {mat.label}</p>
+                  {mesiProg.some(m => m?.temi?.length > 0) ? (
+                    <>
+                      <div style={{ display:"flex", gap:"6px", marginBottom: dettatoMeseChip !== null ? "12px" : "0", overflowX:"auto", paddingBottom:"4px", WebkitOverflowScrolling:"touch" }}>
+                        {mesiShortD.map((nome, idx) => {
+                          const temi = mesiProg[idx]?.temi || [];
+                          if (temi.length === 0) return null;
+                          const sel = dettatoMeseChip === idx;
+                          return (
+                            <button key={idx} className="chip-mese" onClick={() => setDettatoMeseChip(sel ? null : idx)} style={{ padding:"9px 16px", borderRadius:"20px", background:sel?`${t.primario}33`:"rgba(255,255,255,0.06)", border:`2px solid ${sel?t.primario:"rgba(255,255,255,0.1)"}`, color:sel?"white":"rgba(255,255,255,0.65)", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
+                              {nome}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {dettatoMeseChip !== null && temiDettatoMese.length > 0 && (
+                        <div className="vfade" style={{ display:"flex", flexWrap:"wrap", gap:"8px" }}>
+                          {temiDettatoMese.map((arg, i) => (
+                            <button key={i} className="chip-tema" onClick={() => generaTesto(dettatoTipo === "storia" ? "storia" : "dettato", arg)} style={{ padding:"10px 16px", borderRadius:"14px", background:`${mat.colore}18`, border:`2px solid ${mat.colore}44`, color:"white", fontFamily:"'Nunito'", fontWeight:700, fontSize:"13px", cursor:"pointer", display:"flex", alignItems:"center", gap:"6px" }}>
+                              <span>{arg}</span>
+                              <span style={{ color:mat.colore, fontSize:"11px" }}>{dettatoTipo === "storia" ? "📖 →" : "✍️ →"}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {dettatoMeseChip === null && (
+                        <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.35)", fontWeight:600, textAlign:"center", paddingTop:"4px" }}>Tocca un mese per vedere gli argomenti</p>
+                      )}
+                    </>
+                  ) : (
+                    <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.4)", fontWeight:600, textAlign:"center" }}>Seleziona una materia 👆</p>
+                  )}
                 </div>
               )}
               {dettatoTipo === "foto" && (
@@ -1948,12 +2069,175 @@ export default function Home() {
 
         {/* Tab principali */}
         <div style={{ display:"flex", borderBottom:"1px solid rgba(255,255,255,0.1)", flexShrink:0 }}>
-          {[["compiti","📚 Compiti"],["ripasso_anno","🔄 Ripasso"]].map(([id, label]) => (
-            <button key={id} onClick={() => setEstaSezione(id)} style={{ flex:1, padding:"13px 6px", background:estaSezione===id?"rgba(245,158,11,0.12)":"transparent", border:"none", borderBottom:estaSezione===id?"2px solid #f59e0b":"2px solid transparent", color:estaSezione===id?"#fbbf24":"rgba(255,255,255,0.4)", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", cursor:"pointer" }}>
+          {[["miei_compiti","📋 Compiti"],["compiti","📚 Studio"],["ripasso_anno","🔄 Ripasso"]].map(([id, label]) => (
+            <button key={id} onClick={() => { setEstaSezione(id); if (id === "miei_compiti") { setFotoCompitoFase("idle"); setFotoCompitoRisposta(null); caricaCompitiEstivi(figlioAttivo?.id); } }} style={{ flex:1, padding:"13px 4px", background:estaSezione===id?"rgba(0,240,144,0.1)":"transparent", border:"none", borderBottom:estaSezione===id?"2px solid #00F090":"2px solid transparent", color:estaSezione===id?"#00F090":"rgba(255,255,255,0.4)", fontFamily:"'Nunito'", fontWeight:800, fontSize:"12px", cursor:"pointer", whiteSpace:"nowrap" }}>
               {label}
             </button>
           ))}
         </div>
+
+        {/* ── SEZIONE MIEI COMPITI ── */}
+        {estaSezione === "miei_compiti" && (() => {
+          const COLORI_M = { matematica:"#FFE500", italiano:"#FF70C8", scienze:"#00F090", storia:"#FF8533", geografia:"#29C9FF", altro:"#E866FF" };
+          const EMOJI_M = { matematica:"🔢", italiano:"📖", scienze:"🔬", storia:"📜", geografia:"🌍", altro:"✏️" };
+          const LABEL_M = { matematica:"Matematica", italiano:"Italiano", scienze:"Scienze", storia:"Storia", geografia:"Geografia", altro:"Altro" };
+          const daMFare = compitiEstivi.filter(c => !c.completato);
+          const completati = compitiEstivi.filter(c => c.completato);
+          const perc = compitiEstivi.length > 0 ? Math.round(completati.length / compitiEstivi.length * 100) : 0;
+          const gruppiDaFare = daMFare.reduce((acc, c) => { const k = c.materia || "altro"; if (!acc[k]) acc[k] = []; acc[k].push(c); return acc; }, {});
+
+          return (<>
+            <style>{`
+              @keyframes compitoOk{0%{transform:scale(1)}30%{transform:scale(1.06)}60%{transform:scale(0.97)}100%{transform:scale(1)}}
+              @keyframes confettiPop{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-40px) scale(0.5);opacity:0}}
+            `}</style>
+
+            {/* Header progresso */}
+            <div style={{ padding:"10px 18px 12px", background:"rgba(0,240,144,0.06)", borderBottom:"1px solid rgba(0,240,144,0.12)", flexShrink:0 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"5px" }}>
+                <p style={{ fontSize:"12px", fontWeight:800, color:"#00F090" }}>{daMFare.length} da fare · {completati.length} completati</p>
+                <p style={{ fontSize:"13px", fontWeight:900, color:"#00F090" }}>{perc}%</p>
+              </div>
+              <div style={{ height:"6px", background:"rgba(255,255,255,0.1)", borderRadius:"3px", overflow:"hidden" }}>
+                <div style={{ height:"100%", width:`${perc}%`, background:"linear-gradient(90deg,#00F090,#00A855)", borderRadius:"3px", transition:"width 0.5s ease" }} />
+              </div>
+            </div>
+
+            <div style={{ flex:1, overflowY:"auto", padding:"14px 16px 100px" }}>
+
+              {/* Card Fotografa compito */}
+              <label style={{ display:"block", cursor:"pointer", marginBottom:"12px" }}>
+                <div className="hcard" style={{ padding:"20px 22px", borderRadius:"22px", background:"linear-gradient(145deg,#00F090,#00CC70,#00A855)", "--card-border":"linear-gradient(135deg,#00BFA5,#007A3D)", display:"flex", alignItems:"center", gap:"18px" }}>
+                  <div className="card-shine" /><div className="card-depth" />
+                  <div className="card-content" style={{ display:"flex", alignItems:"center", gap:"18px", width:"100%" }}>
+                    <span style={{ fontSize:"40px", flexShrink:0 }}>📸</span>
+                    <div>
+                      <p style={{ fontSize:"17px", fontWeight:900, color:"white" }}>Fotografa il compito</p>
+                      <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.8)", fontWeight:600, marginTop:"3px" }}>Lex ti spiega passo per passo</p>
+                    </div>
+                  </div>
+                </div>
+                <input type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={e => { const f = e.target.files[0]; if (f) fotografaCompitoEstivo(f, "compito_estivo"); e.target.value=""; }} />
+              </label>
+
+              {/* Flow foto compito */}
+              {fotoCompitoFase === "analisi" && (
+                <div style={{ background:"rgba(0,240,144,0.07)", border:"1px solid rgba(0,240,144,0.25)", borderRadius:"18px", padding:"24px", textAlign:"center", marginBottom:"14px" }}>
+                  <LexChar stato="thinking" size={70} style={{ margin:"0 auto 12px" }} />
+                  <p style={{ fontWeight:800, fontSize:"15px" }}>Lex legge il compito…</p>
+                  <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.4)", fontWeight:600, marginTop:"4px" }}>Sto preparando la spiegazione 📚</p>
+                </div>
+              )}
+              {fotoCompitoFase === "risposta" && fotoCompitoRisposta && (
+                <div style={{ background:"rgba(0,240,144,0.07)", border:"1px solid rgba(0,240,144,0.25)", borderRadius:"18px", padding:"18px", marginBottom:"14px" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"12px" }}>
+                    <LexChar stato="happy" size={36} />
+                    <p style={{ fontSize:"12px", fontWeight:800, color:"#00F090", textTransform:"uppercase", letterSpacing:"1px" }}>Lex spiega</p>
+                  </div>
+                  <p style={{ fontSize:"14px", lineHeight:1.75, color:"rgba(255,255,255,0.88)", fontWeight:600, whiteSpace:"pre-wrap" }}>{fotoCompitoRisposta}</p>
+                  <div style={{ display:"flex", gap:"8px", marginTop:"16px" }}>
+                    <button onClick={() => { addStelle(3); setCompitoCompletamentoAnim("foto"); setTimeout(() => setCompitoCompletamentoAnim(null), 1800); setFotoCompitoFase("idle"); }} style={{ flex:1, padding:"12px 8px", borderRadius:"14px", background:"linear-gradient(135deg,#00A855,#00F090)", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", cursor:"pointer" }}>
+                      ✅ Ho capito! +3 ⭐
+                    </button>
+                    <label style={{ flex:1, display:"block", cursor:"pointer" }}>
+                      <div style={{ padding:"12px 8px", borderRadius:"14px", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", textAlign:"center", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", color:"rgba(255,255,255,0.8)" }}>
+                        🤔 Più semplice
+                      </div>
+                      <input type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={e => { const f = e.target.files[0]; if (f) fotografaCompitoEstivo(f, "compito_estivo_semplice"); e.target.value=""; }} />
+                    </label>
+                  </div>
+                  <button onClick={() => { setShowFormCompito(true); setNuovoCompito(prev => ({ ...prev, testo: fotoCompitoRisposta.split("\n")[0].slice(0,80) })); setFotoCompitoFase("idle"); }} style={{ width:"100%", marginTop:"8px", padding:"10px", borderRadius:"12px", background:"rgba(0,240,144,0.1)", border:"1px solid rgba(0,240,144,0.25)", color:"#00F090", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", cursor:"pointer" }}>
+                    📋 Aggiungi alla lista compiti
+                  </button>
+                </div>
+              )}
+
+              {/* Animazione completamento */}
+              {compitoCompletamentoAnim && (
+                <div style={{ position:"fixed", top:"30%", left:"50%", transform:"translateX(-50%)", zIndex:9999, pointerEvents:"none" }}>
+                  {["🌟","⭐","✨","🎉","🌟"].map((e,i) => (
+                    <span key={i} style={{ position:"absolute", left:`${(i-2)*28}px`, fontSize:"28px", animation:`confettiPop 1.4s ease ${i*0.1}s forwards` }}>{e}</span>
+                  ))}
+                </div>
+              )}
+
+              {/* Bottone aggiungi manuale */}
+              <button onClick={() => setShowFormCompito(!showFormCompito)} style={{ width:"100%", padding:"14px", borderRadius:"16px", background:"rgba(255,255,255,0.05)", border:`2px dashed ${showFormCompito?"rgba(0,240,144,0.5)":"rgba(255,255,255,0.15)"}`, color:showFormCompito?"#00F090":"rgba(255,255,255,0.6)", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer", marginBottom:"12px", display:"flex", alignItems:"center", justifyContent:"center", gap:"8px" }}>
+                {showFormCompito ? "✕ Annulla" : "+ Aggiungi compito manualmente"}
+              </button>
+
+              {/* Form aggiungi compito */}
+              {showFormCompito && (
+                <div className="vfade" style={{ background:"rgba(0,240,144,0.06)", border:"1px solid rgba(0,240,144,0.2)", borderRadius:"18px", padding:"18px", marginBottom:"14px" }}>
+                  <p style={{ fontSize:"12px", fontWeight:800, color:"#00F090", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"12px" }}>Nuovo compito</p>
+                  <textarea value={nuovoCompito.testo} onChange={e => setNuovoCompito(p => ({...p, testo: e.target.value}))} placeholder="Descrivi il compito…" rows={3} style={{ width:"100%", padding:"12px 14px", borderRadius:"12px", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.15)", color:"white", fontFamily:"'Nunito'", fontWeight:600, fontSize:"14px", resize:"none", boxSizing:"border-box", marginBottom:"10px", outline:"none" }} />
+                  <div style={{ display:"flex", gap:"8px", marginBottom:"12px" }}>
+                    <select value={nuovoCompito.materia} onChange={e => setNuovoCompito(p => ({...p, materia: e.target.value}))} style={{ flex:1, padding:"10px 12px", borderRadius:"12px", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", color:"white", fontFamily:"'Nunito'", fontWeight:700, fontSize:"13px", outline:"none", cursor:"pointer" }}>
+                      {Object.entries(LABEL_M).map(([k,v]) => <option key={k} value={k} style={{ background:"#1a1b3a", color:"white" }}>{EMOJI_M[k]} {v}</option>)}
+                    </select>
+                    <input type="date" value={nuovoCompito.scadenza} onChange={e => setNuovoCompito(p => ({...p, scadenza: e.target.value}))} style={{ flex:1, padding:"10px 12px", borderRadius:"12px", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", color:"white", fontFamily:"'Nunito'", fontWeight:600, fontSize:"13px", outline:"none" }} />
+                  </div>
+                  <button onClick={aggiungiCompito} disabled={!nuovoCompito.testo.trim()} style={{ width:"100%", padding:"13px", borderRadius:"12px", background: nuovoCompito.testo.trim() ? "linear-gradient(135deg,#00A855,#00F090)" : "rgba(255,255,255,0.08)", border:"none", color: nuovoCompito.testo.trim() ? "white" : "rgba(255,255,255,0.3)", fontFamily:"'Nunito'", fontWeight:900, fontSize:"15px", cursor: nuovoCompito.testo.trim() ? "pointer" : "not-allowed" }}>
+                    Aggiungi →
+                  </button>
+                </div>
+              )}
+
+              {/* Lista compiti da fare */}
+              {compitiLoading ? (
+                <p style={{ textAlign:"center", color:"rgba(255,255,255,0.4)", fontSize:"13px", padding:"20px 0" }}>Caricamento…</p>
+              ) : daMFare.length === 0 && completati.length === 0 ? (
+                <div style={{ textAlign:"center", padding:"30px 0" }}>
+                  <p style={{ fontSize:"36px", marginBottom:"12px" }}>🌴</p>
+                  <p style={{ fontSize:"15px", fontWeight:800, marginBottom:"6px" }}>Nessun compito ancora!</p>
+                  <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.4)", fontWeight:600 }}>Fotografa o aggiungi i compiti estivi assegnati dalla tua scuola</p>
+                </div>
+              ) : (
+                <>
+                  {Object.entries(gruppiDaFare).map(([mat, lista]) => (
+                    <div key={mat} style={{ marginBottom:"16px" }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"8px", padding:"6px 10px", borderRadius:"10px", background:`${COLORI_M[mat] || "#E866FF"}18`, borderLeft:`3px solid ${COLORI_M[mat] || "#E866FF"}` }}>
+                        <span style={{ fontSize:"16px" }}>{EMOJI_M[mat] || "✏️"}</span>
+                        <p style={{ fontSize:"12px", fontWeight:900, color:COLORI_M[mat] || "#E866FF", textTransform:"uppercase", letterSpacing:"1px" }}>{LABEL_M[mat] || "Altro"}</p>
+                        <span style={{ marginLeft:"auto", fontSize:"11px", fontWeight:800, color:`${COLORI_M[mat] || "#E866FF"}AA` }}>{lista.length}</span>
+                      </div>
+                      {lista.map(c => (
+                        <div key={c.id} style={{ display:"flex", alignItems:"flex-start", gap:"12px", padding:"12px 14px", borderRadius:"14px", background:compitoCompletamentoAnim===c.id?"rgba(0,240,144,0.15)":"rgba(255,255,255,0.04)", border:`1px solid ${compitoCompletamentoAnim===c.id?"rgba(0,240,144,0.4)":"rgba(255,255,255,0.08)"}`, marginBottom:"6px", transition:"all 0.3s", animation:compitoCompletamentoAnim===c.id?"compitoOk 0.5s ease":"none" }}>
+                          <button onClick={() => toggleCompito(c)} style={{ width:"24px", height:"24px", borderRadius:"50%", border:`2px solid ${COLORI_M[mat] || "#E866FF"}`, background:"transparent", cursor:"pointer", flexShrink:0, marginTop:"1px", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                            {c.completato && <span style={{ fontSize:"13px", color:COLORI_M[mat] || "#E866FF" }}>✓</span>}
+                          </button>
+                          <div style={{ flex:1 }}>
+                            <p style={{ fontSize:"14px", fontWeight:700, lineHeight:1.5, textDecoration:c.completato?"line-through":"none", opacity:c.completato?0.5:1 }}>{c.testo}</p>
+                            {c.scadenza && <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.35)", fontWeight:600, marginTop:"3px" }}>📅 {new Date(c.scadenza+"T00:00").toLocaleDateString("it-IT",{day:"numeric",month:"long"})}</p>}
+                          </div>
+                          <button onClick={() => eliminaCompito(c.id)} style={{ background:"rgba(239,68,68,0.1)", border:"none", borderRadius:"8px", padding:"4px 8px", color:"rgba(239,68,68,0.6)", fontSize:"14px", cursor:"pointer", flexShrink:0 }}>🗑</button>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+
+                  {/* Completati */}
+                  {completati.length > 0 && (
+                    <div style={{ marginTop:"20px" }}>
+                      <p style={{ fontSize:"12px", fontWeight:800, color:"rgba(255,255,255,0.3)", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px" }}>✅ Completati ({completati.length})</p>
+                      {completati.map(c => (
+                        <div key={c.id} style={{ display:"flex", alignItems:"flex-start", gap:"12px", padding:"10px 14px", borderRadius:"14px", background:"rgba(0,240,144,0.06)", border:"1px solid rgba(0,240,144,0.12)", marginBottom:"6px", opacity:0.65 }}>
+                          <button onClick={() => toggleCompito(c)} style={{ width:"24px", height:"24px", borderRadius:"50%", border:"2px solid #00F090", background:"rgba(0,240,144,0.2)", cursor:"pointer", flexShrink:0, marginTop:"1px", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                            <span style={{ fontSize:"13px", color:"#00F090" }}>✓</span>
+                          </button>
+                          <div style={{ flex:1 }}>
+                            <p style={{ fontSize:"13px", fontWeight:600, textDecoration:"line-through", lineHeight:1.5 }}>{c.testo}</p>
+                          </div>
+                          <button onClick={() => eliminaCompito(c.id)} style={{ background:"rgba(239,68,68,0.1)", border:"none", borderRadius:"8px", padding:"4px 8px", color:"rgba(239,68,68,0.4)", fontSize:"14px", cursor:"pointer", flexShrink:0 }}>🗑</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </>);
+        })()}
 
         {/* ── SEZIONE COMPITI ── */}
         {estaSezione === "compiti" && (<>

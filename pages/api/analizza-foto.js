@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     const mediaType = photo.split(";")[0].split(":")[1];
 
     // ── CONTROLLO SICUREZZA ───────────────────────────────────────────────
-    if (fase === "analisi" || fase === "correzione") {
+    if (fase === "analisi" || fase === "correzione" || fase === "compito_estivo" || fase === "compito_estivo_semplice") {
       const check = await client.messages.create({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 10,
@@ -87,6 +87,30 @@ Livello studente: ${adattivita}`, cache_control: { type: "ephemeral" } }],
       const testo = response.content[0].text;
       const pronto = testo.includes("carica la foto del quaderno") || testo.includes("foto del quaderno");
       return res.json({ risposta: testo, fase: pronto ? "attendi_correzione" : "domande" });
+    }
+
+    // ── COMPITO ESTIVO ────────────────────────────────────────────────────
+    if (fase === "compito_estivo" || fase === "compito_estivo_semplice") {
+      const extra = fase === "compito_estivo_semplice"
+        ? "Spiega come se avessi 6 anni: usa solo parole semplicissime e un esempio pratico della vita di tutti i giorni."
+        : `Usa un linguaggio adatto alla ${classe}, parole semplici, esempi concreti della vita quotidiana.`;
+      const response = await client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 550,
+        system: [{ type: "text", text: `Sei Lex, un professore AI simpatico e incoraggiante per bambini italiani di ${classe}.
+Analizza questa foto di un compito estivo assegnato dalla scuola.
+Prima dimmi in 1-2 frasi semplici di cosa si tratta il compito.
+Poi svolgi il compito passo per passo in modo chiaro e dettagliato.
+${extra}
+Sii sempre positivo e incoraggiante — mai scoraggiare il bambino.
+Alla fine scrivi esattamente: "Hai capito? Dimmi se vuoi che ti spiego qualcosa in modo diverso! 😊"
+Livello studente: ${adattivita}`, cache_control: { type: "ephemeral" } }],
+        messages: [{ role: "user", content: [
+          { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
+          { type: "text", text: "Analizza e svolgi questo compito estivo." }
+        ]}],
+      });
+      return res.json({ risposta: response.content[0].text, fase: "compito_risposta" });
     }
 
     // ── CORREZIONE QUADERNO ───────────────────────────────────────────────
