@@ -23,6 +23,14 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  overscroll-behavior: none;
+  overflow: hidden;
+  height: 100%;
+}
+
+html {
+  height: 100%;
+  overflow: hidden;
 }
 
 /* ═══════════════════════════════════════
@@ -118,4 +126,72 @@ html[data-tema="light"] [style*="linear-gradient(180deg,#141530"] {
 html[data-tema="light"] input::placeholder,
 html[data-tema="light"] textarea::placeholder {
   color: rgba(10, 10, 32, 0.35) !important;
+}
+
+/* ── CARD 3D GLOBALE (hcard) ── */
+.hcard {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+.hcard:active { transform: translateY(3px) scale(0.97); }
+.hcard::before {
+  content: '';
+  position: absolute;
+  top: -30%; left: -20%;
+  width: 70%; height: 70%;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.18);
+  filter: blur(18px);
+  pointer-events: none;
+  z-index: 0;
+}
+.hcard::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: var(--card-border, rgba(255,255,255,0.12));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 2;
+}
+.card-shine {
+  position: absolute; top: 0; left: 0; right: 0; height: 40%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.20), transparent);
+  border-radius: 20px 20px 0 0;
+  pointer-events: none; z-index: 1;
+}
+.card-depth {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 35%;
+  background: linear-gradient(0deg, rgba(0,0,0,0.25), transparent);
+  border-radius: 0 0 20px 20px;
+  pointer-events: none; z-index: 1;
+}
+.card-content { position: relative; z-index: 3; }
+
+/* ── ANIMAZIONI ── */
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.vfade { animation: fadeSlideIn 0.25s ease forwards; }
+
+/* ── Lettere cruciverba: sempre bianche (sfondo sempre scuro) ── */
+.cw-letter { color: white !important; }
+html[data-tema="light"] .cw-letter { color: white !important; }
+
+/* ── CHIP PROGRAMMA ── */
+.chip-mese, .chip-tema {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-style: solid;
 }

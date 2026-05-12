@@ -1,12 +1,25 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { getAdattivita } from "../../lib/adattivita";
+import { cacheGet, cacheAddVariant, ck, randomPick } from "../../lib/cache";
 
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+const MAX_VARIANTS = 5;
+const TTL = 48 * 60 * 60 * 1000; // 48h — variety builds up over days
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { classe, materia, argomento, difficolta = "media", tipo = "dettato" } = req.body;
+  const { classe, materia, argomento, difficolta = "media", tipo = "dettato", forceNew } = req.body;
+  const adattivita = getAdattivita(classe);
+
+  const key = ck("dettato", classe, materia, argomento, difficolta, tipo);
+  const cached = cacheGet(key);
+
+  // Serve from cache unless the caller explicitly wants a fresh text
+  if (!forceNew && cached && cached.length > 0) {
+    res.setHeader("X-Cache", "HIT");
+    return res.json({ ...randomPick(cached), tipo });
+  }
 
   try {
     let prompt = "";
@@ -37,15 +50,21 @@ Scrivi SOLO la storia, con un titolo creativo in prima riga, poi la storia. Ness
       max_tokens: 600,
       system: [{
         type: "text",
-        text: `Sei un esperto di didattica italiana per la scuola primaria e secondaria di primo grado. 
+        text: `Sei un esperto di didattica italiana per la scuola primaria e secondaria di primo grado.
 Crei contenuti educativi di alta qualità, precisi rispetto al programma ministeriale italiano.
-Usi sempre un linguaggio appropriato all'età degli studenti.`,
+Livello studente: ${adattivita}`,
         cache_control: { type: "ephemeral" }
       }],
       messages: [{ role: "user", content: prompt }],
     });
 
-    res.json({ testo: response.content[0].text, tipo });
+    const testo = response.content[0].text;
+    const dati = { testo };
+
+    cacheAddVariant(key, dati, MAX_VARIANTS, TTL);
+
+    res.setHeader("X-Cache", "MISS");
+    res.json({ testo, tipo });
   } catch (e) {
     console.error("ERRORE GENERA:", e.message);
     res.status(500).json({ errore: e.message });

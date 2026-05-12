@@ -1,21 +1,24 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { getAdattivita } from "../../lib/adattivita";
+
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
   const { photo, materia, classe, fase, messaggi, photoOriginale } = req.body;
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const adattivita = getAdattivita(classe);
 
   try {
     const base64 = photo.split(",")[1];
     const mediaType = photo.split(";")[0].split(":")[1];
 
-    // ── CONTROLLO SICUREZZA — gira sempre prima di tutto ──────────────────
+    // ── CONTROLLO SICUREZZA ───────────────────────────────────────────────
     if (fase === "analisi" || fase === "correzione") {
       const check = await client.messages.create({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 10,
-        system: [{ 
-          type: "text", 
+        system: [{
+          type: "text",
           text: `Sei un sistema di sicurezza per un'app scolastica. Analizza la foto e rispondi con UNA SOLA PAROLA:
 - "SCOLASTICO" se la foto mostra: pagine di libri, quaderni, esercizi scritti, testi scolastici, illustrazioni didattiche, ritratti storici stampati su libri, mappe, grafici, formule
 - "PERSONALE" se la foto mostra: selfie, bambini reali fotografati, persone in ambienti privati, foto di famiglia, foto non scolastiche
@@ -30,8 +33,8 @@ Rispondi SOLO con: SCOLASTICO oppure PERSONALE`,
 
       const risultato = check.content[0].text.trim().toUpperCase();
       if (risultato.includes("PERSONALE")) {
-        return res.json({ 
-          risposta: "⚠️ Foto non valida\n\nPuoi caricare solo foto di:\n📚 Pagine di libri\n📝 Quaderni con esercizi\n📖 Testi scolastici\n\nNon caricare foto di persone o bambini.", 
+        return res.json({
+          risposta: "⚠️ Foto non valida\n\nPuoi caricare solo foto di:\n📚 Pagine di libri\n📝 Quaderni con esercizi\n📖 Testi scolastici\n\nNon caricare foto di persone o bambini.",
           fase: "bloccata",
           bloccata: true
         });
@@ -42,13 +45,14 @@ Rispondi SOLO con: SCOLASTICO oppure PERSONALE`,
     if (fase === "analisi") {
       const response = await client.messages.create({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 500,
+        max_tokens: 400,
         system: [{ type: "text", text: `Sei Lexyo, insegnante di ${materia} per la ${classe} italiana.
 Guardi la foto di un esercizio. Devi:
 1. Spiegare in modo CHIARO e SEMPLICE il tipo di esercizio e come si risolve
 2. NON dare la risposta finale
 3. Fare UNA sola domanda sul primo passo
 Linguaggio caldo, semplice, per bambini. Emoji moderate. In italiano.
+Livello studente: ${adattivita}
 Formato risposta:
 🎯 [Tipo di esercizio]
 📖 [Spiegazione del metodo passo per passo]
@@ -76,7 +80,8 @@ REGOLE:
 - NON dare mai la soluzione
 - Una domanda alla volta
 - Linguaggio semplice e incoraggiante
-In italiano.`, cache_control: { type: "ephemeral" } }],
+In italiano.
+Livello studente: ${adattivita}`, cache_control: { type: "ephemeral" } }],
         messages: msgs,
       });
       const testo = response.content[0].text;
@@ -90,13 +95,14 @@ In italiano.`, cache_control: { type: "ephemeral" } }],
       const mtOrig = photoOriginale.split(";")[0].split(":")[1];
       const response = await client.messages.create({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 500,
+        max_tokens: 400,
         system: [{ type: "text", text: `Sei Lexyo, insegnante di ${materia} per la ${classe} italiana.
 Il bambino ha fatto l'esercizio sul quaderno. Correggi il suo lavoro:
 1. Se ci sono errori: spiegali in modo CHIARO e GENTILE
 2. Se è tutto giusto: complimentati calorosamente
 3. Alla fine scrivi sempre: "Ora puoi vedere la soluzione completa! 🔓"
-Linguaggio semplice e incoraggiante. In italiano.`, cache_control: { type: "ephemeral" } }],
+Linguaggio semplice e incoraggiante. In italiano.
+Livello studente: ${adattivita}`, cache_control: { type: "ephemeral" } }],
         messages: [
           { role: "user", content: [
             { type: "image", source: { type: "base64", media_type: mtOrig, data: b64orig } },

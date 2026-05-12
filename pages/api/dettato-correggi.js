@@ -1,12 +1,12 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { getAdattivita } from "../../lib/adattivita";
 
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
   const { photo, testoOriginale, classe, materia } = req.body;
+  const adattivita = getAdattivita(classe);
 
   try {
     const base64 = photo.split(",")[1];
@@ -14,7 +14,7 @@ export default async function handler(req, res) {
 
     const response = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 800,
+      max_tokens: 600,
       system: [{
         type: "text",
         text: `Sei Lexyo, insegnante esperto di italiano per la ${classe} italiana.
@@ -44,7 +44,8 @@ FORMATO RISPOSTA:
 📊 **Voto**: [X]/10
 💬 **[Messaggio incoraggiante personalizzato per la ${classe}]**
 
-Usa linguaggio semplice e incoraggiante. In italiano.`,
+Usa linguaggio semplice e incoraggiante. In italiano.
+Livello studente: ${adattivita}`,
         cache_control: { type: "ephemeral" }
       }],
       messages: [{

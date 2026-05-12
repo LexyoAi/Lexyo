@@ -3,7 +3,12 @@
     "allow": [
       "Bash(node -e \"require\\('./pages/api/interroga-analizza.js'\\)\")",
       "Bash(npm run *)",
-      "Bash(npx next *)"
+      "Bash(npx next *)",
+      "Bash(node -e ' *)",
+      "Bash(node -e \"require\\('./pages/index.js'\\)\")",
+      "Bash(dir *)",
+      "Bash(npm install *)",
+      "Bash(node -e \"require\\('stripe'\\); console.log\\('stripe OK'\\)\")"
     ]
   }
 }

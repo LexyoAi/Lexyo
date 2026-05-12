@@ -1,12 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { photo, velocita = "normale" } = req.body;
+  const { photo } = req.body;
 
   if (!photo) return res.status(400).json({ errore: "Foto mancante" });
 
@@ -17,7 +15,7 @@ export default async function handler(req, res) {
     // Step 1 — Claude estrae il testo dalla foto
     const estrazione = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 600,
+      max_tokens: 400,
       system: [{
         type: "text",
         text: `Sei un sistema OCR preciso per testi scolastici italiani.
@@ -51,12 +49,7 @@ Se la foto non contiene testo leggibile, scrivi solo: "NESSUN_TESTO"`,
       body: JSON.stringify({
         text: testoEstratto,
         model_id: "eleven_multilingual_v2",
-        voice_settings: {
-          stability: 0.45,
-          similarity_boost: 0.85,
-          style: 0.5,
-          use_speaker_boost: true,
-        },
+        voice_settings: { stability: 0.45, similarity_boost: 0.85, style: 0.5, use_speaker_boost: true },
       }),
     });
 

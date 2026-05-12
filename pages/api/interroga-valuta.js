@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { getAdattivita } from "../../lib/adattivita";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -22,6 +23,7 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
   const { conversazione, argomenti, materia, classe } = req.body;
 
+  const adattivita = getAdattivita(classe);
   const domandeFatte = conversazione.length;
   const maxDomande = (classe || "").toLowerCase().includes("media") ? 5 : 4;
   const fine = domandeFatte >= maxDomande;
@@ -34,7 +36,8 @@ export default async function handler(req, res) {
     const systemPrompt = `Sei Lex, insegnante AI simpatico e incoraggiante per bambini italiani di ${classe}.
 Valuti le risposte durante interrogazioni orali di ${materia}.
 Argomenti interrogazione: ${(argomenti || []).join(", ")}.
-Rispondi SOLO con JSON valido. Niente testo fuori dal JSON. Niente markdown. Niente backtick.`;
+Rispondi SOLO con JSON valido. Niente testo fuori dal JSON. Niente markdown. Niente backtick.
+Livello studente: ${adattivita}`;
 
     let userPrompt;
     if (fine) {

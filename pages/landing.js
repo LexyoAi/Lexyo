@@ -230,7 +230,7 @@ export default function Landing({ onEntra }) {
               Inizia gratis — 3 giorni
             </button>
             <div style={{ display:"flex", alignItems:"center", gap:"8px", flexWrap:"wrap", justifyContent:"center" }}>
-              {["poi 9,99€/mese","annulla quando vuoi","GDPR"].map((t,i) => (
+              {["poi 12,90€/mese","annulla quando vuoi","GDPR"].map((t,i) => (
                 <span key={i} style={{ fontSize:"13px", color:"rgba(255,255,255,0.3)", fontWeight:500 }}>{i>0&&<span style={{ margin:"0 8px", color:"rgba(255,255,255,0.12)" }}>·</span>}{t}</span>
               ))}
             </div>
@@ -710,7 +710,7 @@ export default function Landing({ onEntra }) {
               </div>
               <div style={{ textAlign:"center", marginBottom:"20px" }}>
                 <div style={{ fontSize:"clamp(42px,6vw,60px)", fontWeight:900, letterSpacing:"-2px", lineHeight:1 }}>
-                  9,99€<span style={{ fontSize:"18px", color:"rgba(255,255,255,0.45)", fontWeight:600 }}>/mese</span>
+                  12,90€<span style={{ fontSize:"18px", color:"rgba(255,255,255,0.45)", fontWeight:600 }}>/mese</span>
                 </div>
               </div>
               <div style={{ display:"flex", flexDirection:"column", gap:"10px", marginBottom:"24px" }}>
@@ -723,7 +723,7 @@ export default function Landing({ onEntra }) {
               </button>
               <div style={{ marginTop:"18px", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:"14px", padding:"16px 18px" }}>
                 <p style={{ fontSize:"14px", fontWeight:800, color:"white", textAlign:"center", marginBottom:"6px", lineHeight:1.5 }}>
-                  🔒 Prezzo bloccato per sempre a 9,99€/mese
+                  🔒 Prezzo bloccato per sempre a 12,90€/mese
                 </p>
                 <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.5)", textAlign:"center", marginBottom:"10px", lineHeight:1.5 }}>
                   Solo per chi si iscrive durante il lancio.<br/>
@@ -833,7 +833,7 @@ export default function Landing({ onEntra }) {
             🎁 Inizia 3 giorni gratis
           </button>
           <p style={{ marginTop:"14px", fontSize:"12px", color:"rgba(255,255,255,0.2)" }}>
-            Poi 9,99€/mese · Annulla quando vuoi · 🚫 Zero pubblicità
+            Poi 12,90€/mese · Annulla quando vuoi · 🚫 Zero pubblicità
           </p>
         </div>
       </section>

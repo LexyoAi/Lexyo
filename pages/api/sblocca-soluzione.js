@@ -1,12 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
   const { photo, materia, classe } = req.body;
-
-  const client = new Anthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY,
-  });
 
   try {
     const base64 = photo.split(",")[1];
@@ -14,13 +12,11 @@ export default async function handler(req, res) {
     const response = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 500,
-      system: [
-        {
-          type: "text",
-          text: `Sei Lexyo, insegnante di ${materia} per la ${classe} italiana. Mostra la soluzione completa spiegata passo per passo. Lo studente ha già provato — ora merita la spiegazione completa. Spiega PERCHÉ ogni passaggio è giusto. Linguaggio semplice per bambini. In italiano.`,
-          cache_control: { type: "ephemeral" }
-        }
-      ],
+      system: [{
+        type: "text",
+        text: `Sei Lexyo, insegnante di ${materia} per la ${classe} italiana. Mostra la soluzione completa spiegata passo per passo. Lo studente ha già provato — ora merita la spiegazione completa. Spiega PERCHÉ ogni passaggio è giusto. Linguaggio semplice per bambini. In italiano.`,
+        cache_control: { type: "ephemeral" }
+      }],
       messages: [{
         role: "user",
         content: [
