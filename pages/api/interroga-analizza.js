@@ -1,39 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getAdattivita } from "../../lib/adattivita";
-import { cacheGet, cacheAddVariant, ck, randomPick } from "../../lib/cache";
+import { cacheGetOrFetch, ck } from "../../lib/cache";
+import { tts, VOICE_INTERROGA } from "../../lib/tts";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
-// TTS cached by generated text to avoid re-calling ElevenLabs for the same sentence.
-// Audio base64 strings are large, so we cap this at 50 entries with 30m TTL.
-const ttsStore = new Map();
-const TTS_MAX = 50;
-const TTS_TTL = 30 * 60 * 1000; // 30 min
-
-async function tts(testo) {
-  // In-memory TTS cache keyed by exact text
-  const entry = ttsStore.get(testo);
-  if (entry && Date.now() < entry.exp) return entry.audio;
-
-  try {
-    const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${process.env.ELEVENLABS_VOICE_ID}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "xi-api-key": process.env.ELEVENLABS_API_KEY },
-      body: JSON.stringify({
-        text: testo,
-        model_id: "eleven_multilingual_v2",
-        voice_settings: { stability: 0.3, similarity_boost: 0.85, style: 0.65, use_speaker_boost: true, speed: 0.92 },
-      }),
-    });
-    if (!r.ok) return null;
-    const audio = Buffer.from(await r.arrayBuffer()).toString("base64");
-
-    if (ttsStore.size >= TTS_MAX) ttsStore.delete(ttsStore.keys().next().value);
-    ttsStore.set(testo, { audio, exp: Date.now() + TTS_TTL });
-
-    return audio;
-  } catch { return null; }
-}
 
 const TEXT_VARIANTS = 5;
 const TEXT_TTL = 2 * 60 * 60 * 1000; // 2h — fresh questions each school session
@@ -47,13 +17,10 @@ export default async function handler(req, res) {
     let dati;
 
     if (argomento && !photo) {
-      // ── TEXT MODE — cacheable ──────────────────────────────────────────
+      // ── TEXT MODE — cacheable + coalesced ─────────────────────────────
       const key = ck("interroga", classe, materia, argomento);
-      const cached = cacheGet(key);
 
-      if (cached && cached.length > 0) {
-        dati = randomPick(cached);
-      } else {
+      const { data } = await cacheGetOrFetch(key, async () => {
         const analisi = await client.messages.create({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 200,
@@ -66,15 +33,11 @@ Livello studente: ${adattivita}`, cache_control: { type: "ephemeral" } }],
         });
 
         const testo = analisi.content[0].text.trim();
-        try {
-          const match = testo.match(/\{[\s\S]*\}/);
-          dati = JSON.parse(match ? match[0] : testo);
-        } catch {
-          return res.status(500).json({ errore: "Errore nella preparazione dell'interrogazione. Riprova." });
-        }
+        const match = testo.match(/\{[\s\S]*\}/);
+        return JSON.parse(match ? match[0] : testo);
+      }, TEXT_VARIANTS, TEXT_TTL);
 
-        cacheAddVariant(key, dati, TEXT_VARIANTS, TEXT_TTL);
-      }
+      dati = data;
 
     } else {
       // ── PHOTO MODE — not cacheable ─────────────────────────────────────
@@ -112,8 +75,8 @@ Livello studente: ${adattivita}`, cache_control: { type: "ephemeral" } }],
       });
 
       const testo = analisi.content[0].text.trim();
+      const match = testo.match(/\{[\s\S]*\}/);
       try {
-        const match = testo.match(/\{[\s\S]*\}/);
         dati = JSON.parse(match ? match[0] : testo);
       } catch {
         return res.status(500).json({ errore: "Non riesco ad analizzare gli appunti. Riprova con una foto più nitida." });
@@ -121,7 +84,7 @@ Livello studente: ${adattivita}`, cache_control: { type: "ephemeral" } }],
     }
 
     const testoAudio = `${dati.benvenuto} Prima domanda: ${dati.prima_domanda}`;
-    const audio = await tts(testoAudio);
+    const audio = await tts(testoAudio, VOICE_INTERROGA);
 
     res.json({
       argomenti: dati.argomenti || [],

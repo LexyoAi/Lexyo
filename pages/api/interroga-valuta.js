@@ -1,23 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getAdattivita } from "../../lib/adattivita";
+import { tts, VOICE_INTERROGA } from "../../lib/tts";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
-async function tts(testo) {
-  try {
-    const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${process.env.ELEVENLABS_VOICE_ID}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "xi-api-key": process.env.ELEVENLABS_API_KEY },
-      body: JSON.stringify({
-        text: testo,
-        model_id: "eleven_multilingual_v2",
-        voice_settings: { stability: 0.3, similarity_boost: 0.85, style: 0.65, use_speaker_boost: true, speed: 0.92 },
-      }),
-    });
-    if (!r.ok) return null;
-    return Buffer.from(await r.arrayBuffer()).toString("base64");
-  } catch { return null; }
-}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
@@ -64,7 +49,8 @@ JSON richiesto: {"valutazione":"commento breve ultima risposta (1-2 righe, incor
       return res.status(500).json({ errore: "Errore nella valutazione della risposta." });
     }
 
-    const audio = await tts(dati.testo_audio || "");
+    // TTS con cache condivisa — evita ri-generazioni di frasi identiche
+    const audio = await tts(dati.testo_audio || "", VOICE_INTERROGA);
 
     if (fine) {
       res.json({

@@ -8,7 +8,12 @@
       "Bash(node -e \"require\\('./pages/index.js'\\)\")",
       "Bash(dir *)",
       "Bash(npm install *)",
-      "Bash(node -e \"require\\('stripe'\\); console.log\\('stripe OK'\\)\")"
+      "Bash(node -e \"require\\('stripe'\\); console.log\\('stripe OK'\\)\")",
+      "Bash(node -e \"const fs=require\\('fs'\\);const c=fs.readFileSync\\('pages/index.js','utf8'\\);console.log\\('Lines:',c.split\\('\\\\n'\\).length\\);['materiaRipasso','ripassoStreak','ripassoScores','ripassoXp','ripasso_home','ripasso_mappa','ripasso_quiz','ripasso_risultato','ripasso-genera','rispondiRipasso','rLevelPop','Nav.*ripasso_home'].forEach\\(p=>{const m=c.match\\(new RegExp\\(p,'g'\\)\\);console.log\\(p+':'+\\(m?m.length:0\\)\\);}\\)\")",
+      "Bash(node -e \"const fs=require\\('fs'\\);const c=fs.readFileSync\\('pages/index.js','utf8'\\);const navMatch=c.match\\(/const Nav[\\\\s\\\\S]{0,400}/\\);console.log\\(navMatch?navMatch[0].substring\\(0,400\\):' NOT FOUND'\\)\")",
+      "PowerShell(\\(Get-Content \"C:\\\\Users\\\\Shq\\\\Desktop\\\\maiprof\\\\pages\\\\index.js\" | Measure-Object -Line\\).Lines)",
+      "PowerShell(\\(Get-Content \"C:\\\\Users\\\\Shq\\\\Desktop\\\\maiprof\\\\styles\\\\globals.css\" | Measure-Object -Line\\).Lines)",
+      "Bash(python3 *)"
     ]
   }
 }

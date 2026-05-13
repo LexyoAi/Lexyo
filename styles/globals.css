@@ -122,6 +122,14 @@ html[data-tema="light"] [style*="linear-gradient(180deg,#141530"] {
   background: linear-gradient(180deg, #ffffff 0%, #f5f7ff 100%) !important;
 }
 
+/* ── Input / textarea / select: testo sempre visibile in tema chiaro ── */
+html[data-tema="light"] input,
+html[data-tema="light"] textarea,
+html[data-tema="light"] select {
+  color: rgba(10, 10, 32, 0.87) !important;
+  caret-color: rgba(10, 10, 32, 0.87) !important;
+}
+
 /* ── Placeholder input ── */
 html[data-tema="light"] input::placeholder,
 html[data-tema="light"] textarea::placeholder {
@@ -184,6 +192,47 @@ html[data-tema="light"] textarea::placeholder {
 /* ── Lettere cruciverba: sempre bianche (sfondo sempre scuro) ── */
 .cw-letter { color: white !important; }
 html[data-tema="light"] .cw-letter { color: white !important; }
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-8px); }
+  80% { transform: translateX(8px); }
+}
+@keyframes floatUp {
+  0% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-55px); opacity: 0; }
+}
+@keyframes revealAnim {
+  0% { transform: scale(0.3); opacity: 0; filter: blur(10px); }
+  60% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; filter: blur(0); }
+}
+@keyframes pulseSlow {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+@keyframes attackAnim {
+  0% { transform: translateX(0); }
+  30% { transform: translateX(-28px); }
+  65% { transform: translateX(20px); }
+  100% { transform: translateX(0); }
+}
+@keyframes confettiFall {
+  0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+@keyframes countdownAnim {
+  0% { transform: scale(1.6); opacity: 0; }
+  25% { transform: scale(1); opacity: 1; }
+  75% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.6); opacity: 0; }
+}
+@keyframes timerPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
 
 /* ── CHIP PROGRAMMA ── */
 .chip-mese, .chip-tema {

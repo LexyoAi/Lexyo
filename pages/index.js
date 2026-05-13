@@ -76,6 +76,7 @@ export default function Home() {
   const [interrogMeseChip, setInterrogMeseChip] = useState(null);
   const [streak, setStreak] = useState(0);
   const [levelUpAnim, setLevelUpAnim] = useState(false);
+  const [lexEvoluzione, setLexEvoluzione] = useState(null);
   const [giocaTab, setGiocaTab] = useState("giochi");
   const [mcQuiz, setMcQuiz] = useState(null);
   const [mcLoading, setMcLoading] = useState(false);
@@ -133,6 +134,39 @@ export default function Home() {
   const [mesiGratisGuadagnati, setMesiGratisGuadagnati] = useState(0);
   const [referralCopiato, setReferralCopiato] = useState("");
   const [toastReferral, setToastReferral] = useState("");
+  const [materiaRipasso, setMateriaRipasso] = useState("matematica");
+  const [livelloRipasso, setLivelloRipasso] = useState(0);
+  const [ripassoQuiz, setRipassoQuiz] = useState(null);
+  const [ripassoRisposte, setRipassoRisposte] = useState([]);
+  const [ripassoFine, setRipassoFine] = useState(false);
+  const [ripassoLoading, setRipassoLoading] = useState(false);
+  const [ripassoScore, setRipassoScore] = useState(0);
+  const [ripassoLexMsg, setRipassoLexMsg] = useState("");
+  const [ripassoLexLoading, setRipassoLexLoading] = useState(false);
+  const [ripassoScoreAnim, setRipassoScoreAnim] = useState(0);
+  const [ripassoNuovoLivelloOverlay, setRipassoNuovoLivelloOverlay] = useState(false);
+  const [ripassoStreak, setRipassoStreak] = useState(0);
+  const [ripassoScores, setRipassoScores] = useState({});
+  const [ripassoXp, setRipassoXp] = useState(0);
+  const [ripassoTransizione, setRipassoTransizione] = useState(false);
+  const [ripassoLexMappaTop, setRipassoLexMappaTop] = useState(80);
+  const [ripassoXpAnimHome, setRipassoXpAnimHome] = useState(0);
+  const [compitoPianoSettimana, setCompitoPianoSettimana] = useState(null);
+  // ── Sfida Velocità ──
+  const [svState, setSvState] = useState(null);
+  const [svPlusAnim, setSvPlusAnim] = useState(false);
+  const [svShake, setSvShake] = useState(false);
+  const svIntervalRef = useRef(null);
+  // ── Chi Sono ──
+  const [csState, setCsState] = useState(null);
+  const [csRisposta, setCsRisposta] = useState("");
+  const [csLoading, setCsLoading] = useState(false);
+  // ── Coriandoli & record ──
+  const [mostraCoriandoli, setMostraCoriandoli] = useState(false);
+  const [recordGiochi, setRecordGiochi] = useState(() => {
+    if (typeof window !== "undefined") { try { return JSON.parse(localStorage.getItem("lexyo_record_giochi") || "{}"); } catch {} }
+    return {};
+  });
   const isAdmin = profiloUtente?.is_admin === true;
 
   const getFingerprint = () => {
@@ -284,6 +318,7 @@ export default function Home() {
     setCompitiEstivi(prev => prev.map(x => x.id === c.id ? { ...x, completato: nuovoStato } : x));
     await supabase.from("compiti_estivi").update({ completato: nuovoStato }).eq("id", c.id);
     if (nuovoStato) {
+      suona("compito");
       setCompitoCompletamentoAnim(c.id);
       addStelle(3); // stelle doppie in estate = 6 effettive
       setTimeout(() => setCompitoCompletamentoAnim(null), 1800);
@@ -443,6 +478,77 @@ export default function Home() {
     }
   }, []);
 
+  useEffect(() => {
+    if (!figlioAttivo) return;
+    setRipassoStreak(figlioAttivo.ripasso_streak || 0);
+    setRipassoScores(figlioAttivo.ripasso_scores || {});
+    setRipassoXp(figlioAttivo.ripasso_xp || 0);
+  }, [figlioAttivo?.id]);
+
+  useEffect(() => {
+    if (screen !== "ripasso_risultato") return;
+    setRipassoScoreAnim(0);
+    let c = 0;
+    const target = ripassoScore;
+    if (target === 0) return;
+    const id = setInterval(() => {
+      c++;
+      setRipassoScoreAnim(c);
+      if (c >= target) clearInterval(id);
+    }, 100);
+    return () => clearInterval(id);
+  }, [screen]);
+
+  useEffect(() => {
+    if (screen !== "ripasso_home") return;
+    setRipassoXpAnimHome(0);
+    const target = ripassoXp % 100;
+    if (target === 0) return;
+    let c = 0;
+    const id = setInterval(() => {
+      c += 2;
+      setRipassoXpAnimHome(Math.min(c, target));
+      if (c >= target) clearInterval(id);
+    }, 18);
+    return () => clearInterval(id);
+  }, [screen]);
+
+  useEffect(() => {
+    if (screen !== "ripasso_mappa") return;
+    const temi = (PROGRAMMA[figlioAttivo?.classe]?.materie?.[materiaRipasso] || []).flatMap(m => m.temi || []);
+    const scores = ripassoScores[materiaRipasso] || {};
+    let pnc = 0;
+    for (let i = 0; i < temi.length; i++) {
+      if (scores[i] === 10) { pnc = i + 1; } else { break; }
+    }
+    const targetTop = 80 + Math.max(0, pnc - 1) * 110;
+    setTimeout(() => setRipassoLexMappaTop(targetTop), 600);
+  }, [screen, materiaRipasso]);
+
+  // Countdown Sfida Velocità 3→2→1→0→VIA!
+  useEffect(() => {
+    if (!svState || svState.fase !== "countdown") return;
+    if (svState.countdown <= 0) {
+      setSvState(prev => prev ? { ...prev, fase: "gioco", tempoRimasto: 60 } : null);
+      return;
+    }
+    const id = setTimeout(() => setSvState(prev => prev ? { ...prev, countdown: prev.countdown - 1 } : null), 1000);
+    return () => clearTimeout(id);
+  }, [svState?.fase, svState?.countdown]);
+
+  // Timer Sfida Velocità
+  useEffect(() => {
+    if (!svState || svState.fase !== "gioco") { clearInterval(svIntervalRef.current); return; }
+    svIntervalRef.current = setInterval(() => {
+      setSvState(prev => {
+        if (!prev || prev.fase !== "gioco") { clearInterval(svIntervalRef.current); return prev; }
+        if (prev.tempoRimasto <= 1) { clearInterval(svIntervalRef.current); return { ...prev, fase: "risultato", tempoRimasto: 0 }; }
+        return { ...prev, tempoRimasto: prev.tempoRimasto - 1 };
+      });
+    }, 1000);
+    return () => clearInterval(svIntervalRef.current);
+  }, [svState?.fase]);
+
   const aggiornaStreak = () => {
     if (typeof window === "undefined") return;
     const oggi = new Date().toDateString();
@@ -527,6 +633,7 @@ export default function Home() {
   const isMobile = typeof navigator !== "undefined" && /iPhone|iPad|Android/i.test(navigator.userAgent);
   const addStelle = async (n) => {
     if (!figlioAttivo) return;
+    if (n > 0) suona("stelle");
     const meseCorrente = new Date().getMonth();
     const isEstate = meseCorrente >= 5 && meseCorrente <= 7;
     const stelleEffettive = isEstate ? n * 2 : n;
@@ -540,8 +647,15 @@ export default function Home() {
       const u = { ...f, stelle, livello: nuovoLivello, sessioni, ultimaAttivita: new Date().toLocaleDateString("it-IT") };
       setFiglioAttivo(u);
       if (prevLivelloRef.current !== null && nuovoLivello > prevLivelloRef.current) {
-        setLevelUpAnim(true);
-        setTimeout(() => setLevelUpAnim(false), 3000);
+        const stagePrec = getEvoStage(prevLivelloRef.current);
+        const stageNuovo = getEvoStage(nuovoLivello);
+        if (stageNuovo > stagePrec) {
+          setLexEvoluzione(getLexEvolution(nuovoLivello));
+          suona("obiettivo");
+        } else {
+          setLevelUpAnim(true);
+          setTimeout(() => setLevelUpAnim(false), 3000);
+        }
       }
       prevLivelloRef.current = nuovoLivello;
       if (utente) supabase.from("figli").update({ stelle: u.stelle, livello: u.livello, sessioni: u.sessioni, ultima_attivita: new Date().toISOString() }).eq("id", f.id);
@@ -558,6 +672,73 @@ export default function Home() {
     }));
     const b = BADGE.find((x) => x.id === id);
     setNewBadge(b); setTimeout(() => setNewBadge(null), 3000);
+    suona("badge");
+  };
+
+  const suona = (tipo) => {
+    if (typeof window === "undefined") return;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const play = (freq, t, dur, vol = 0.28, type = "sine") => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + t);
+        gain.gain.setValueAtTime(0, ctx.currentTime + t);
+        gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + t + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + dur);
+        osc.start(ctx.currentTime + t);
+        osc.stop(ctx.currentTime + t + dur + 0.05);
+      };
+      switch (tipo) {
+        case "corretto":
+          play(523, 0, 0.10);
+          play(659, 0.09, 0.10);
+          play(784, 0.18, 0.18, 0.32);
+          break;
+        case "sbagliato":
+          play(349, 0, 0.18, 0.22, "sawtooth");
+          play(294, 0.17, 0.22, 0.16, "sawtooth");
+          break;
+        case "livello":
+          play(523, 0,    0.09, 0.28);
+          play(659, 0.09, 0.09, 0.28);
+          play(784, 0.18, 0.09, 0.28);
+          play(1047,0.27, 0.45, 0.38);
+          break;
+        case "obiettivo":
+          play(523, 0,    0.07, 0.3);
+          play(659, 0.07, 0.07, 0.3);
+          play(784, 0.14, 0.07, 0.3);
+          play(1047,0.21, 0.07, 0.3);
+          play(1319,0.28, 0.55, 0.42);
+          play(1047,0.36, 0.12, 0.2);
+          break;
+        case "compito":
+          play(659, 0,    0.08, 0.22);
+          play(784, 0.08, 0.15, 0.25);
+          break;
+        case "stelle":
+          play(523, 0,    0.07, 0.18);
+          play(659, 0.07, 0.07, 0.18);
+          play(784, 0.14, 0.12, 0.20);
+          break;
+        case "badge":
+          play(523, 0,    0.08, 0.28);
+          play(659, 0.08, 0.08, 0.28);
+          play(784, 0.16, 0.08, 0.28);
+          play(1047,0.24, 0.08, 0.28);
+          play(784, 0.30, 0.12, 0.20);
+          play(1047,0.42, 0.50, 0.38);
+          break;
+        case "click":
+          play(900, 0, 0.04, 0.10);
+          break;
+        default: break;
+      }
+      setTimeout(() => { try { ctx.close(); } catch {} }, 2500);
+    } catch {}
   };
 
   const aggiornaPreparazione = (materiaN, argomento, stato) => {
@@ -599,7 +780,10 @@ export default function Home() {
     if (s === "foto") { setPhoto(null); setSbloccato(false); setFotoFase("carica"); setFotoMsgs([]); setFotoInput(""); setPhotoOriginale(null); }
     if (s === "famiglia") setPinScreen("chiuso");
     if (s === "dettato") { setDettatoFase("menu"); setDettatoTesto(""); setDettatoAudio(null); setDettatoCorrezione(null); setDettatoMeseChip(null); }
-    if (s === "estate") { setEstaTab("ripasso"); setEstaSezione("miei_compiti"); setFotoCompitoFase("idle"); setFotoCompitoRisposta(null); caricaCompitiEstivi(figlioAttivo?.id); }
+    if (s === "estate") { /* menu semplice, nessun reset necessario */ }
+    if (s === "compiti_estivi") { setCompitoPianoSettimana(null); setEstaTab("ripasso"); setEstaSezione("miei_compiti"); setFotoCompitoFase("idle"); setFotoCompitoRisposta(null); caricaCompitiEstivi(figlioAttivo?.id); }
+    if (s === "compiti_lista") { setFotoCompitoFase("idle"); setFotoCompitoRisposta(null); caricaCompitiEstivi(figlioAttivo?.id); }
+    if (s === "compiti_studio") { setCompitoPianoSettimana(null); setEstaTab("piano"); }
     if (s === "ripasso_estate") { setRipassoEstateState(null); }
     if (s === "chat" && s !== screen) { setChatMsgs([]); setChatContesto(null); setChatMeseChip(null); }
     if (s === "calendario") setMeseAperto(null);
@@ -609,6 +793,16 @@ export default function Home() {
     if (s === "gioca") { setGiocaTab("giochi"); setGiocaArgomento(""); setGiocaMeseAperto(null); }
     if (s === "quiz_mc") { setMcQuiz(null); setMcRisposte([]); setMcFine(false); setMcLoading(false); }
     if (s === "parole_crociate") { setWordGame(null); setWordInputs({}); setWordVerificato(false); setWordLoading(false); setCwSelected(null); setCwDir('H'); }
+    if (s === "sfida_velocita") { clearInterval(svIntervalRef.current); setSvState(null); setSvShake(false); setSvPlusAnim(false); }
+    if (s === "chi_sono") { setCsState(null); setCsRisposta(""); setCsLoading(false); }
+    if (s === "ripasso_home") { setRipassoQuiz(null); setRipassoRisposte([]); setRipassoFine(false); setRipassoLoading(false); setRipassoNuovoLivelloOverlay(false); setRipassoTransizione(false); }
+    if (s === "ripasso_mappa") { setRipassoQuiz(null); setRipassoRisposte([]); setRipassoFine(false); setRipassoLoading(false); setRipassoNuovoLivelloOverlay(false); setRipassoTransizione(false); }
+    if (s === "ripasso_quiz") {
+      setRipassoQuiz(null); setRipassoRisposte([]); setRipassoFine(false); setRipassoScore(0); setRipassoScoreAnim(0); setRipassoNuovoLivelloOverlay(false); setRipassoLexMsg("");
+      setRipassoTransizione(true);
+      setTimeout(() => { setScreen("ripasso_quiz"); setRipassoTransizione(false); }, 400);
+      return;
+    }
     setScreen(s);
   };
 
@@ -790,8 +984,27 @@ export default function Home() {
     estate:        { primario: "#E866FF", secondario: "#AA00FF", gradiente: "linear-gradient(135deg,#AA00FF,#FF4081)", glow: "rgba(200,50,255,0.3)" },
     quiz_mc:       { primario: "#A78BFA", secondario: "#6C47FF", gradiente: "linear-gradient(135deg,#6C47FF,#9B3FD4)", glow: "rgba(108,71,255,0.3)" },
     parole_crociate:{ primario: "#34d399", secondario: "#059669", gradiente: "linear-gradient(135deg,#059669,#0d9488)", glow: "rgba(52,211,153,0.3)" },
+    ripasso_home:    { primario: "#a855f7", secondario: "#7c3aed", gradiente: "linear-gradient(135deg,#7c3aed,#a855f7)", glow: "rgba(168,85,247,0.3)" },
+    ripasso_mappa:   { primario: "#a855f7", secondario: "#7c3aed", gradiente: "linear-gradient(135deg,#7c3aed,#a855f7)", glow: "rgba(168,85,247,0.3)" },
+    ripasso_quiz:    { primario: "#a855f7", secondario: "#7c3aed", gradiente: "linear-gradient(135deg,#7c3aed,#a855f7)", glow: "rgba(168,85,247,0.3)" },
+    ripasso_risultato:{ primario: "#a855f7", secondario: "#7c3aed", gradiente: "linear-gradient(135deg,#7c3aed,#a855f7)", glow: "rgba(168,85,247,0.3)" },
+    compiti_estivi:   { primario: "#E866FF", secondario: "#AA00FF", gradiente: "linear-gradient(135deg,#AA00FF,#FF4081)", glow: "rgba(200,50,255,0.3)" },
+    compiti_lista:    { primario: "#00F090", secondario: "#00A855", gradiente: "linear-gradient(135deg,#00A855,#00F090)", glow: "rgba(0,240,144,0.3)" },
+    compiti_studio:   { primario: "#FF8C00", secondario: "#FF6000", gradiente: "linear-gradient(135deg,#FF6000,#FFB300)", glow: "rgba(255,140,0,0.3)" },
   };
   const t = TEMI[screen] || { primario: "#A78BFA", secondario: "#6C47FF", gradiente: "linear-gradient(135deg,#6C47FF,#9B3FD4)", glow: "rgba(108,71,255,0.3)" };
+
+  const getEvoStage = (l) => !l || l <= 3 ? 0 : l <= 7 ? 1 : l <= 12 ? 2 : l <= 18 ? 3 : 4;
+  const getLexEvolution = (livello) => {
+    const s = getEvoStage(livello);
+    return [
+      { img:"/Lex-prof.png",    nome:"Lex Professore", colore:"#6366f1", glow:"rgba(99,102,241,0.5)",  stella:"⭐", soglia:"Lv. 1"  },
+      { img:"/LexStudioso.png", nome:"Lex Studioso",   colore:"#10b981", glow:"rgba(16,185,129,0.5)",  stella:"🌟", soglia:"Lv. 4"  },
+      { img:"/LexEsperto.png",  nome:"Lex Esperto",    colore:"#f59e0b", glow:"rgba(245,158,11,0.5)",  stella:"💫", soglia:"Lv. 8"  },
+      { img:"/LexMaestro.png",  nome:"Lex Maestro",    colore:"#ec4899", glow:"rgba(236,72,153,0.5)",  stella:"✨", soglia:"Lv. 13" },
+      { img:"/LexSuper.png",    nome:"Super Lex",      colore:"#a855f7", glow:"rgba(168,85,247,0.7)",  stella:"⚡", soglia:"Lv. 19" },
+    ][s];
+  };
 
   if (screen === "landing") return <Landing onEntra={() => setScreen("login")} />;
 
@@ -805,7 +1018,8 @@ export default function Home() {
   );
 
   // ── COMPONENTE LEX ───────────────────────────────────────────────────────
-  const LexChar = ({ stato = "idle", size = 80, style = {} }) => {
+  const LexChar = ({ stato = "idle", size = 80, style = {}, evoImg }) => {
+    const lexImg = evoImg || getLexEvolution(figlioAttivo?.livello || 1).img;
     return (
       <div style={{ position:"relative", width:size, height:size, ...style }}>
         <style>{`
@@ -879,7 +1093,8 @@ export default function Home() {
         `}</style>
 
         <img
-          src="/lex.png"
+          src={lexImg}
+          onError={(e) => { e.target.src = "/Lex-prof.png"; }}
           alt="Lex"
           style={{
             width: "100%",
@@ -920,7 +1135,7 @@ export default function Home() {
   if (screen === "login") return (
     <div style={{ ...S.app, ...S.center }}>
       <Head><title>Lexyo — Accesso</title></Head>
-      <LexChar stato="idle" size={100} style={{ marginBottom:"16px" }} />
+      <LexChar stato="idle" size={130} style={{ marginBottom:"16px" }} />
       <h1 style={S.title}>Area Genitore</h1>
       <p style={{ ...S.gray, marginBottom:"24px" }}>Solo il genitore si registra.<br/>Il bambino usa senza dati personali. 🔒</p>
       <div style={{ width:"100%", maxWidth:"380px", display:"flex", flexDirection:"column", gap:"12px" }}>
@@ -961,7 +1176,7 @@ export default function Home() {
           ← Torna alla home
         </button>
       )}
-      <LexChar stato="happy" size={80} style={{ marginTop:"16px", marginBottom:"8px" }} />
+      <LexChar stato="happy" size={110} style={{ marginTop:"16px", marginBottom:"8px" }} />
       <h1 style={{ ...S.title }}>Scegli il Piano</h1>
       <p style={{ ...S.gray, marginBottom:"28px" }}>Puoi cambiare in qualsiasi momento</p>
       <div style={{ width:"100%", maxWidth:"420px", display:"flex", flexDirection:"column", gap:"16px" }}>
@@ -1184,18 +1399,19 @@ export default function Home() {
 
   const Nav = () => (
     <div style={S.nav}>
-      {[["🏠","Home","home"],["📚","Studia","studia"],["✏️","Verifiche","verifiche"],["🌊","Estate","estate"],["🎮","Gioca","gioca"]].map(([ico,lab,s]) => {
+      {[["🏠","Home","home"],["📚","Studia","studia"],["✏️","Verifiche","verifiche"],["🌊","Estate","estate"],["🎮","Gioca","gioca"],["🏆","Ripasso","ripasso_home"]].map(([ico,lab,s]) => {
         const attivo = screen === s
           || (s === "studia" && ["foto","chat","dettato"].includes(screen))
           || (s === "verifiche" && ["interrogazione","quiz_mc"].includes(screen))
-          || (s === "estate" && screen === "ripasso_estate")
-          || (s === "gioca" && screen === "parole_crociate");
+          || (s === "estate" && ["ripasso_estate","compiti_estivi","compiti_lista","compiti_studio"].includes(screen))
+          || (s === "gioca" && ["parole_crociate","sfida_velocita","chi_sono"].includes(screen))
+          || (s === "ripasso_home" && ["ripasso_mappa","ripasso_quiz","ripasso_risultato"].includes(screen));
         return (
-          <button key={s} onClick={() => goScreen(s)} style={{ background:"none", border:"none", display:"flex", flexDirection:"column", alignItems:"center", gap:"3px", fontFamily:"'Nunito', sans-serif", cursor:"pointer", padding:"6px 8px", borderRadius:"14px" }}>
-            <div style={{ width:"40px", height:"34px", display:"flex", alignItems:"center", justifyContent:"center", borderRadius:"12px", background:attivo?"linear-gradient(135deg,rgba(108,71,255,0.3),rgba(167,139,250,0.15))":"transparent", border:attivo?"1px solid rgba(108,71,255,0.4)":"1px solid transparent", boxShadow:attivo?"0 4px 12px rgba(108,71,255,0.25)":"none", transition:"all 0.15s" }}>
-              <span style={{ fontSize:"23px" }}>{ico}</span>
+          <button key={s} onClick={() => goScreen(s)} style={{ background:"none", border:"none", display:"flex", flexDirection:"column", alignItems:"center", gap:"3px", fontFamily:"'Nunito', sans-serif", cursor:"pointer", padding:"6px 4px", borderRadius:"14px" }}>
+            <div style={{ width:"36px", height:"32px", display:"flex", alignItems:"center", justifyContent:"center", borderRadius:"12px", background:attivo?"linear-gradient(135deg,rgba(108,71,255,0.3),rgba(167,139,250,0.15))":"transparent", border:attivo?"1px solid rgba(108,71,255,0.4)":"1px solid transparent", boxShadow:attivo?"0 4px 12px rgba(108,71,255,0.25)":"none", transition:"all 0.15s" }}>
+              <span style={{ fontSize:"20px" }}>{ico}</span>
             </div>
-            <span style={{ fontSize:"11px", fontWeight:800, color:attivo?"#A78BFA":"rgba(255,255,255,0.35)" }}>{lab}</span>
+            <span style={{ fontSize:"10px", fontWeight:800, color:attivo?"#A78BFA":"rgba(255,255,255,0.35)" }}>{lab}</span>
           </button>
         );
       })}
@@ -1225,6 +1441,34 @@ export default function Home() {
 
       {/* overlay level-up */}
       {levelUpAnim && <div style={{ position:"fixed", inset:0, zIndex:10000, background:"rgba(0,0,0,0.82)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"16px" }}><div style={{ animation:"levelUpPop 0.6s cubic-bezier(0.175,0.885,0.32,1.275) forwards" }}><LexChar stato="happy" size={140} /></div><div style={{ textAlign:"center" }}><p style={{ fontSize:"40px", fontWeight:900, background:"linear-gradient(135deg,#fbbf24,#f59e0b)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>LIVELLO {figlioAttivo?.livello}!</p><p style={{ fontSize:"18px", color:"rgba(255,255,255,0.85)", fontWeight:700 }}>Sei cresciuto! Continua così 💪</p></div></div>}
+
+      {/* overlay EVOLUZIONE LEX */}
+      {lexEvoluzione && (
+        <div onClick={() => setLexEvoluzione(null)} style={{ position:"fixed", inset:0, zIndex:10001, background:"rgba(0,0,0,0.95)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"18px", cursor:"pointer" }}>
+          <style>{`
+            @keyframes evoFlash { 0%{opacity:0} 30%{opacity:1} 60%{opacity:0.7} 100%{opacity:1} }
+            @keyframes evoPop { 0%{transform:scale(0) rotate(-15deg);opacity:0} 50%{transform:scale(1.25) rotate(5deg);opacity:1} 80%{transform:scale(0.95) rotate(-2deg)} 100%{transform:scale(1) rotate(0deg);opacity:1} }
+            @keyframes evoGlow { 0%,100%{box-shadow:0 0 40px var(--eg,rgba(99,102,241,0.8))} 50%{box-shadow:0 0 80px var(--eg,rgba(99,102,241,0.8)),0 0 120px var(--eg,rgba(99,102,241,0.4))} }
+            @keyframes evoParticle { 0%{transform:translateY(0) scale(1);opacity:1} 100%{transform:translateY(-120px) scale(0);opacity:0} }
+          `}</style>
+          {/* Particelle */}
+          {Array.from({length:16},(_,i) => (
+            <div key={i} style={{ position:"absolute", top:`${20 + ((i*23+7)%60)}%`, left:`${5 + ((i*17+11)%88)}%`, width:`${5+(i%3)*3}px`, height:`${5+(i%3)*3}px`, borderRadius:"50%", background: i%2===0 ? lexEvoluzione.colore : "#fbbf24", animation:`evoParticle ${1.2+(i%4)*0.15}s ${(i*0.08).toFixed(2)}s ease-out both`, pointerEvents:"none" }} />
+          ))}
+          {/* Testo EVOLUZIONE */}
+          <p style={{ fontSize:"14px", fontWeight:800, color:lexEvoluzione.colore, letterSpacing:"4px", textTransform:"uppercase", animation:"evoFlash 0.6s ease forwards" }}>✦ EVOLUZIONE ✦</p>
+          {/* Lex nuovo stadio con glow */}
+          <div style={{ animation:"evoPop 0.8s cubic-bezier(0.175,0.885,0.32,1.275) 0.2s both", "--eg":lexEvoluzione.glow, borderRadius:"50%", padding:"12px", animation:"evoPop 0.8s cubic-bezier(0.175,0.885,0.32,1.275) 0.2s both, evoGlow 1.5s 1s ease-in-out infinite" }}>
+            <LexChar stato="happy" size={180} evoImg={lexEvoluzione.img} />
+          </div>
+          <div style={{ textAlign:"center", animation:"evoFlash 0.5s 0.7s ease both" }}>
+            <p style={{ fontSize:"32px", fontWeight:900, background:`linear-gradient(135deg,${lexEvoluzione.colore},#fbbf24)`, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", marginBottom:"6px" }}>{lexEvoluzione.nome}</p>
+            <p style={{ fontSize:"16px", color:"rgba(255,255,255,0.8)", fontWeight:700 }}>Lex si è evoluto! {lexEvoluzione.stella}</p>
+            <p style={{ fontSize:"13px", color:`${lexEvoluzione.colore}cc`, fontWeight:600, marginTop:"4px" }}>Livello {figlioAttivo?.livello} raggiunto</p>
+          </div>
+          <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.3)", marginTop:"8px" }}>Tocca per continuare</p>
+        </div>
+      )}
 
       {/* toast ritorno da Stripe */}
       {pagamentoFlash && (
@@ -1286,12 +1530,37 @@ export default function Home() {
 
       <div style={{ flex:1, overflowY:"auto", padding:"16px 16px 8px" }}>
 
+        {/* LEX HERO */}
+        {(() => {
+          const evo = getLexEvolution(figlioAttivo.livello || 1);
+          const ora = new Date().getHours();
+          const saluto = ora < 6 ? "Buonanotte 🌙" : ora < 12 ? "Buongiorno ☀️" : ora < 18 ? "Buon pomeriggio 🌤️" : "Buona sera 🌙";
+          const msgs = [`${saluto}, ${figlioAttivo.nome}! Pronto a imparare?`, `Cosa studiamo oggi? Scegli una sezione! 👇`, `Ogni giorno un passo avanti! 💪`];
+          const msg = msgs[new Date().getDate() % msgs.length];
+          const nextEvoLvl = [4,8,13,19,99][[0,1,2,3,4].find(i => [4,8,13,19,Infinity][i] > (figlioAttivo.livello||1))];
+          return (
+            <div style={{ display:"flex", alignItems:"center", gap:"14px", padding:"14px 16px", borderRadius:"20px", background: luce ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)", border: `1px solid ${luce?"rgba(0,0,0,0.07)":"rgba(255,255,255,0.07)"}`, marginBottom:"14px" }}>
+              <div style={{ position:"relative", flexShrink:0 }}>
+                <div style={{ position:"absolute", inset:"-6px", borderRadius:"50%", background:`radial-gradient(circle, ${evo.glow} 0%, transparent 70%)`, animation:"lexGlow 3s ease-in-out infinite", pointerEvents:"none" }} />
+                <LexChar stato="idle" size={76} />
+              </div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:"6px", marginBottom:"2px" }}>
+                  <span style={{ fontSize:"10px", fontWeight:900, color:evo.colore, background:`${evo.colore}20`, border:`1px solid ${evo.colore}44`, borderRadius:"8px", padding:"2px 8px", whiteSpace:"nowrap" }}>{evo.nome} {evo.stella}</span>
+                </div>
+                <p style={{ fontSize:"13px", fontWeight:700, lineHeight:1.35 }}>{msg}</p>
+                {nextEvoLvl < 99 && <p style={{ fontSize:"10px", color: luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.4)", fontWeight:600, marginTop:"3px" }}>Prossima evoluzione al Lv.{nextEvoLvl}</p>}
+              </div>
+            </div>
+          );
+        })()}
+
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"13px", marginBottom:"14px" }}>
           {[
             { label:"Studia con Lex", sub:"Foto, chat e dettato", emoji:"📚", screen:"studia", bg:"linear-gradient(145deg,#29C9FF,#00AAFF,#007ACC)", border:"linear-gradient(135deg,#005FA3,#003D6B)" },
             { label:"Verifiche e Interrogazioni", sub:"Quiz e orale", emoji:"✏️", screen:"verifiche", bg:"linear-gradient(145deg,#FF70C8,#FF3FA3,#E0008A)", border:"linear-gradient(135deg,#C026D3,#7C3AED)" },
-            { label:"Estate con Lex", sub:"Compiti e ripasso", emoji:"🌊", screen:"estate", bg:"linear-gradient(145deg,#00F090,#00CC70,#00A855)", border:"linear-gradient(135deg,#00BFA5,#007A3D)" },
-            { label:"Gioca Studiando", sub:"Impara giocando", emoji:"🎮", screen:"gioca", bg:"linear-gradient(145deg,#FF8533,#FF6000,#DD4400)", border:"linear-gradient(135deg,#FF3D00,#FFD600)" },
+            { label:"Estate con Lex", sub:"Compiti e ripasso", emoji:"🌊", screen:"estate", bg:"linear-gradient(145deg,#FFE135,#FFC200,#FF9A00)", border:"linear-gradient(135deg,#FFB300,#FF6D00)" },
+            { label:"Imparare è un Gioco", sub:"Gioca, Impara, Diventa Leggendario!", emoji:"🎮", screen:"gioca", bg:"linear-gradient(145deg,#FF8533,#FF6000,#DD4400)", border:"linear-gradient(135deg,#FF3D00,#FFD600)" },
           ].map(c => (
             <button key={c.screen} className="hcard" onClick={() => goScreen(c.screen)} style={{ padding:"22px 16px", borderRadius:"22px", background:c.bg, boxShadow:"0 6px 18px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", textAlign:"left", cursor:"pointer", "--card-border":c.border }}>
               <div className="card-shine" />
@@ -1304,6 +1573,20 @@ export default function Home() {
             </button>
           ))}
         </div>
+
+        {/* ── SFIDA LEGGENDA LEX ── */}
+        <button onClick={() => {}} className="hcard" style={{ width:"100%", marginBottom:"12px", padding:"0", borderRadius:"22px", background:"linear-gradient(145deg,#00F090,#00CC70,#00A855)", boxShadow:"0 6px 18px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", cursor:"pointer", textAlign:"left", fontFamily:"'Nunito'", "--card-border":"linear-gradient(135deg,#00BFA5,#007A3D)" }}>
+          <div className="card-shine" />
+          <div className="card-content" style={{ padding:"20px 18px", display:"flex", alignItems:"center", gap:"14px" }}>
+            <div style={{ fontSize:"46px", lineHeight:1, flexShrink:0 }}>🔥</div>
+            <div style={{ flex:1 }}>
+              <p style={{ fontSize:"16px", fontWeight:900, color:"white", lineHeight:1.2, marginBottom:"5px" }}>Riesci a trasformare Lex?</p>
+              <p style={{ fontSize:"11px", fontWeight:800, color:"#fbbf24", lineHeight:1.4 }}>Nessuno ci è ancora riuscito —{"\n"}scrivi la leggenda di Super Lex! ⚡</p>
+            </div>
+            <span style={{ fontSize:"28px", flexShrink:0 }}>→</span>
+          </div>
+          <div className="card-depth" />
+        </button>
 
         <button onClick={() => goScreen("badge")} style={{ width:"100%", padding:"14px 18px", borderRadius:"16px", background: luce ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.04)", border: luce ? "1px solid rgba(0,0,0,0.08)" : "1px solid rgba(255,255,255,0.08)", color: luce ? "#0a0a20" : "white", fontFamily:"'Nunito'", textAlign:"left", cursor:"pointer", display:"flex", alignItems:"center", gap:"12px", marginBottom:"10px" }}>
           <span style={{ fontSize:"22px" }}>🏆</span>
@@ -1447,10 +1730,10 @@ export default function Home() {
               <div className="vfade">
                 {/* Materia */}
                 <p style={{ fontSize:"10px", fontWeight:800, color: luce?"rgba(0,0,30,0.35)":"rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"8px" }}>Materia</p>
-                <div style={{ display:"flex", gap:"7px", marginBottom:"18px", overflowX:"auto", paddingBottom:"4px", WebkitOverflowScrolling:"touch" }}>
+                <div style={{ display:"flex", gap:"8px", marginBottom:"18px" }}>
                   {Object.entries(MATERIE).map(([key, info]) => (
-                    <button key={key} onClick={() => { setMateria(key); setVerificheArgomento(""); setVerificheMeseAperto(null); }} style={{ flexShrink:0, padding:"9px 14px", borderRadius:"20px", background:materia===key?`${info.colore}33`: luce?"rgba(0,0,0,0.06)":"rgba(255,255,255,0.06)", border:`2px solid ${materia===key?info.colore: luce?"rgba(0,0,0,0.1)":"rgba(255,255,255,0.1)"}`, color: luce?"#0a0a20":"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"12px", cursor:"pointer", display:"flex", alignItems:"center", gap:"6px", whiteSpace:"nowrap" }}>
-                      <span style={{ fontSize:"15px" }}>{info.emoji}</span>{info.label.split(" ")[0]}
+                    <button key={key} onClick={() => { setMateria(key); setVerificheArgomento(""); setVerificheMeseAperto(null); }} style={{ flex:1, padding:"8px 4px", borderRadius:"12px", background:materia===key?`${info.colore}22`:"rgba(255,255,255,0.04)", border:`2px solid ${materia===key?info.colore:"rgba(255,255,255,0.08)"}`, color:"white", fontFamily:"'Nunito', sans-serif", fontWeight:800, fontSize:"10px", cursor:"pointer" }}>
+                      <div style={{ fontSize:"16px", marginBottom:"2px" }}>{info.emoji}</div>{info.label.split(" ")[0]}
                     </button>
                   ))}
                 </div>
@@ -1809,16 +2092,17 @@ export default function Home() {
             <p style={{ fontSize:"11px", color:t.primario, fontWeight:700 }}>Lex legge — tu scrivi</p>
           </div>
         </div>
-        <div style={{ display:"flex", gap:"8px", padding:"10px 18px", borderBottom:"1px solid rgba(255,255,255,0.06)", background:"rgba(0,0,0,0.15)", overflowX:"auto", flexShrink:0 }}>
-          {Object.entries(MATERIE).map(([key, info]) => (
-            <button key={key} onClick={() => setMateria(key)} style={{ padding:"5px 12px", borderRadius:"20px", background:materia===key?`${info.colore}22`:"rgba(255,255,255,0.04)", border:`1px solid ${materia===key?info.colore:"rgba(255,255,255,0.08)"}`, color:"white", fontFamily:"'Nunito'", fontWeight:700, fontSize:"12px", cursor:"pointer", whiteSpace:"nowrap" }}>
-              {info.emoji} {info.label.split(" ")[0]}
-            </button>
-          ))}
-        </div>
         <div style={{ flex:1, overflowY:"auto", padding:"18px" }}>
           {dettatoFase === "menu" && (
             <div>
+              {/* Materia */}
+              <div style={{ display:"flex", gap:"8px", marginBottom:"14px" }}>
+                {Object.entries(MATERIE).map(([key, info]) => (
+                  <button key={key} onClick={() => { setMateria(key); setDettatoMeseChip(null); }} style={{ flex:1, padding:"8px 4px", borderRadius:"12px", background:materia===key?`${info.colore}22`:"rgba(255,255,255,0.04)", border:`2px solid ${materia===key?info.colore:"rgba(255,255,255,0.08)"}`, color:"white", fontFamily:"'Nunito', sans-serif", fontWeight:800, fontSize:"10px", cursor:"pointer" }}>
+                    <div style={{ fontSize:"16px", marginBottom:"2px" }}>{info.emoji}</div>{info.label.split(" ")[0]}
+                  </button>
+                ))}
+              </div>
               <div style={{ ...S.card, marginBottom:"14px", background:`${t.primario}0D`, border:`1px solid ${t.primario}33`, textAlign:"center" }}>
                 <p style={{ fontSize:"28px", marginBottom:"8px" }}>✍️</p>
                 <p style={{ fontWeight:900, fontSize:"16px", marginBottom:"6px" }}>Come vuoi fare il dettato?</p>
@@ -1930,7 +2214,7 @@ export default function Home() {
           {dettatoFase === "in_corso" && !dettatoLoading && (
             <div>
               <div style={{ ...S.card, marginBottom:"14px", background:"rgba(236,72,153,0.1)", border:"1px solid rgba(236,72,153,0.3)", textAlign:"center" }}>
-                <LexChar stato="talking" size={100} style={{ margin:"0 auto 12px" }} />
+                <LexChar stato="talking" size={130} style={{ margin:"0 auto 12px" }} />
                 <p style={{ fontWeight:900, fontSize:"18px", marginBottom:"8px" }}>Lex sta leggendo...</p>
                 <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.5)", fontWeight:600 }}>Scrivi sul quaderno quello che senti!</p>
               </div>
@@ -2119,364 +2403,438 @@ export default function Home() {
 
 
   if (screen === "estate") {
-    const est = COMPITI_ESTIVI[figlioAttivo.classe];
-    if (!est) return <div style={{ ...S.app, ...S.center }}><p>Dati non disponibili</p></div>;
-    const matEst = est.materie[materia] || est.materie["matematica"];
-    const classeProgr = PROGRAMMA[figlioAttivo.classe];
-    const mesiNomi = ["Settembre","Ottobre","Novembre","Dicembre","Gennaio","Febbraio","Marzo","Aprile","Maggio"];
-    const mioId = figlioAttivo.id;
-    const totaleArgomenti = classeProgr ? Object.values(classeProgr.materie).reduce((acc, mesi) => acc + mesi.slice(0,9).reduce((a, m) => a + (m.temi?.length || 0), 0), 0) : 0;
-    const completatiCount = ripassoCompletati.filter(k => k.startsWith(mioId + "_")).length;
-    const percProgresso = totaleArgomenti > 0 ? Math.round(completatiCount / totaleArgomenti * 100) : 0;
-
     return (
       <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
         <Head><title>Lexyo — Estate</title></Head>
-        <div style={{ ...S.hdr, borderBottomColor:`${t.secondario}44` }}>
+        <div style={{ ...S.hdr, borderBottomColor:"rgba(0,240,144,0.3)" }}>
           <button onClick={() => goScreen("home")} style={S.back}>←</button>
-          <div style={{ width:"44px", height:"44px", borderRadius:"14px", background:t.gradiente, boxShadow:`0 4px 16px ${t.glow}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", flexShrink:0 }}>{est.emoji}</div>
-          <div><p style={{ fontWeight:900, fontSize:"15px" }}>☀️ Estate con Lex</p><p style={{ fontSize:"11px", color:t.primario, fontWeight:700 }}>🌞 Stelle doppie in estate!</p></div>
+          <div style={{ width:"44px", height:"44px", borderRadius:"14px", background:"linear-gradient(145deg,#00F090,#00CC70,#00A855)", boxShadow:"0 4px 16px rgba(0,200,100,0.3)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", flexShrink:0 }}>🌊</div>
+          <div><p style={{ fontWeight:900, fontSize:"15px" }}>☀️ Estate con Lex</p><p style={{ fontSize:"11px", color:"#00F090", fontWeight:700 }}>🌞 Stelle doppie in estate!</p></div>
+        </div>
+        <div style={{ flex:1, overflowY:"auto", padding:"20px 16px 100px" }}>
+          {/* Hero */}
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", marginBottom:"28px", paddingTop:"8px" }}>
+            <LexChar stato="happy" size={100} style={{ marginBottom:"12px" }} />
+            <p style={{ fontSize:"20px", fontWeight:900, textAlign:"center" }}>🌞 Stelle doppie in estate!</p>
+            <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.5)", fontWeight:600, textAlign:"center", marginTop:"4px" }}>Scegli cosa fare oggi</p>
+          </div>
+          {/* Card 1 — Compiti Estivi */}
+          <button className="hcard" onClick={() => goScreen("compiti_estivi")} style={{ width:"100%", padding:"24px 20px", borderRadius:"22px", background:"linear-gradient(145deg,#00F090,#00CC70,#00A855)", boxShadow:"0 6px 20px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", textAlign:"left", cursor:"pointer", "--card-border":"linear-gradient(135deg,#00BFA5,#007A3D)", display:"block", marginBottom:"14px" }}>
+            <div className="card-shine" /><div className="card-depth" />
+            <div className="card-content" style={{ display:"flex", alignItems:"center", gap:"16px" }}>
+              <span style={{ fontSize:"42px", flexShrink:0 }}>📋</span>
+              <div>
+                <p style={{ fontSize:"17px", fontWeight:900, color:"white" }}>Compiti Estivi</p>
+                <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.8)", fontWeight:600, marginTop:"4px" }}>Lista compiti, foto spiegazioni e studio</p>
+              </div>
+            </div>
+          </button>
+          {/* Card 2 — Ripasso Programma Scolastico */}
+          <button className="hcard" onClick={() => goScreen("ripasso_home")} style={{ width:"100%", padding:"24px 20px", borderRadius:"22px", background:"linear-gradient(145deg,#a855f7,#7c3aed,#6d28d9)", boxShadow:"0 6px 20px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", textAlign:"left", cursor:"pointer", "--card-border":"linear-gradient(135deg,#6d28d9,#4c1d95)", display:"block" }}>
+            <div className="card-shine" /><div className="card-depth" />
+            <div className="card-content" style={{ display:"flex", alignItems:"center", gap:"16px" }}>
+              <span style={{ fontSize:"42px", flexShrink:0 }}>🏆</span>
+              <div>
+                <p style={{ fontSize:"17px", fontWeight:900, color:"white" }}>Ripasso Programma Scolastico</p>
+                <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.8)", fontWeight:600, marginTop:"4px" }}>Ripassa tutto il programma scolastico con Lex</p>
+                <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.6)", fontWeight:600, marginTop:"5px" }}>10 domande per argomento · XP · Streak giornaliero</p>
+              </div>
+            </div>
+          </button>
+        </div>
+        <Nav />
+      </div>
+    );
+  }
+
+  if (screen === "compiti_estivi") {
+    return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <Head><title>Lexyo — Compiti Estivi</title></Head>
+        <div style={{ ...S.hdr, borderBottomColor:"rgba(0,240,144,0.3)" }}>
+          <button onClick={() => goScreen("estate")} style={S.back}>←</button>
+          <div style={{ width:"44px", height:"44px", borderRadius:"14px", background:"linear-gradient(145deg,#00F090,#00CC70,#00A855)", boxShadow:"0 4px 16px rgba(0,200,100,0.3)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", flexShrink:0 }}>📋</div>
+          <div><p style={{ fontWeight:900, fontSize:"15px" }}>Compiti Estivi</p><p style={{ fontSize:"11px", color:"#00F090", fontWeight:700 }}>🌞 Stelle doppie in estate!</p></div>
+        </div>
+        <div style={{ flex:1, overflowY:"auto", padding:"20px 16px 100px" }}>
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", marginBottom:"28px", paddingTop:"8px" }}>
+            <LexChar stato="happy" size={90} style={{ marginBottom:"12px" }} />
+            <p style={{ fontSize:"18px", fontWeight:900, textAlign:"center" }}>Cosa vuoi fare oggi?</p>
+            <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.5)", fontWeight:600, textAlign:"center", marginTop:"4px" }}>Scegli un&apos;area per iniziare</p>
+          </div>
+          <button className="hcard" onClick={() => goScreen("compiti_lista")} style={{ width:"100%", padding:"24px 20px", borderRadius:"22px", background:"linear-gradient(145deg,#00F090,#00CC70,#00A855)", boxShadow:"0 6px 20px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", textAlign:"left", cursor:"pointer", "--card-border":"linear-gradient(135deg,#00BFA5,#007A3D)", display:"block", marginBottom:"14px" }}>
+            <div className="card-shine" /><div className="card-depth" />
+            <div className="card-content" style={{ display:"flex", alignItems:"center", gap:"16px" }}>
+              <span style={{ fontSize:"42px", flexShrink:0 }}>📋</span>
+              <div>
+                <p style={{ fontSize:"17px", fontWeight:900, color:"white" }}>I Miei Compiti</p>
+                <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.8)", fontWeight:600, marginTop:"4px" }}>Gestisci la lista compiti estivi</p>
+              </div>
+            </div>
+          </button>
+          <button className="hcard" onClick={() => goScreen("compiti_studio")} style={{ width:"100%", padding:"24px 20px", borderRadius:"22px", background:"linear-gradient(145deg,#FFB300,#FF8C00,#FF6000)", boxShadow:"0 6px 20px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", textAlign:"left", cursor:"pointer", "--card-border":"linear-gradient(135deg,#FF3D00,#DD2200)", display:"block" }}>
+            <div className="card-shine" /><div className="card-depth" />
+            <div className="card-content" style={{ display:"flex", alignItems:"center", gap:"16px" }}>
+              <span style={{ fontSize:"42px", flexShrink:0 }}>📚</span>
+              <div>
+                <p style={{ fontSize:"17px", fontWeight:900, color:"white" }}>Studio Estivo</p>
+                <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.8)", fontWeight:600, marginTop:"4px" }}>Piano settimanale, letture e anteprima</p>
+              </div>
+            </div>
+          </button>
+        </div>
+        <Nav />
+      </div>
+    );
+  }
+
+  if (screen === "compiti_lista") {
+    const COLORI_M = { matematica:"#FFE500", italiano:"#FF70C8", scienze:"#00F090", storia:"#FF8533", geografia:"#29C9FF", altro:"#E866FF" };
+    const EMOJI_M = { matematica:"🔢", italiano:"📖", scienze:"🔬", storia:"📜", geografia:"🌍", altro:"✏️" };
+    const LABEL_M = { matematica:"Matematica", italiano:"Italiano", scienze:"Scienze", storia:"Storia", geografia:"Geografia", altro:"Altro" };
+    const daMFare = compitiEstivi.filter(c => !c.completato);
+    const completati = compitiEstivi.filter(c => c.completato);
+    const perc = compitiEstivi.length > 0 ? Math.round(completati.length / compitiEstivi.length * 100) : 0;
+    const gruppiDaFare = daMFare.reduce((acc, c) => { const k = c.materia || "altro"; if (!acc[k]) acc[k] = []; acc[k].push(c); return acc; }, {});
+
+    return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <Head><title>Lexyo — I Miei Compiti</title></Head>
+        <style>{`
+          @keyframes compitoOk{0%{transform:scale(1)}30%{transform:scale(1.06)}60%{transform:scale(0.97)}100%{transform:scale(1)}}
+          @keyframes confettiPop{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-40px) scale(0.5);opacity:0}}
+        `}</style>
+        <div style={{ ...S.hdr, borderBottomColor:"rgba(0,240,144,0.3)" }}>
+          <button onClick={() => goScreen("compiti_estivi")} style={S.back}>←</button>
+          <div style={{ width:"44px", height:"44px", borderRadius:"14px", background:"linear-gradient(145deg,#00F090,#00CC70,#00A855)", boxShadow:"0 4px 16px rgba(0,200,100,0.3)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", flexShrink:0 }}>📋</div>
+          <div><p style={{ fontWeight:900, fontSize:"15px" }}>I Miei Compiti</p><p style={{ fontSize:"11px", color:"#00F090", fontWeight:700 }}>🌞 Stelle doppie in estate!</p></div>
         </div>
 
-        {/* Tab principali */}
-        <div style={{ display:"flex", borderBottom:"1px solid rgba(255,255,255,0.1)", flexShrink:0 }}>
-          {[["miei_compiti","📋 Compiti"],["compiti","📚 Studio"],["ripasso_anno","🔄 Ripasso"]].map(([id, label]) => (
-            <button key={id} onClick={() => { setEstaSezione(id); if (id === "miei_compiti") { setFotoCompitoFase("idle"); setFotoCompitoRisposta(null); caricaCompitiEstivi(figlioAttivo?.id); } }} style={{ flex:1, padding:"13px 4px", background:estaSezione===id?"rgba(0,240,144,0.1)":"transparent", border:"none", borderBottom:estaSezione===id?"2px solid #00F090":"2px solid transparent", color:estaSezione===id?"#00F090":"rgba(255,255,255,0.4)", fontFamily:"'Nunito'", fontWeight:800, fontSize:"12px", cursor:"pointer", whiteSpace:"nowrap" }}>
-              {label}
+        {/* Header progresso */}
+        <div style={{ padding:"10px 18px 12px", background:"rgba(0,240,144,0.06)", borderBottom:"1px solid rgba(0,240,144,0.12)", flexShrink:0 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"5px" }}>
+            <p style={{ fontSize:"12px", fontWeight:800, color:"#00F090" }}>{daMFare.length} da fare · {completati.length} completati</p>
+            <p style={{ fontSize:"13px", fontWeight:900, color:"#00F090" }}>{perc}%</p>
+          </div>
+          <div style={{ height:"6px", background:"rgba(255,255,255,0.1)", borderRadius:"3px", overflow:"hidden" }}>
+            <div style={{ height:"100%", width:`${perc}%`, background:"linear-gradient(90deg,#00F090,#00A855)", borderRadius:"3px", transition:"width 0.5s ease" }} />
+          </div>
+        </div>
+
+        <div style={{ flex:1, overflowY:"auto", padding:"14px 16px 100px" }}>
+
+          {/* Selezione materia */}
+          <div style={{ marginBottom:"14px" }}>
+            <p style={{ fontSize:"10px", fontWeight:800, color:"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"8px" }}>Materia</p>
+            <div style={{ display:"flex", gap:"8px" }}>
+              {Object.entries(MATERIE).map(([key, info]) => (
+                <button key={key} onClick={() => setMateria(key)} style={{ flex:1, padding:"8px 4px", borderRadius:"12px", background:materia===key?`${info.colore}22`:"rgba(255,255,255,0.04)", border:`2px solid ${materia===key?info.colore:"rgba(255,255,255,0.08)"}`, color:"white", fontFamily:"'Nunito', sans-serif", fontWeight:800, fontSize:"10px", cursor:"pointer" }}>
+                  <div style={{ fontSize:"16px", marginBottom:"2px" }}>{info.emoji}</div>{info.label.split(" ")[0]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Card Fotografa compito */}
+          <label style={{ display:"block", cursor:"pointer", marginBottom:"12px" }}>
+            <div className="hcard" style={{ padding:"20px 22px", borderRadius:"22px", background:"linear-gradient(145deg,#00F090,#00CC70,#00A855)", "--card-border":"linear-gradient(135deg,#00BFA5,#007A3D)", display:"flex", alignItems:"center", gap:"18px" }}>
+              <div className="card-shine" /><div className="card-depth" />
+              <div className="card-content" style={{ display:"flex", alignItems:"center", gap:"18px", width:"100%" }}>
+                <span style={{ fontSize:"40px", flexShrink:0 }}>📸</span>
+                <div>
+                  <p style={{ fontSize:"17px", fontWeight:900, color:"white" }}>Fotografa il compito</p>
+                  <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.8)", fontWeight:600, marginTop:"3px" }}>Lex ti spiega passo per passo</p>
+                </div>
+              </div>
+            </div>
+            <input type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={e => { const f = e.target.files[0]; if (f) fotografaCompitoEstivo(f, "compito_estivo"); e.target.value=""; }} />
+          </label>
+
+          {/* Flow foto compito */}
+          {fotoCompitoFase === "analisi" && (
+            <div style={{ background:"rgba(0,240,144,0.07)", border:"1px solid rgba(0,240,144,0.25)", borderRadius:"18px", padding:"24px", textAlign:"center", marginBottom:"14px" }}>
+              <LexChar stato="thinking" size={70} style={{ margin:"0 auto 12px" }} />
+              <p style={{ fontWeight:800, fontSize:"15px" }}>Lex legge il compito…</p>
+              <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.4)", fontWeight:600, marginTop:"4px" }}>Sto preparando la spiegazione 📚</p>
+            </div>
+          )}
+          {fotoCompitoFase === "risposta" && fotoCompitoRisposta && (
+            <div style={{ background:"rgba(0,240,144,0.07)", border:"1px solid rgba(0,240,144,0.25)", borderRadius:"18px", padding:"18px", marginBottom:"14px" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"12px" }}>
+                <LexChar stato="happy" size={36} />
+                <p style={{ fontSize:"12px", fontWeight:800, color:"#00F090", textTransform:"uppercase", letterSpacing:"1px" }}>Lex spiega</p>
+              </div>
+              <p style={{ fontSize:"14px", lineHeight:1.75, color:"rgba(255,255,255,0.88)", fontWeight:600, whiteSpace:"pre-wrap" }}>{fotoCompitoRisposta}</p>
+              <div style={{ display:"flex", gap:"8px", marginTop:"16px" }}>
+                <button onClick={() => { addStelle(3); setCompitoCompletamentoAnim("foto"); setTimeout(() => setCompitoCompletamentoAnim(null), 1800); setFotoCompitoFase("idle"); }} style={{ flex:1, padding:"12px 8px", borderRadius:"14px", background:"linear-gradient(135deg,#00A855,#00F090)", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", cursor:"pointer" }}>
+                  ✅ Ho capito! +3 ⭐
+                </button>
+                <label style={{ flex:1, display:"block", cursor:"pointer" }}>
+                  <div style={{ padding:"12px 8px", borderRadius:"14px", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", textAlign:"center", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", color:"rgba(255,255,255,0.8)" }}>
+                    🤔 Più semplice
+                  </div>
+                  <input type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={e => { const f = e.target.files[0]; if (f) fotografaCompitoEstivo(f, "compito_estivo_semplice"); e.target.value=""; }} />
+                </label>
+              </div>
+              <button onClick={() => { setShowFormCompito(true); setNuovoCompito(prev => ({ ...prev, testo: fotoCompitoRisposta.split("\n")[0].slice(0,80) })); setFotoCompitoFase("idle"); }} style={{ width:"100%", marginTop:"8px", padding:"10px", borderRadius:"12px", background:"rgba(0,240,144,0.1)", border:"1px solid rgba(0,240,144,0.25)", color:"#00F090", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", cursor:"pointer" }}>
+                📋 Aggiungi alla lista compiti
+              </button>
+            </div>
+          )}
+
+          {/* Animazione completamento */}
+          {compitoCompletamentoAnim && (
+            <div style={{ position:"fixed", top:"30%", left:"50%", transform:"translateX(-50%)", zIndex:9999, pointerEvents:"none" }}>
+              {["🌟","⭐","✨","🎉","🌟"].map((e,i) => (
+                <span key={i} style={{ position:"absolute", left:`${(i-2)*28}px`, fontSize:"28px", animation:`confettiPop 1.4s ease ${i*0.1}s forwards` }}>{e}</span>
+              ))}
+            </div>
+          )}
+
+          {/* Bottone aggiungi manuale */}
+          <button onClick={() => setShowFormCompito(!showFormCompito)} style={{ width:"100%", padding:"14px", borderRadius:"16px", background:"rgba(255,255,255,0.05)", border:`2px dashed ${showFormCompito?"rgba(0,240,144,0.5)":"rgba(255,255,255,0.15)"}`, color:showFormCompito?"#00F090":"rgba(255,255,255,0.6)", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer", marginBottom:"12px", display:"flex", alignItems:"center", justifyContent:"center", gap:"8px" }}>
+            {showFormCompito ? "✕ Annulla" : "+ Aggiungi compito manualmente"}
+          </button>
+
+          {/* Form aggiungi compito */}
+          {showFormCompito && (
+            <div className="vfade" style={{ background:"rgba(0,240,144,0.06)", border:"1px solid rgba(0,240,144,0.2)", borderRadius:"18px", padding:"18px", marginBottom:"14px" }}>
+              <p style={{ fontSize:"12px", fontWeight:800, color:"#00F090", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"12px" }}>Nuovo compito</p>
+              <textarea value={nuovoCompito.testo} onChange={e => setNuovoCompito(p => ({...p, testo: e.target.value}))} placeholder="Descrivi il compito…" rows={3} style={{ width:"100%", padding:"12px 14px", borderRadius:"12px", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.15)", color:"white", fontFamily:"'Nunito'", fontWeight:600, fontSize:"14px", resize:"none", boxSizing:"border-box", marginBottom:"10px", outline:"none" }} />
+              <div style={{ display:"flex", gap:"8px", marginBottom:"12px" }}>
+                <select value={nuovoCompito.materia} onChange={e => setNuovoCompito(p => ({...p, materia: e.target.value}))} style={{ flex:1, padding:"10px 12px", borderRadius:"12px", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", color:"white", fontFamily:"'Nunito'", fontWeight:700, fontSize:"13px", outline:"none", cursor:"pointer" }}>
+                  {Object.entries(LABEL_M).map(([k,v]) => <option key={k} value={k} style={{ background:"#1a1b3a", color:"white" }}>{EMOJI_M[k]} {v}</option>)}
+                </select>
+                <input type="date" value={nuovoCompito.scadenza} onChange={e => setNuovoCompito(p => ({...p, scadenza: e.target.value}))} style={{ flex:1, padding:"10px 12px", borderRadius:"12px", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", color:"white", fontFamily:"'Nunito'", fontWeight:600, fontSize:"13px", outline:"none" }} />
+              </div>
+              <button onClick={aggiungiCompito} disabled={!nuovoCompito.testo.trim()} style={{ width:"100%", padding:"13px", borderRadius:"12px", background: nuovoCompito.testo.trim() ? "linear-gradient(135deg,#00A855,#00F090)" : "rgba(255,255,255,0.08)", border:"none", color: nuovoCompito.testo.trim() ? "white" : "rgba(255,255,255,0.3)", fontFamily:"'Nunito'", fontWeight:900, fontSize:"15px", cursor: nuovoCompito.testo.trim() ? "pointer" : "not-allowed" }}>
+                Aggiungi →
+              </button>
+            </div>
+          )}
+
+          {/* Lista compiti da fare */}
+          {compitiLoading ? (
+            <p style={{ textAlign:"center", color:"rgba(255,255,255,0.4)", fontSize:"13px", padding:"20px 0" }}>Caricamento…</p>
+          ) : daMFare.length === 0 && completati.length === 0 ? (
+            <div style={{ textAlign:"center", padding:"30px 0" }}>
+              <p style={{ fontSize:"36px", marginBottom:"12px" }}>🌴</p>
+              <p style={{ fontSize:"15px", fontWeight:800, marginBottom:"6px" }}>Nessun compito ancora!</p>
+              <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.4)", fontWeight:600 }}>Fotografa o aggiungi i compiti estivi assegnati dalla tua scuola</p>
+            </div>
+          ) : (
+            <>
+              {Object.entries(gruppiDaFare).map(([matKey, lista]) => (
+                <div key={matKey} style={{ marginBottom:"16px" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"8px", padding:"6px 10px", borderRadius:"10px", background:`${COLORI_M[matKey] || "#E866FF"}18`, borderLeft:`3px solid ${COLORI_M[matKey] || "#E866FF"}` }}>
+                    <span style={{ fontSize:"16px" }}>{EMOJI_M[matKey] || "✏️"}</span>
+                    <p style={{ fontSize:"12px", fontWeight:900, color:COLORI_M[matKey] || "#E866FF", textTransform:"uppercase", letterSpacing:"1px" }}>{LABEL_M[matKey] || "Altro"}</p>
+                    <span style={{ marginLeft:"auto", fontSize:"11px", fontWeight:800, color:`${COLORI_M[matKey] || "#E866FF"}AA` }}>{lista.length}</span>
+                  </div>
+                  {lista.map(c => (
+                    <div key={c.id} style={{ display:"flex", alignItems:"flex-start", gap:"12px", padding:"12px 14px", borderRadius:"14px", background:compitoCompletamentoAnim===c.id?"rgba(0,240,144,0.15)":"rgba(255,255,255,0.04)", border:`1px solid ${compitoCompletamentoAnim===c.id?"rgba(0,240,144,0.4)":"rgba(255,255,255,0.08)"}`, marginBottom:"6px", transition:"all 0.3s", animation:compitoCompletamentoAnim===c.id?"compitoOk 0.5s ease":"none" }}>
+                      <button onClick={() => toggleCompito(c)} style={{ width:"24px", height:"24px", borderRadius:"50%", border:`2px solid ${COLORI_M[matKey] || "#E866FF"}`, background:"transparent", cursor:"pointer", flexShrink:0, marginTop:"1px", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                        {c.completato && <span style={{ fontSize:"13px", color:COLORI_M[matKey] || "#E866FF" }}>✓</span>}
+                      </button>
+                      <div style={{ flex:1 }}>
+                        <p style={{ fontSize:"14px", fontWeight:700, lineHeight:1.5, textDecoration:c.completato?"line-through":"none", opacity:c.completato?0.5:1 }}>{c.testo}</p>
+                        {c.scadenza && <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.35)", fontWeight:600, marginTop:"3px" }}>📅 {new Date(c.scadenza+"T00:00").toLocaleDateString("it-IT",{day:"numeric",month:"long"})}</p>}
+                      </div>
+                      <button onClick={() => eliminaCompito(c.id)} style={{ background:"rgba(239,68,68,0.1)", border:"none", borderRadius:"8px", padding:"4px 8px", color:"rgba(239,68,68,0.6)", fontSize:"14px", cursor:"pointer", flexShrink:0 }}>🗑</button>
+                    </div>
+                  ))}
+                </div>
+              ))}
+
+              {/* Completati */}
+              {completati.length > 0 && (
+                <div style={{ marginTop:"20px" }}>
+                  <p style={{ fontSize:"12px", fontWeight:800, color:"rgba(255,255,255,0.3)", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px" }}>✅ Completati ({completati.length})</p>
+                  {completati.map(c => (
+                    <div key={c.id} style={{ display:"flex", alignItems:"flex-start", gap:"12px", padding:"10px 14px", borderRadius:"14px", background:"rgba(0,240,144,0.06)", border:"1px solid rgba(0,240,144,0.12)", marginBottom:"6px", opacity:0.65 }}>
+                      <button onClick={() => toggleCompito(c)} style={{ width:"24px", height:"24px", borderRadius:"50%", border:"2px solid #00F090", background:"rgba(0,240,144,0.2)", cursor:"pointer", flexShrink:0, marginTop:"1px", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                        <span style={{ fontSize:"13px", color:"#00F090" }}>✓</span>
+                      </button>
+                      <div style={{ flex:1 }}>
+                        <p style={{ fontSize:"13px", fontWeight:600, textDecoration:"line-through", lineHeight:1.5 }}>{c.testo}</p>
+                      </div>
+                      <button onClick={() => eliminaCompito(c.id)} style={{ background:"rgba(239,68,68,0.1)", border:"none", borderRadius:"8px", padding:"4px 8px", color:"rgba(239,68,68,0.4)", fontSize:"14px", cursor:"pointer", flexShrink:0 }}>🗑</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+        <Nav />
+      </div>
+    );
+  }
+
+  if (screen === "compiti_studio") {
+    const est = COMPITI_ESTIVI[figlioAttivo.classe];
+    const matEst = est ? (est.materie[materia] || est.materie["matematica"]) : null;
+    const mesiNomiCorti = ["Set","Ott","Nov","Dic","Gen","Feb","Mar","Apr","Mag"];
+    const programmaMateria = PROGRAMMA[figlioAttivo?.classe]?.materie?.[materia] || [];
+    const settimaneConf = [[0,1,2],[2,3,4],[4,5,6],[6,7,8]];
+    const labelSettimane = ["Settimana 1 · Set–Nov","Settimana 2 · Nov–Gen","Settimana 3 · Gen–Mar","Settimana 4 · Mar–Mag"];
+    const getTemiSettimana = (swIdx) =>
+      settimaneConf[swIdx].flatMap(m => programmaMateria[m]?.temi || []).slice(0, 8);
+    const GIORNI = ["Lunedì","Martedì","Mercoledì","Giovedì","Venerdì"];
+    const ATTIVITA_CYCLE = [
+      { tipo:"quiz",      emoji:"🧠", label:"Quiz a Risposta Multipla",        tempo:"15 min", color:"#6366f1", desc:"5 domande su questo argomento per testare la tua preparazione" },
+      { tipo:"esercizi",  emoji:"✏️", label:"Esercizi sul Quaderno",             tempo:"20 min", color:"#f59e0b", desc:"Risolvi gli esercizi indicati — scrivi tutto sul quaderno" },
+      { tipo:"domande",   emoji:"💬", label:"Domande Aperte con Lex",            tempo:"15 min", color:"#ec4899", desc:"Chiedi a Lex di spiegarti i concetti che non hai capito" },
+      { tipo:"quaderno",  emoji:"📓", label:"Scheda Riassuntiva sul Quaderno",   tempo:"25 min", color:"#10b981", desc:"Fai un riassunto scritto e poi fotografa per la correzione" },
+      { tipo:"riepilogo", emoji:"⭐", label:"Quiz di Riepilogo Settimanale",     tempo:"10 min", color:"#a855f7", desc:"Domande che coprono tutti gli argomenti della settimana" },
+    ];
+    const getPianoGiornaliero = (swIdx) => {
+      const temi = getTemiSettimana(swIdx);
+      if (temi.length === 0) return [];
+      return GIORNI.map((giorno, gi) => ({
+        giorno,
+        tema: temi[gi % temi.length],
+        ...ATTIVITA_CYCLE[gi % ATTIVITA_CYCLE.length],
+      }));
+    };
+
+    return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <Head><title>Lexyo — Studio Estivo</title></Head>
+        <div style={{ ...S.hdr, borderBottomColor:"rgba(255,140,0,0.3)" }}>
+          <button onClick={() => goScreen("compiti_estivi")} style={S.back}>←</button>
+          <div style={{ width:"44px", height:"44px", borderRadius:"14px", background:"linear-gradient(145deg,#FFB300,#FF8C00,#FF6000)", boxShadow:"0 4px 16px rgba(255,140,0,0.3)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", flexShrink:0 }}>📚</div>
+          <div><p style={{ fontWeight:900, fontSize:"15px" }}>Studio Estivo</p><p style={{ fontSize:"11px", color:"#FF8C00", fontWeight:700 }}>🌞 Stelle doppie in estate!</p></div>
+        </div>
+
+        {/* Selezione materia fissa */}
+        <div style={{ display:"flex", gap:"8px", padding:"10px 18px", borderBottom:"1px solid rgba(255,255,255,0.06)", flexShrink:0 }}>
+          {Object.entries(MATERIE).map(([key, info]) => (
+            <button key={key} onClick={() => { setMateria(key); setCompitoPianoSettimana(null); }} style={{ flex:1, padding:"8px 4px", borderRadius:"12px", background:materia===key?`${info.colore}22`:"rgba(255,255,255,0.04)", border:`2px solid ${materia===key?info.colore:"rgba(255,255,255,0.08)"}`, color:"white", fontFamily:"'Nunito', sans-serif", fontWeight:800, fontSize:"10px", cursor:"pointer" }}>
+              <div style={{ fontSize:"16px", marginBottom:"2px" }}>{info.emoji}</div>{info.label.split(" ")[0]}
             </button>
           ))}
         </div>
 
-        {/* ── SEZIONE MIEI COMPITI ── */}
-        {estaSezione === "miei_compiti" && (() => {
-          const COLORI_M = { matematica:"#FFE500", italiano:"#FF70C8", scienze:"#00F090", storia:"#FF8533", geografia:"#29C9FF", altro:"#E866FF" };
-          const EMOJI_M = { matematica:"🔢", italiano:"📖", scienze:"🔬", storia:"📜", geografia:"🌍", altro:"✏️" };
-          const LABEL_M = { matematica:"Matematica", italiano:"Italiano", scienze:"Scienze", storia:"Storia", geografia:"Geografia", altro:"Altro" };
-          const daMFare = compitiEstivi.filter(c => !c.completato);
-          const completati = compitiEstivi.filter(c => c.completato);
-          const perc = compitiEstivi.length > 0 ? Math.round(completati.length / compitiEstivi.length * 100) : 0;
-          const gruppiDaFare = daMFare.reduce((acc, c) => { const k = c.materia || "altro"; if (!acc[k]) acc[k] = []; acc[k].push(c); return acc; }, {});
+        {/* Tab selector */}
+        <div style={{ display:"flex", borderBottom:"1px solid rgba(255,255,255,0.08)", flexShrink:0 }}>
+          {[["piano","📅 Piano"],["anteprima","🔭 Anteprima"]].map(([tid,l]) => (
+            <button key={tid} onClick={() => setEstaTab(tid)} style={{ flex:1, padding:"10px 2px", background:estaTab===tid?`${mat.colore}15`:"transparent", border:"none", borderBottom:estaTab===tid?`2px solid ${mat.colore}`:"2px solid transparent", color:estaTab===tid?"white":"rgba(255,255,255,0.4)", fontFamily:"'Nunito'", fontWeight:800, fontSize:"11px", cursor:"pointer", whiteSpace:"nowrap" }}>
+              {l}
+            </button>
+          ))}
+        </div>
 
-          return (<>
-            <style>{`
-              @keyframes compitoOk{0%{transform:scale(1)}30%{transform:scale(1.06)}60%{transform:scale(0.97)}100%{transform:scale(1)}}
-              @keyframes confettiPop{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-40px) scale(0.5);opacity:0}}
-            `}</style>
+        <div style={{ flex:1, overflowY:"auto", padding:"14px 18px 100px" }}>
 
-            {/* Header progresso */}
-            <div style={{ padding:"10px 18px 12px", background:"rgba(0,240,144,0.06)", borderBottom:"1px solid rgba(0,240,144,0.12)", flexShrink:0 }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"5px" }}>
-                <p style={{ fontSize:"12px", fontWeight:800, color:"#00F090" }}>{daMFare.length} da fare · {completati.length} completati</p>
-                <p style={{ fontSize:"13px", fontWeight:900, color:"#00F090" }}>{perc}%</p>
-              </div>
-              <div style={{ height:"6px", background:"rgba(255,255,255,0.1)", borderRadius:"3px", overflow:"hidden" }}>
-                <div style={{ height:"100%", width:`${perc}%`, background:"linear-gradient(90deg,#00F090,#00A855)", borderRadius:"3px", transition:"width 0.5s ease" }} />
-              </div>
-            </div>
-
-            <div style={{ flex:1, overflowY:"auto", padding:"14px 16px 100px" }}>
-
-              {/* Card Fotografa compito */}
-              <label style={{ display:"block", cursor:"pointer", marginBottom:"12px" }}>
-                <div className="hcard" style={{ padding:"20px 22px", borderRadius:"22px", background:"linear-gradient(145deg,#00F090,#00CC70,#00A855)", "--card-border":"linear-gradient(135deg,#00BFA5,#007A3D)", display:"flex", alignItems:"center", gap:"18px" }}>
-                  <div className="card-shine" /><div className="card-depth" />
-                  <div className="card-content" style={{ display:"flex", alignItems:"center", gap:"18px", width:"100%" }}>
-                    <span style={{ fontSize:"40px", flexShrink:0 }}>📸</span>
-                    <div>
-                      <p style={{ fontSize:"17px", fontWeight:900, color:"white" }}>Fotografa il compito</p>
-                      <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.8)", fontWeight:600, marginTop:"3px" }}>Lex ti spiega passo per passo</p>
-                    </div>
-                  </div>
-                </div>
-                <input type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={e => { const f = e.target.files[0]; if (f) fotografaCompitoEstivo(f, "compito_estivo"); e.target.value=""; }} />
-              </label>
-
-              {/* Flow foto compito */}
-              {fotoCompitoFase === "analisi" && (
-                <div style={{ background:"rgba(0,240,144,0.07)", border:"1px solid rgba(0,240,144,0.25)", borderRadius:"18px", padding:"24px", textAlign:"center", marginBottom:"14px" }}>
-                  <LexChar stato="thinking" size={70} style={{ margin:"0 auto 12px" }} />
-                  <p style={{ fontWeight:800, fontSize:"15px" }}>Lex legge il compito…</p>
-                  <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.4)", fontWeight:600, marginTop:"4px" }}>Sto preparando la spiegazione 📚</p>
-                </div>
-              )}
-              {fotoCompitoFase === "risposta" && fotoCompitoRisposta && (
-                <div style={{ background:"rgba(0,240,144,0.07)", border:"1px solid rgba(0,240,144,0.25)", borderRadius:"18px", padding:"18px", marginBottom:"14px" }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"12px" }}>
-                    <LexChar stato="happy" size={36} />
-                    <p style={{ fontSize:"12px", fontWeight:800, color:"#00F090", textTransform:"uppercase", letterSpacing:"1px" }}>Lex spiega</p>
-                  </div>
-                  <p style={{ fontSize:"14px", lineHeight:1.75, color:"rgba(255,255,255,0.88)", fontWeight:600, whiteSpace:"pre-wrap" }}>{fotoCompitoRisposta}</p>
-                  <div style={{ display:"flex", gap:"8px", marginTop:"16px" }}>
-                    <button onClick={() => { addStelle(3); setCompitoCompletamentoAnim("foto"); setTimeout(() => setCompitoCompletamentoAnim(null), 1800); setFotoCompitoFase("idle"); }} style={{ flex:1, padding:"12px 8px", borderRadius:"14px", background:"linear-gradient(135deg,#00A855,#00F090)", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", cursor:"pointer" }}>
-                      ✅ Ho capito! +3 ⭐
-                    </button>
-                    <label style={{ flex:1, display:"block", cursor:"pointer" }}>
-                      <div style={{ padding:"12px 8px", borderRadius:"14px", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", textAlign:"center", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", color:"rgba(255,255,255,0.8)" }}>
-                        🤔 Più semplice
-                      </div>
-                      <input type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={e => { const f = e.target.files[0]; if (f) fotografaCompitoEstivo(f, "compito_estivo_semplice"); e.target.value=""; }} />
-                    </label>
-                  </div>
-                  <button onClick={() => { setShowFormCompito(true); setNuovoCompito(prev => ({ ...prev, testo: fotoCompitoRisposta.split("\n")[0].slice(0,80) })); setFotoCompitoFase("idle"); }} style={{ width:"100%", marginTop:"8px", padding:"10px", borderRadius:"12px", background:"rgba(0,240,144,0.1)", border:"1px solid rgba(0,240,144,0.25)", color:"#00F090", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", cursor:"pointer" }}>
-                    📋 Aggiungi alla lista compiti
-                  </button>
-                </div>
-              )}
-
-              {/* Animazione completamento */}
-              {compitoCompletamentoAnim && (
-                <div style={{ position:"fixed", top:"30%", left:"50%", transform:"translateX(-50%)", zIndex:9999, pointerEvents:"none" }}>
-                  {["🌟","⭐","✨","🎉","🌟"].map((e,i) => (
-                    <span key={i} style={{ position:"absolute", left:`${(i-2)*28}px`, fontSize:"28px", animation:`confettiPop 1.4s ease ${i*0.1}s forwards` }}>{e}</span>
-                  ))}
-                </div>
-              )}
-
-              {/* Bottone aggiungi manuale */}
-              <button onClick={() => setShowFormCompito(!showFormCompito)} style={{ width:"100%", padding:"14px", borderRadius:"16px", background:"rgba(255,255,255,0.05)", border:`2px dashed ${showFormCompito?"rgba(0,240,144,0.5)":"rgba(255,255,255,0.15)"}`, color:showFormCompito?"#00F090":"rgba(255,255,255,0.6)", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer", marginBottom:"12px", display:"flex", alignItems:"center", justifyContent:"center", gap:"8px" }}>
-                {showFormCompito ? "✕ Annulla" : "+ Aggiungi compito manualmente"}
-              </button>
-
-              {/* Form aggiungi compito */}
-              {showFormCompito && (
-                <div className="vfade" style={{ background:"rgba(0,240,144,0.06)", border:"1px solid rgba(0,240,144,0.2)", borderRadius:"18px", padding:"18px", marginBottom:"14px" }}>
-                  <p style={{ fontSize:"12px", fontWeight:800, color:"#00F090", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"12px" }}>Nuovo compito</p>
-                  <textarea value={nuovoCompito.testo} onChange={e => setNuovoCompito(p => ({...p, testo: e.target.value}))} placeholder="Descrivi il compito…" rows={3} style={{ width:"100%", padding:"12px 14px", borderRadius:"12px", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.15)", color:"white", fontFamily:"'Nunito'", fontWeight:600, fontSize:"14px", resize:"none", boxSizing:"border-box", marginBottom:"10px", outline:"none" }} />
-                  <div style={{ display:"flex", gap:"8px", marginBottom:"12px" }}>
-                    <select value={nuovoCompito.materia} onChange={e => setNuovoCompito(p => ({...p, materia: e.target.value}))} style={{ flex:1, padding:"10px 12px", borderRadius:"12px", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", color:"white", fontFamily:"'Nunito'", fontWeight:700, fontSize:"13px", outline:"none", cursor:"pointer" }}>
-                      {Object.entries(LABEL_M).map(([k,v]) => <option key={k} value={k} style={{ background:"#1a1b3a", color:"white" }}>{EMOJI_M[k]} {v}</option>)}
-                    </select>
-                    <input type="date" value={nuovoCompito.scadenza} onChange={e => setNuovoCompito(p => ({...p, scadenza: e.target.value}))} style={{ flex:1, padding:"10px 12px", borderRadius:"12px", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", color:"white", fontFamily:"'Nunito'", fontWeight:600, fontSize:"13px", outline:"none" }} />
-                  </div>
-                  <button onClick={aggiungiCompito} disabled={!nuovoCompito.testo.trim()} style={{ width:"100%", padding:"13px", borderRadius:"12px", background: nuovoCompito.testo.trim() ? "linear-gradient(135deg,#00A855,#00F090)" : "rgba(255,255,255,0.08)", border:"none", color: nuovoCompito.testo.trim() ? "white" : "rgba(255,255,255,0.3)", fontFamily:"'Nunito'", fontWeight:900, fontSize:"15px", cursor: nuovoCompito.testo.trim() ? "pointer" : "not-allowed" }}>
-                    Aggiungi →
-                  </button>
-                </div>
-              )}
-
-              {/* Lista compiti da fare */}
-              {compitiLoading ? (
-                <p style={{ textAlign:"center", color:"rgba(255,255,255,0.4)", fontSize:"13px", padding:"20px 0" }}>Caricamento…</p>
-              ) : daMFare.length === 0 && completati.length === 0 ? (
-                <div style={{ textAlign:"center", padding:"30px 0" }}>
-                  <p style={{ fontSize:"36px", marginBottom:"12px" }}>🌴</p>
-                  <p style={{ fontSize:"15px", fontWeight:800, marginBottom:"6px" }}>Nessun compito ancora!</p>
-                  <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.4)", fontWeight:600 }}>Fotografa o aggiungi i compiti estivi assegnati dalla tua scuola</p>
+          {/* ── TAB PIANO ── */}
+          {estaTab === "piano" && (
+            <div>
+              {compitoPianoSettimana === null ? (
+                <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
+                  {[0,1,2,3].map(swIdx => {
+                    const temi = getTemiSettimana(swIdx);
+                    const hasTemi = temi.length > 0;
+                    return (
+                      <button key={swIdx} onClick={() => hasTemi && setCompitoPianoSettimana(swIdx)}
+                        disabled={!hasTemi}
+                        style={{ padding:"18px", borderRadius:"18px", background:hasTemi?`${mat.colore}15`:"rgba(255,255,255,0.03)", border:`2px solid ${hasTemi?mat.colore+"44":"rgba(255,255,255,0.06)"}`, color:"white", fontFamily:"'Nunito'", textAlign:"left", cursor:hasTemi?"pointer":"not-allowed", opacity:hasTemi?1:0.4 }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                          <div>
+                            <p style={{ fontSize:"13px", fontWeight:900, color:hasTemi?mat.colore:"rgba(255,255,255,0.5)" }}>{labelSettimane[swIdx]}</p>
+                            <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.5)", marginTop:"4px", fontWeight:600 }}>{hasTemi ? `${Math.min(temi.length,5)} argomenti · 5 giorni` : "Nessun argomento disponibile"}</p>
+                          </div>
+                          {hasTemi && <span style={{ fontSize:"20px", color:mat.colore }}>→</span>}
+                        </div>
+                        {hasTemi && (
+                          <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginTop:"10px" }}>
+                            {temi.slice(0,3).map(tema2 => <span key={tema2} style={{ background:`${mat.colore}20`, border:`1px solid ${mat.colore}33`, borderRadius:"8px", padding:"2px 8px", fontSize:"10px", fontWeight:700 }}>{tema2}</span>)}
+                            {temi.length > 3 && <span style={{ fontSize:"10px", color:"rgba(255,255,255,0.4)", fontWeight:700 }}>+{temi.length-3}</span>}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               ) : (
-                <>
-                  {Object.entries(gruppiDaFare).map(([mat, lista]) => (
-                    <div key={mat} style={{ marginBottom:"16px" }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"8px", padding:"6px 10px", borderRadius:"10px", background:`${COLORI_M[mat] || "#E866FF"}18`, borderLeft:`3px solid ${COLORI_M[mat] || "#E866FF"}` }}>
-                        <span style={{ fontSize:"16px" }}>{EMOJI_M[mat] || "✏️"}</span>
-                        <p style={{ fontSize:"12px", fontWeight:900, color:COLORI_M[mat] || "#E866FF", textTransform:"uppercase", letterSpacing:"1px" }}>{LABEL_M[mat] || "Altro"}</p>
-                        <span style={{ marginLeft:"auto", fontSize:"11px", fontWeight:800, color:`${COLORI_M[mat] || "#E866FF"}AA` }}>{lista.length}</span>
+                <div>
+                  <button onClick={() => setCompitoPianoSettimana(null)} style={{ ...S.back, marginBottom:"14px", width:"auto", paddingLeft:"12px", paddingRight:"12px", fontSize:"13px" }}>← Tutte le settimane</button>
+                  <div style={{ ...S.card, background:`${mat.colore}10`, border:`1px solid ${mat.colore}33`, marginBottom:"14px" }}>
+                    <p style={{ fontSize:"14px", fontWeight:900, color:mat.colore }}>{mat.emoji} {mat.label} · {labelSettimane[compitoPianoSettimana]}</p>
+                    <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.5)", marginTop:"4px", fontWeight:600 }}>15-25 minuti al giorno · 5 giorni</p>
+                  </div>
+                  {getPianoGiornaliero(compitoPianoSettimana).map((giorno, gi) => (
+                    <div key={gi} style={{ ...S.card, marginBottom:"12px", borderLeft:`4px solid ${giorno.color}` }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"8px" }}>
+                        <p style={{ fontSize:"13px", fontWeight:900 }}>{giorno.emoji} {giorno.giorno}</p>
+                        <span style={{ background:`${giorno.color}22`, border:`1px solid ${giorno.color}44`, borderRadius:"8px", padding:"2px 8px", fontSize:"10px", fontWeight:800, color:giorno.color }}>⏱ {giorno.tempo}</span>
                       </div>
-                      {lista.map(c => (
-                        <div key={c.id} style={{ display:"flex", alignItems:"flex-start", gap:"12px", padding:"12px 14px", borderRadius:"14px", background:compitoCompletamentoAnim===c.id?"rgba(0,240,144,0.15)":"rgba(255,255,255,0.04)", border:`1px solid ${compitoCompletamentoAnim===c.id?"rgba(0,240,144,0.4)":"rgba(255,255,255,0.08)"}`, marginBottom:"6px", transition:"all 0.3s", animation:compitoCompletamentoAnim===c.id?"compitoOk 0.5s ease":"none" }}>
-                          <button onClick={() => toggleCompito(c)} style={{ width:"24px", height:"24px", borderRadius:"50%", border:`2px solid ${COLORI_M[mat] || "#E866FF"}`, background:"transparent", cursor:"pointer", flexShrink:0, marginTop:"1px", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                            {c.completato && <span style={{ fontSize:"13px", color:COLORI_M[mat] || "#E866FF" }}>✓</span>}
+                      <p style={{ fontSize:"11px", fontWeight:800, color:giorno.color, textTransform:"uppercase", letterSpacing:"1px", marginBottom:"4px" }}>{giorno.label}</p>
+                      <p style={{ fontSize:"13px", fontWeight:700, marginBottom:"4px" }}>📌 {giorno.tema}</p>
+                      <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.5)", fontWeight:600, marginBottom:"12px" }}>{giorno.desc}</p>
+                      <div style={{ display:"flex", gap:"10px" }}>
+                        {giorno.tipo === "quiz" || giorno.tipo === "riepilogo" ? (
+                          <button onClick={() => { setGiocaArgomento(giorno.tema); setQuizCaller("gioca"); setMcQuiz(null); setMcRisposte([]); setMcFine(false); setMcLoading(false); goScreen("quiz_mc"); }}
+                            className="hcard" style={{ flex:1, padding:"16px 12px", borderRadius:"16px", background:`linear-gradient(135deg, ${giorno.color}, ${giorno.color}bb)`, border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", cursor:"pointer", boxShadow:`0 4px 16px ${giorno.color}55`, textAlign:"center" }}>
+                            <div style={{ fontSize:"24px", marginBottom:"4px" }}>🧠</div>
+                            Inizia Quiz
                           </button>
-                          <div style={{ flex:1 }}>
-                            <p style={{ fontSize:"14px", fontWeight:700, lineHeight:1.5, textDecoration:c.completato?"line-through":"none", opacity:c.completato?0.5:1 }}>{c.testo}</p>
-                            {c.scadenza && <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.35)", fontWeight:600, marginTop:"3px" }}>📅 {new Date(c.scadenza+"T00:00").toLocaleDateString("it-IT",{day:"numeric",month:"long"})}</p>}
-                          </div>
-                          <button onClick={() => eliminaCompito(c.id)} style={{ background:"rgba(239,68,68,0.1)", border:"none", borderRadius:"8px", padding:"4px 8px", color:"rgba(239,68,68,0.6)", fontSize:"14px", cursor:"pointer", flexShrink:0 }}>🗑</button>
-                        </div>
-                      ))}
+                        ) : giorno.tipo === "quaderno" ? (
+                          <>
+                            <button onClick={() => apriChatConArgomento(giorno.tema, materia)} className="hcard" style={{ flex:1, padding:"16px 12px", borderRadius:"16px", background:`linear-gradient(135deg, ${giorno.color}, ${giorno.color}bb)`, border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", cursor:"pointer", boxShadow:`0 4px 16px ${giorno.color}55`, textAlign:"center" }}>
+                              <div style={{ fontSize:"24px", marginBottom:"4px" }}>💬</div>
+                              Chiedi a Lex
+                            </button>
+                            <label style={{ flex:1, display:"block", cursor:"pointer" }}>
+                              <div className="hcard" style={{ padding:"16px 12px", borderRadius:"16px", background:"linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.08))", border:"1px solid rgba(255,255,255,0.18)", textAlign:"center", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", color:"white", boxShadow:"0 4px 16px rgba(0,0,0,0.2)" }}>
+                                <div style={{ fontSize:"24px", marginBottom:"4px" }}>📷</div>
+                                Foto correzione
+                              </div>
+                              <input type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={e => { const f = e.target.files[0]; if(f) fotografaCompitoEstivo(f, "compito_estivo"); e.target.value=""; }} />
+                            </label>
+                          </>
+                        ) : (
+                          <button onClick={() => apriChatConArgomento(giorno.tema, materia)} className="hcard" style={{ flex:1, padding:"16px 12px", borderRadius:"16px", background:`linear-gradient(135deg, ${giorno.color}, ${giorno.color}bb)`, border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", cursor:"pointer", boxShadow:`0 4px 16px ${giorno.color}55`, textAlign:"center" }}>
+                            <div style={{ fontSize:"24px", marginBottom:"4px" }}>💬</div>
+                            Chiedi a Lex
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
-
-                  {/* Completati */}
-                  {completati.length > 0 && (
-                    <div style={{ marginTop:"20px" }}>
-                      <p style={{ fontSize:"12px", fontWeight:800, color:"rgba(255,255,255,0.3)", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px" }}>✅ Completati ({completati.length})</p>
-                      {completati.map(c => (
-                        <div key={c.id} style={{ display:"flex", alignItems:"flex-start", gap:"12px", padding:"10px 14px", borderRadius:"14px", background:"rgba(0,240,144,0.06)", border:"1px solid rgba(0,240,144,0.12)", marginBottom:"6px", opacity:0.65 }}>
-                          <button onClick={() => toggleCompito(c)} style={{ width:"24px", height:"24px", borderRadius:"50%", border:"2px solid #00F090", background:"rgba(0,240,144,0.2)", cursor:"pointer", flexShrink:0, marginTop:"1px", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                            <span style={{ fontSize:"13px", color:"#00F090" }}>✓</span>
-                          </button>
-                          <div style={{ flex:1 }}>
-                            <p style={{ fontSize:"13px", fontWeight:600, textDecoration:"line-through", lineHeight:1.5 }}>{c.testo}</p>
-                          </div>
-                          <button onClick={() => eliminaCompito(c.id)} style={{ background:"rgba(239,68,68,0.1)", border:"none", borderRadius:"8px", padding:"4px 8px", color:"rgba(239,68,68,0.4)", fontSize:"14px", cursor:"pointer", flexShrink:0 }}>🗑</button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
+                </div>
               )}
             </div>
-          </>);
-        })()}
+          )}
 
-        {/* ── SEZIONE COMPITI ── */}
-        {estaSezione === "compiti" && (<>
-          <div style={{ padding:"10px 18px", background:"rgba(245,158,11,0.08)", borderBottom:"1px solid rgba(245,158,11,0.15)", flexShrink:0 }}>
-            <p style={{ fontSize:"13px", color:"#fbbf24", fontWeight:700, textAlign:"center" }}>☀️ {est.slogan}</p>
-          </div>
-          <div style={{ display:"flex", borderBottom:"1px solid rgba(255,255,255,0.08)", background:"rgba(0,0,0,0.15)", flexShrink:0 }}>
-            {[["ripasso","📚 Ripasso"],["piano","📅 Piano"],["letture","📖 Letture"],["anteprima","🔭 Anteprima"]].map(([tid,l]) => (
-              <button key={tid} onClick={() => setEstaTab(tid)} style={{ flex:1, padding:"10px 2px", background:estaTab===tid?`${est.colore}15`:"transparent", border:"none", borderBottom:estaTab===tid?`2px solid ${est.colore}`:"2px solid transparent", color:estaTab===tid?"white":"rgba(255,255,255,0.4)", fontFamily:"'Nunito'", fontWeight:800, fontSize:"11px", cursor:"pointer", whiteSpace:"nowrap" }}>
-                {l}
-              </button>
-            ))}
-          </div>
-          <div style={{ display:"flex", gap:"8px", padding:"10px 18px", borderBottom:"1px solid rgba(255,255,255,0.06)", overflowX:"auto", flexShrink:0 }}>
-            {Object.entries(MATERIE).map(([key, info]) => (
-              <button key={key} onClick={() => setMateria(key)} style={{ padding:"5px 12px", borderRadius:"20px", background:materia===key?`${info.colore}22`:"rgba(255,255,255,0.04)", border:`1px solid ${materia===key?info.colore:"rgba(255,255,255,0.08)"}`, color:"white", fontFamily:"'Nunito'", fontWeight:700, fontSize:"12px", cursor:"pointer", whiteSpace:"nowrap" }}>
-                {info.emoji} {info.label.split(" ")[0]}
-              </button>
-            ))}
-          </div>
-          <div style={{ flex:1, overflowY:"auto", padding:"14px 18px" }}>
-            {estaTab === "ripasso" && (
-              <div>
-                {matEst?.ripasso?.map((r, i) => (
-                  <div key={i} style={{ ...S.card, marginBottom:"14px", background:`${est.colore}10`, border:`1px solid ${est.colore}30` }}>
-                    <p style={{ fontWeight:900, fontSize:"15px", marginBottom:"10px" }}>📚 {r.titolo}</p>
-                    <div style={{ display:"flex", flexWrap:"wrap", gap:"6px", marginBottom:"10px" }}>
-                      {r.argomenti.map((a, j) => (<span key={j} style={{ background:`${est.colore}20`, border:`1px solid ${est.colore}40`, borderRadius:"20px", padding:"4px 10px", fontSize:"12px", fontWeight:700 }}>{a}</span>))}
-                    </div>
-                    <div style={{ background:"rgba(255,255,255,0.05)", borderRadius:"10px", padding:"10px 12px", marginBottom:"10px" }}>
-                      <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.6)", fontWeight:600 }}>💡 {r.esercizio}</p>
-                    </div>
-                    <div style={{ display:"flex", gap:"8px" }}>
-                      <button onClick={() => apriChatConArgomento(r.titolo, materia)} style={{ flex:1, padding:"10px", borderRadius:"10px", background:`${est.colore}22`, border:`1px solid ${est.colore}44`, color:est.colore, fontFamily:"'Nunito'", fontWeight:800, fontSize:"12px", cursor:"pointer" }}>💬 Chiedi a Lex</button>
-                      <button onClick={() => avviaQuiz(r.titolo, materia, prog?.label)} style={{ flex:1, padding:"10px", borderRadius:"10px", background:"rgba(245,158,11,0.15)", border:"1px solid rgba(245,158,11,0.3)", color:"#f59e0b", fontFamily:"'Nunito'", fontWeight:800, fontSize:"12px", cursor:"pointer" }}>⚡ Quiz</button>
-                    </div>
-                  </div>
-                ))}
-                {!matEst?.ripasso?.length && <p style={{ textAlign:"center", color:"rgba(255,255,255,0.4)", fontSize:"14px", padding:"20px" }}>Seleziona una materia 👆</p>}
+          {/* ── TAB ANTEPRIMA ── */}
+          {estaTab === "anteprima" && est && (
+            <div>
+              <div style={{ ...S.card, marginBottom:"14px", background:`${est.colore}10`, border:`1px solid ${est.colore}30`, textAlign:"center" }}>
+                <p style={{ fontSize:"28px", marginBottom:"8px" }}>🔭</p>
+                <p style={{ fontWeight:900, fontSize:"16px", marginBottom:"6px" }}>Anteprima {est.prossima}</p>
+                <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.5)", fontWeight:600 }}>Inizia con vantaggio!</p>
               </div>
-            )}
-            {estaTab === "piano" && (
-              <div>
-                <div style={{ ...S.card, marginBottom:"14px", background:"rgba(245,158,11,0.08)", border:"1px solid rgba(245,158,11,0.2)" }}>
-                  <p style={{ fontSize:"12px", fontWeight:800, color:"#fbbf24", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px" }}>📅 Piano Studio — 4 Settimane</p>
-                  <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.5)", marginBottom:"14px", fontWeight:600 }}>15-20 minuti al giorno bastano!</p>
-                  {est.piano.map((s, i) => (
-                    <div key={i} style={{ display:"flex", gap:"12px", marginBottom:"12px", alignItems:"flex-start" }}>
-                      <div style={{ width:"32px", height:"32px", borderRadius:"50%", background:`${est.colore}33`, border:`2px solid ${est.colore}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"13px", fontWeight:900, color:est.colore, flexShrink:0 }}>{i+1}</div>
-                      <div style={{ flex:1, background:"rgba(255,255,255,0.04)", borderRadius:"12px", padding:"10px 14px" }}>
-                        <p style={{ fontSize:"11px", fontWeight:800, color:"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"4px" }}>Settimana {i+1}</p>
-                        <p style={{ fontSize:"13px", fontWeight:600, color:"rgba(0,0,0,0.7)" }}>{s.attivita}</p>
-                      </div>
-                    </div>
-                  ))}
+              {matEst && Object.entries(matEst).filter(([k]) => k.startsWith("anteprima") || k === "anteprimaSup").map(([key, val]) => (
+                <div key={key} style={{ ...S.card, marginBottom:"12px" }}>
+                  <p style={{ fontSize:"12px", fontWeight:800, color:est.colore, textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px" }}>{MATERIE[materia]?.emoji} {MATERIE[materia]?.label} — {est.prossima}</p>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:"6px", marginBottom:"12px" }}>
+                    {val.map((a, i) => (<span key={i} style={{ background:`${est.colore}15`, border:`1px solid ${est.colore}35`, borderRadius:"20px", padding:"5px 12px", fontSize:"12px", fontWeight:700 }}>{a}</span>))}
+                  </div>
+                  <button onClick={() => apriChatConArgomento(`introduzione a "${val[0]}" per il prossimo anno`, materia)} className="hcard" style={{ width:"100%", padding:"18px 16px", borderRadius:"18px", background:`linear-gradient(135deg, ${est.colore}, ${est.colore}bb)`, border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"14px", cursor:"pointer", boxShadow:`0 6px 20px ${est.colore}55`, display:"flex", alignItems:"center", justifyContent:"center", gap:"10px" }}>
+                    <span style={{ fontSize:"22px" }}>💬</span> Fatti spiegare da Lex
+                  </button>
                 </div>
-              </div>
-            )}
-            {estaTab === "letture" && (
-              <div>
-                {matEst?.letture?.length > 0 ? (
-                  <div>
-                    <div style={{ ...S.card, marginBottom:"14px", background:"rgba(236,72,153,0.08)", border:"1px solid rgba(236,72,153,0.2)" }}>
-                      <p style={{ fontSize:"13px", fontWeight:700, color:"#ec4899" }}>📖 Letture consigliate per l&apos;estate</p>
-                    </div>
-                    {matEst.letture.map((l, i) => (
-                      <div key={i} style={{ ...S.card, marginBottom:"12px" }}>
-                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"8px" }}>
-                          <div style={{ flex:1 }}>
-                            <p style={{ fontWeight:900, fontSize:"15px", marginBottom:"2px" }}>{l.titolo}</p>
-                            <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.5)", fontWeight:600 }}>{l.autore}</p>
-                          </div>
-                          <div style={{ background:"rgba(236,72,153,0.2)", borderRadius:"20px", padding:"3px 10px", marginLeft:"10px" }}>
-                            <p style={{ fontSize:"11px", color:"#ec4899", fontWeight:700 }}>{l.eta}</p>
-                          </div>
-                        </div>
-                        <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.6)", fontWeight:600, marginBottom:"10px" }}>{l.desc}</p>
-                        <button onClick={() => { setMateria("italiano"); apriChatConArgomento(`libro "${l.titolo}" di ${l.autore}`, "italiano"); }} style={{ width:"100%", padding:"10px", borderRadius:"10px", background:"rgba(236,72,153,0.15)", border:"1px solid rgba(236,72,153,0.3)", color:"#ec4899", fontFamily:"'Nunito'", fontWeight:800, fontSize:"12px", cursor:"pointer" }}>💬 Discuti con Lex</button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div style={{ ...S.card, textAlign:"center", padding:"30px" }}>
-                    <p style={{ fontSize:"32px", marginBottom:"12px" }}>📚</p>
-                    <p style={{ fontWeight:800, fontSize:"15px", marginBottom:"8px" }}>Seleziona Italiano</p>
-                    <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.4)", fontWeight:600 }}>Le letture sono nella sezione Italiano</p>
-                    <button onClick={() => setMateria("italiano")} style={{ marginTop:"14px", padding:"10px 20px", borderRadius:"10px", background:"rgba(236,72,153,0.2)", border:"1px solid rgba(236,72,153,0.4)", color:"#ec4899", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", cursor:"pointer" }}>Vai a Italiano 📖</button>
-                  </div>
-                )}
-              </div>
-            )}
-            {estaTab === "anteprima" && (
-              <div>
-                <div style={{ ...S.card, marginBottom:"14px", background:`${est.colore}10`, border:`1px solid ${est.colore}30`, textAlign:"center" }}>
-                  <p style={{ fontSize:"28px", marginBottom:"8px" }}>🔭</p>
-                  <p style={{ fontWeight:900, fontSize:"16px", marginBottom:"6px" }}>Anteprima {est.prossima}</p>
-                  <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.5)", fontWeight:600 }}>Inizia con vantaggio!</p>
-                </div>
-                {matEst && Object.entries(matEst).filter(([k]) => k.startsWith("anteprima") || k === "anteprimaSup").map(([key, val]) => (
-                  <div key={key} style={{ ...S.card, marginBottom:"12px" }}>
-                    <p style={{ fontSize:"12px", fontWeight:800, color:est.colore, textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px" }}>{MATERIE[materia]?.emoji} {MATERIE[materia]?.label} — {est.prossima}</p>
-                    <div style={{ display:"flex", flexWrap:"wrap", gap:"6px", marginBottom:"12px" }}>
-                      {val.map((a, i) => (<span key={i} style={{ background:`${est.colore}15`, border:`1px solid ${est.colore}35`, borderRadius:"20px", padding:"5px 12px", fontSize:"12px", fontWeight:700 }}>{a}</span>))}
-                    </div>
-                    <button onClick={() => apriChatConArgomento(`introduzione a "${val[0]}" per il prossimo anno`, materia)} style={{ width:"100%", padding:"10px", borderRadius:"10px", background:`${est.colore}20`, border:`1px solid ${est.colore}40`, color:est.colore, fontFamily:"'Nunito'", fontWeight:800, fontSize:"12px", cursor:"pointer" }}>💬 Fatti spiegare da Lex</button>
-                  </div>
-                ))}
-                {!matEst && <p style={{ textAlign:"center", color:"rgba(255,255,255,0.4)", fontSize:"14px", padding:"20px" }}>Seleziona una materia 👆</p>}
-              </div>
-            )}
-          </div>
-        </>)}
+              ))}
+              {!matEst && <p style={{ textAlign:"center", color:"rgba(255,255,255,0.4)", fontSize:"14px", padding:"20px" }}>Seleziona una materia 👆</p>}
+            </div>
+          )}
+          {estaTab === "anteprima" && !est && (
+            <p style={{ textAlign:"center", color:"rgba(255,255,255,0.4)", fontSize:"14px", padding:"20px" }}>Dati non disponibili</p>
+          )}
 
-        {/* ── SEZIONE RIPASSO ANNO ── */}
-        {estaSezione === "ripasso_anno" && (<>
-          {/* Barra progresso */}
-          <div style={{ padding:"12px 18px", background:"rgba(245,158,11,0.06)", borderBottom:"1px solid rgba(245,158,11,0.12)", flexShrink:0 }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"6px" }}>
-              <p style={{ fontSize:"12px", fontWeight:800, color:"#fbbf24" }}>📊 Progresso ripasso anno</p>
-              <p style={{ fontSize:"12px", fontWeight:900, color:"#fbbf24" }}>{completatiCount}/{totaleArgomenti} ({percProgresso}%)</p>
-            </div>
-            <div style={{ height:"8px", background:"rgba(255,255,255,0.1)", borderRadius:"4px", overflow:"hidden" }}>
-              <div style={{ height:"100%", width:`${percProgresso}%`, background:"linear-gradient(90deg,#f59e0b,#fbbf24)", borderRadius:"4px", transition:"width 0.4s ease" }} />
-            </div>
-            <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.4)", fontWeight:600, marginTop:"5px" }}>🌞 In estate le stelle valgono il doppio!</p>
-          </div>
-          {/* Selettore materia */}
-          <div style={{ display:"flex", gap:"8px", padding:"10px 18px", borderBottom:"1px solid rgba(255,255,255,0.06)", overflowX:"auto", flexShrink:0 }}>
-            {Object.entries(MATERIE).map(([key, info]) => (
-              <button key={key} onClick={() => setMateria(key)} style={{ padding:"5px 12px", borderRadius:"20px", background:materia===key?`${info.colore}22`:"rgba(255,255,255,0.04)", border:`1px solid ${materia===key?info.colore:"rgba(255,255,255,0.08)"}`, color:"white", fontFamily:"'Nunito'", fontWeight:700, fontSize:"12px", cursor:"pointer", whiteSpace:"nowrap" }}>
-                {info.emoji} {info.label.split(" ")[0]}
-              </button>
-            ))}
-          </div>
-          {/* Lista mesi e argomenti */}
-          <div style={{ flex:1, overflowY:"auto", padding:"14px 18px" }}>
-            {classeProgr ? (
-              mesiNomi.map((nomeMese, mi) => {
-                const mese = classeProgr.materie[materia]?.[mi];
-                if (!mese) return null;
-                return (
-                  <div key={mi} style={{ marginBottom:"18px" }}>
-                    <p style={{ fontSize:"12px", fontWeight:800, color:MATERIE[materia]?.colore, textTransform:"uppercase", letterSpacing:"1px", marginBottom:"8px" }}>📅 {nomeMese}</p>
-                    <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
-                      {mese.temi.map((tema, ti) => {
-                        const chiave = `${mioId}_${materia}_${mi}_${tema}`;
-                        const completato = ripassoCompletati.includes(chiave);
-                        return (
-                          <div key={ti} style={{ ...S.card, padding:"12px 14px", background:completato?"rgba(16,185,129,0.1)":"rgba(255,255,255,0.04)", border:`1px solid ${completato?"rgba(16,185,129,0.3)":"rgba(255,255,255,0.08)"}`, display:"flex", alignItems:"center", gap:"10px" }}>
-                            <span style={{ fontSize:"18px", flexShrink:0 }}>{completato?"✅":"○"}</span>
-                            <p style={{ flex:1, fontSize:"13px", fontWeight:700, color:completato?"#10b981":"white", lineHeight:1.4 }}>{tema}</p>
-                            {!completato && (
-                              <button onClick={() => avviaRipassoEstate(tema, materia, mi)} style={{ padding:"7px 12px", borderRadius:"10px", background:`${MATERIE[materia]?.colore}22`, border:`1px solid ${MATERIE[materia]?.colore}55`, color:MATERIE[materia]?.colore, fontFamily:"'Nunito'", fontWeight:800, fontSize:"11px", cursor:"pointer", whiteSpace:"nowrap" }}>
-                                Ripassa →
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <p style={{ textAlign:"center", color:"rgba(255,255,255,0.4)", fontSize:"14px", padding:"30px" }}>Programma non disponibile per questa classe</p>
-            )}
-          </div>
-        </>)}
+        </div>
+        <Nav />
       </div>
     );
   }
@@ -2535,7 +2893,7 @@ export default function Home() {
 
     if (rs.fase === "loading" || rs.fase === "loading_quiz" || rs.fase === "valuta") return (
       <div style={{ ...S.app, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"20px" }}>
-        <LexChar stato="thinking" size={100} />
+        <LexChar stato="thinking" size={130} />
         <p style={{ fontWeight:800, fontSize:"16px" }}>{rs.fase === "loading_quiz" ? "Lex prepara il quiz..." : "Lex valuta la risposta..."}</p>
       </div>
     );
@@ -2575,7 +2933,7 @@ export default function Home() {
 
     if (rs.fase === "pass_quiz") return (
       <div style={{ ...S.app, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"16px", padding:"24px" }}>
-        <LexChar stato="happy" size={100} />
+        <LexChar stato="happy" size={130} />
         <p style={{ fontWeight:900, fontSize:"20px", textAlign:"center" }}>Interrogazione completata! 🎉</p>
         {rs.valutazione && <p style={{ fontSize:"14px", color:"rgba(255,255,255,0.7)", fontWeight:600, textAlign:"center", lineHeight:1.6 }}>{rs.valutazione}</p>}
         <p style={{ fontSize:"14px", color:"#fbbf24", fontWeight:700 }}>Ora un mini quiz da 3 domande!</p>
@@ -2624,7 +2982,7 @@ export default function Home() {
       const stelle = voto >= 8 ? 4 : voto >= 6 ? 3 : 2;
       return (
         <div style={{ ...S.app, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"16px", padding:"24px" }}>
-          <LexChar stato={voto >= 7 ? "happy" : "idle"} size={110} />
+          <LexChar stato={voto >= 7 ? "happy" : "idle"} size={140} />
           <p style={{ fontWeight:900, fontSize:"22px", textAlign:"center" }}>Ripasso completato! 🎉</p>
           <div style={{ background:"rgba(245,158,11,0.15)", border:"1px solid rgba(245,158,11,0.3)", borderRadius:"16px", padding:"16px 28px", textAlign:"center" }}>
             <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.5)", fontWeight:700, marginBottom:"4px" }}>Voto</p>
@@ -3007,7 +3365,7 @@ export default function Home() {
           {interrogFase === "carica" && (
             <div>
               <div style={{ ...S.card, marginBottom:"16px", background:`${t.primario}0D`, border:`1px solid ${t.primario}33`, textAlign:"center", padding:"24px" }}>
-                <LexChar stato="idle" size={80} style={{ margin:"0 auto 12px" }} />
+                <LexChar stato="idle" size={110} style={{ margin:"0 auto 12px" }} />
                 <p style={{ fontWeight:900, fontSize:"17px", marginBottom:"6px" }}>Pronto per l'interrogazione?</p>
                 <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.5)", fontWeight:600, lineHeight:1.8 }}>
                   Carica una foto dei tuoi appunti.<br/>Lex ti farà {maxDomande} domande a voce!
@@ -3022,10 +3380,10 @@ export default function Home() {
                   <div>📊 Lex ti dà il voto finale</div>
                 </div>
               </div>
-              <div style={{ display:"flex", gap:"8px", marginBottom:"14px", overflowX:"auto", paddingBottom:"4px" }}>
+              <div style={{ display:"flex", gap:"8px", marginBottom:"14px" }}>
                 {Object.entries(MATERIE).map(([key, info]) => (
-                  <button key={key} onClick={() => setMateria(key)} style={{ padding:"6px 14px", borderRadius:"20px", background:materia===key?`${info.colore}22`:"rgba(255,255,255,0.04)", border:`1px solid ${materia===key?info.colore:"rgba(255,255,255,0.08)"}`, color:"white", fontFamily:"'Nunito'", fontWeight:700, fontSize:"12px", cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
-                    {info.emoji} {info.label.split(" ")[0]}
+                  <button key={key} onClick={() => { setMateria(key); setInterrogMeseChip(null); setInterrogTopicScelto(""); }} style={{ flex:1, padding:"8px 4px", borderRadius:"12px", background:materia===key?`${info.colore}22`:"rgba(255,255,255,0.04)", border:`2px solid ${materia===key?info.colore:"rgba(255,255,255,0.08)"}`, color:"white", fontFamily:"'Nunito', sans-serif", fontWeight:800, fontSize:"10px", cursor:"pointer" }}>
+                    <div style={{ fontSize:"16px", marginBottom:"2px" }}>{info.emoji}</div>{info.label.split(" ")[0]}
                   </button>
                 ))}
               </div>
@@ -3077,7 +3435,7 @@ export default function Home() {
 
           {interrogFase === "analisi" && (
             <div style={{ textAlign:"center", padding:"60px 20px" }}>
-              <LexChar stato="thinking" size={100} style={{ margin:"0 auto 20px" }} />
+              <LexChar stato="thinking" size={130} style={{ margin:"0 auto 20px" }} />
               <p style={{ fontWeight:900, fontSize:"18px", marginBottom:"8px" }}>Lex prepara le domande...</p>
               <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.4)", fontWeight:600 }}>Preparo l'interrogazione per te</p>
             </div>
@@ -3098,7 +3456,7 @@ export default function Home() {
                 </div>
               )}
               <div style={{ ...S.card, marginBottom:"16px", background:"rgba(99,102,241,0.1)", border:"1px solid rgba(99,102,241,0.3)", textAlign:"center", padding:"24px" }}>
-                <LexChar stato={interrogLexParla ? "talking" : "idle"} size={80} style={{ margin:"0 auto 12px" }} />
+                <LexChar stato={interrogLexParla ? "talking" : "idle"} size={110} style={{ margin:"0 auto 12px" }} />
                 <p style={{ fontSize:"11px", fontWeight:700, color:"#a78bfa", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px" }}>
                   Domanda {interrogConv.length + 1} di {maxDomande}
                 </p>
@@ -3170,7 +3528,7 @@ export default function Home() {
 
           {interrogFase === "valuta" && (
             <div style={{ textAlign:"center", padding:"60px 20px" }}>
-              <LexChar stato="thinking" size={100} style={{ margin:"0 auto 20px" }} />
+              <LexChar stato="thinking" size={130} style={{ margin:"0 auto 20px" }} />
               <p style={{ fontWeight:900, fontSize:"18px", marginBottom:"8px" }}>Lex sta valutando...</p>
               <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.4)", fontWeight:600 }}>Sto analizzando la tua risposta</p>
             </div>
@@ -3179,7 +3537,7 @@ export default function Home() {
           {interrogFase === "voto" && interrogVoto !== null && (
             <div>
               <div style={{ ...S.card, marginBottom:"16px", background:"linear-gradient(135deg,rgba(99,102,241,0.2),rgba(124,58,237,0.15))", border:"1px solid rgba(99,102,241,0.4)", textAlign:"center", padding:"28px" }}>
-                <LexChar stato={interrogVoto >= 7 ? "happy" : "idle"} size={100} style={{ margin:"0 auto 16px" }} />
+                <LexChar stato={interrogVoto >= 7 ? "happy" : "idle"} size={130} style={{ margin:"0 auto 16px" }} />
                 <p style={{ fontSize:"14px", fontWeight:700, color:"rgba(255,255,255,0.5)", marginBottom:"12px" }}>Interrogazione completata!</p>
                 <div style={{ background:"linear-gradient(135deg,rgba(99,102,241,0.1),rgba(124,58,237,0.08))", border:"2px solid rgba(99,102,241,0.2)", borderRadius:"24px", padding:"20px 40px", marginBottom:"16px", display:"inline-block" }}>
                   <p style={{ fontSize:"13px", fontWeight:800, color:"#a78bfa", marginBottom:"4px", textTransform:"uppercase", letterSpacing:"1px" }}>Voto</p>
@@ -3495,6 +3853,7 @@ export default function Home() {
   );
 
   // ── SCHERMATA GIOCA ──────────────────────────────────────────
+  // ── SCHERMATA GIOCA ──────────────────────────────────────────
   if (screen === "gioca") {
     const prog2 = figlioAttivo ? CLASSI[figlioAttivo.classe] : null;
     const materiaGioca = materia;
@@ -3503,19 +3862,40 @@ export default function Home() {
       ? (PROGRAMMA[figlioAttivo.classe]?.materie?.[materiaGioca]?.slice(0,9) || [])
       : [];
 
+    const CORIANDOLI_D = Array.from({length:50},(_,i)=>({
+      left:((i*37+7)%100), dur:1.5+((i*13)%15)/10, delay:((i*23)%80)/100,
+      size:8+(i%9), round:i%3!==0, color:['#FFE500','#FF70C8','#00F090','#29C9FF','#6C47FF','#FF8533'][i%6],
+    }));
+
+    const rvSv = recordGiochi?.sfida_velocita || {};
+    const recSv = Object.values(rvSv).length > 0 ? Math.max(...Object.values(rvSv)) : null;
+    const rvCs = recordGiochi?.chi_sono || {};
+    const recCs = Object.values(rvCs).length > 0 ? Math.min(...Object.values(rvCs)) : null;
+
+    const GIOCHI_CARDS = [
+      { id:"quiz",     emoji:"🧠", titolo:"Quiz Domande",   sub:"Rispondi e guadagna stelle",  bg:"linear-gradient(145deg,#6C47FF,#4A2FD4)", border:"linear-gradient(135deg,#3B21BD,#261580)", rec:null, badge:null,     onClick:() => { if(!giocaArgomento) return; setQuizCaller("gioca"); goScreen("quiz_mc"); } },
+      { id:"parole",   emoji:"📝", titolo:"Parole Crociate", sub:"Completa la griglia",          bg:"linear-gradient(145deg,#FF70C8,#E0008A)", border:"linear-gradient(135deg,#C026D3,#7C3AED)", rec:null, badge:null,     onClick:() => { if(!giocaArgomento) return; goScreen("parole_crociate"); } },
+      { id:"sfida",    emoji:"⚡", titolo:"Sfida Velocità",  sub:"60 secondi di fuoco",          bg:"linear-gradient(145deg,#FFE500,#FFB300)", border:"linear-gradient(135deg,#F59E0B,#D97706)", rec:recSv!==null?`🏆 Record: ${recSv}`:"🏆 Record: —", badge:"NUOVO 🔥", onClick:() => { if(!giocaArgomento) return; goScreen("sfida_velocita"); } },
+      { id:"chisono",  emoji:"🎭", titolo:"Chi Sono?",       sub:"Indovina con meno indizi",     bg:"linear-gradient(145deg,#29C9FF,#007ACC)", border:"linear-gradient(135deg,#0369A1,#075985)", rec:recCs!==null?`⭐ Miglior: ${recCs}/5 indizi`:"⭐ Indizi: —", badge:"NUOVO 🔥", onClick:() => { if(!giocaArgomento) return; goScreen("chi_sono"); } },
+    ];
+
     return (
       <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
         <Head><title>Lexyo — Gioca</title></Head>
         <div style={S.hdr}>
           <button onClick={() => goScreen("home")} style={S.back}>←</button>
-          <div><p style={{ fontWeight:900, fontSize:"17px" }}>🎮 Gioca Studiando</p><p style={{ fontSize:"11px", color:"rgba(255,255,255,0.4)", fontWeight:600 }}>Guadagna stelle giocando!</p></div>
+          <div>
+            <p style={{ fontWeight:900, fontSize:"17px" }}>🎮 Imparare è un Gioco</p>
+            <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.4)", fontWeight:600 }}>{figlioAttivo?.nome} · ⭐ {figlioAttivo?.stelle || 0}</p>
+          </div>
           <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:"6px", background:"rgba(239,68,68,0.15)", border:"1px solid rgba(239,68,68,0.3)", borderRadius:"12px", padding:"6px 10px" }}>
             <span style={{ fontSize:"16px" }}>🔥</span>
             <span style={{ fontWeight:900, fontSize:"15px", color:"#fbbf24" }}>{streak}</span>
           </div>
         </div>
 
-        <div style={{ flex:1, overflowY:"auto", padding:"14px 18px" }}>
+        <div style={{ flex:1, overflowY:"auto", padding:"14px 18px 100px" }}>
+          {/* Materia selector */}
           <div style={{ display:"flex", gap:"8px", marginBottom:"14px" }}>
             {Object.entries(MATERIE).map(([key, info]) => (
               <button key={key} onClick={() => setMateria(key)} style={{ flex:1, padding:"8px 4px", borderRadius:"12px", background:materiaGioca===key?`${info.colore}22`:"rgba(255,255,255,0.04)", border:`2px solid ${materiaGioca===key?info.colore:"rgba(255,255,255,0.08)"}`, color:"white", fontFamily:"'Nunito', sans-serif", fontWeight:800, fontSize:"10px", cursor:"pointer" }}>
@@ -3524,10 +3904,11 @@ export default function Home() {
             ))}
           </div>
 
+          {/* Argomento selector */}
           <div style={{ marginBottom:"16px" }}>
             <p style={{ fontSize:"12px", fontWeight:800, color:"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px" }}>Scegli argomento</p>
             {tuttiMesi.length === 0 ? (
-              <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.3)", fontWeight:600 }}>Nessun argomento disponibile per questa materia</p>
+              <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.3)", fontWeight:600 }}>Nessun argomento disponibile</p>
             ) : (
               <>
                 <div style={{ display:"flex", gap:"6px", marginBottom:"12px", overflowX:"auto", paddingBottom:"4px", WebkitOverflowScrolling:"touch" }}>
@@ -3560,61 +3941,393 @@ export default function Home() {
             )}
           </div>
 
-          <div style={{ display:"flex", gap:"10px", marginBottom:"20px" }}>
-            {["giochi","classifica"].map(t => (
-              <button key={t} onClick={() => setGiocaTab(t)} style={{ flex:1, padding:"10px", borderRadius:"12px", background:giocaTab===t?"rgba(99,102,241,0.25)":"rgba(255,255,255,0.05)", border:`2px solid ${giocaTab===t?"#6366f1":"rgba(255,255,255,0.08)"}`, color:giocaTab===t?"white":"rgba(255,255,255,0.4)", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer" }}>
-                {t==="giochi"?"🎮 Giochi":"🏆 Badge"}
+          {!giocaArgomento && <p style={{ textAlign:"center", color:"rgba(255,255,255,0.35)", fontSize:"13px", fontWeight:700, marginBottom:"16px", padding:"10px", background:"rgba(255,255,255,0.04)", borderRadius:"12px", border:"1px solid rgba(255,255,255,0.07)" }}>👆 Scegli un argomento per sbloccare i giochi</p>}
+
+          {/* Griglia card giochi */}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px" }}>
+            {GIOCHI_CARDS.map(g => (
+              <button key={g.id} onClick={g.onClick} className="hcard"
+                style={{ padding:"0", borderRadius:"20px", background:g.bg, boxShadow:giocaArgomento?"0 6px 18px rgba(0,0,0,0.4), inset 0 -3px 0 rgba(0,0,0,0.15)":"0 4px 12px rgba(0,0,0,0.25)", border:"none", cursor:giocaArgomento?"pointer":"not-allowed", opacity:giocaArgomento?1:0.55, textAlign:"left", fontFamily:"'Nunito'", "--card-border":g.border, position:"relative" }}>
+                <div className="card-shine" />
+                <div className="card-content" style={{ padding:"16px 14px 14px" }}>
+                  {g.badge && <div style={{ position:"absolute", top:"10px", right:"10px", background:"rgba(0,0,0,0.3)", borderRadius:"8px", padding:"2px 7px", fontSize:"9px", fontWeight:900, color:"#fbbf24", letterSpacing:"0.5px" }}>{g.badge}</div>}
+                  <div style={{ fontSize:"28px", marginBottom:"8px" }}>{g.emoji}</div>
+                  <p style={{ fontSize:"13px", fontWeight:900, color:"white", marginBottom:"3px", lineHeight:1.2 }}>{g.titolo}</p>
+                  <p style={{ fontSize:"10px", fontWeight:700, color:"rgba(255,255,255,0.75)", marginBottom:"8px", lineHeight:1.3 }}>{g.sub}</p>
+                  {g.rec && <p style={{ fontSize:"9px", fontWeight:800, color:"rgba(255,255,255,0.55)" }}>{g.rec}</p>}
+                </div>
+                <div className="card-depth" />
               </button>
             ))}
           </div>
-
-          {giocaTab === "giochi" && (
-            <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
-              <button onClick={() => { if (!giocaArgomento) return; setQuizCaller("gioca"); goScreen("quiz_mc"); }} style={{ padding:"20px 18px", borderRadius:"18px", background:giocaArgomento?"rgba(99,102,241,0.18)":"rgba(255,255,255,0.04)", border:`1px solid ${giocaArgomento?"rgba(99,102,241,0.4)":"rgba(255,255,255,0.08)"}`, color:"white", fontFamily:"'Nunito'", textAlign:"left", cursor:giocaArgomento?"pointer":"not-allowed", opacity:giocaArgomento?1:0.5 }}>
-                <div style={{ fontSize:"28px", marginBottom:"8px" }}>🧠</div>
-                <p style={{ fontSize:"16px", fontWeight:900 }}>Quiz a Risposta Multipla</p>
-                <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.5)", marginTop:"4px", fontWeight:600 }}>5 domande — guadagna fino a 10 ⭐</p>
-              </button>
-              <button onClick={() => { if (!giocaArgomento) return; goScreen("parole_crociate"); }} style={{ padding:"20px 18px", borderRadius:"18px", background:giocaArgomento?"rgba(16,185,129,0.15)":"rgba(255,255,255,0.04)", border:`1px solid ${giocaArgomento?"rgba(16,185,129,0.35)":"rgba(255,255,255,0.08)"}`, color:"white", fontFamily:"'Nunito'", textAlign:"left", cursor:giocaArgomento?"pointer":"not-allowed", opacity:giocaArgomento?1:0.5 }}>
-                <div style={{ fontSize:"28px", marginBottom:"8px" }}>✏️</div>
-                <p style={{ fontSize:"16px", fontWeight:900 }}>Gioco Parole</p>
-                <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.5)", marginTop:"4px", fontWeight:600 }}>6 indizi — indovina le parole chiave</p>
-              </button>
-              {!giocaArgomento && <p style={{ textAlign:"center", color:"rgba(255,255,255,0.3)", fontSize:"13px", fontWeight:600 }}>Scegli prima un argomento ↑</p>}
-            </div>
-          )}
-
-          {giocaTab === "classifica" && (
-            <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
-              <div style={{ ...S.card, background:"linear-gradient(135deg,rgba(251,191,36,0.15),rgba(245,158,11,0.1))", border:"1px solid rgba(251,191,36,0.3)" }}>
-                <p style={{ fontSize:"13px", fontWeight:800, color:"#fbbf24", marginBottom:"12px" }}>🔥 Il tuo Streak</p>
-                <div style={{ display:"flex", justifyContent:"center", gap:"8px", marginBottom:"12px" }}>
-                  {[1,2,3,4,5,6,7].map(g => (
-                    <div key={g} style={{ width:"36px", height:"36px", borderRadius:"10px", background:g<=streak?"rgba(239,68,68,0.4)":"rgba(255,255,255,0.06)", border:`2px solid ${g<=streak?"#ef4444":"rgba(255,255,255,0.1)"}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"16px" }}>
-                      {g<=streak?"🔥":"·"}
-                    </div>
-                  ))}
-                </div>
-                <p style={{ textAlign:"center", fontSize:"13px", color:"rgba(255,255,255,0.5)", fontWeight:600 }}>{streak===0?"Inizia a studiare per accendere la fiamma!":streak===1?"Ottimo inizio! Torna domani 🔥":`${streak} giorni consecutivi! Sei in fuoco! 🔥`}</p>
-              </div>
-              <div style={{ ...S.card }}>
-                <p style={{ fontSize:"13px", fontWeight:800, color:"#a78bfa", marginBottom:"12px" }}>🏆 I tuoi Badge speciali</p>
-                {BADGE.filter(b => ["streak3","streak7","quiz_maestro","quiz_perfetto","gamer"].includes(b.id)).map(b => {
-                  const ok = figlioAttivo?.badge?.includes(b.id);
-                  return <div key={b.id} style={{ display:"flex", alignItems:"center", gap:"12px", padding:"10px", borderRadius:"12px", background:ok?"rgba(251,191,36,0.08)":"rgba(255,255,255,0.04)", marginBottom:"6px", opacity:ok?1:0.4 }}>
-                    <span style={{ fontSize:"24px", filter:ok?"none":"grayscale(1)" }}>{b.emoji}</span>
-                    <div><p style={{ fontWeight:800, fontSize:"13px" }}>{b.label}</p><p style={{ fontSize:"11px", color:"rgba(255,255,255,0.4)", fontWeight:600 }}>{b.desc}</p></div>
-                    {ok && <span style={{ marginLeft:"auto", color:"#fbbf24", fontSize:"12px", fontWeight:800 }}>✓</span>}
-                  </div>;
-                })}
-              </div>
-            </div>
-          )}
         </div>
         <Nav />
       </div>
     );
   }
+
+  // ── SFIDA VELOCITÀ ───────────────────────────────────────────
+  if (screen === "sfida_velocita") {
+    const matInfo = MATERIE[materia] || MATERIE.matematica;
+    const prog2 = figlioAttivo ? CLASSI[figlioAttivo.classe] : null;
+
+    const avviaSfida = async () => {
+      setSvState({ fase: "loading" });
+      try {
+        const r = await fetch("/api/sfida-velocita", {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ materia: matInfo.label, classe: prog2?.label, argomento: giocaArgomento }),
+        });
+        const d = await r.json();
+        if (d.errore || !d.domande?.length) { setSvState(null); alert("Errore: " + (d.errore || "nessuna domanda")); return; }
+        // Mescola le opzioni in modo deterministico per metà domande
+        const domande = d.domande.map((dom, i) => {
+          const scambiate = i % 3 === 1;
+          return scambiate
+            ? { ...dom, opzioneA: dom.opzioneB, opzioneB: dom.opzioneA, corretta: 1 }
+            : { ...dom, corretta: 0 };
+        });
+        setSvState({ fase:"countdown", countdown:3, domande, corrente:0, punteggio:0, tempoRimasto:60 });
+      } catch (e) { setSvState(null); alert("Errore di rete. Riprova."); }
+    };
+
+    const rispondiSv = (scelta) => {
+      if (!svState || svState.fase !== "gioco") return;
+      const dom = svState.domande[svState.corrente];
+      const corretta = scelta === dom.corretta;
+      if (corretta) {
+        suona("corretto");
+        setSvPlusAnim(true);
+        setTimeout(() => setSvPlusAnim(false), 700);
+      } else {
+        suona("sbagliato");
+        setSvShake(true);
+        setTimeout(() => setSvShake(false), 500);
+      }
+      setSvState(prev => {
+        if (!prev) return null;
+        const nuovoPunteggio = corretta ? prev.punteggio + 1 : prev.punteggio;
+        const prossimo = prev.corrente + 1;
+        if (prossimo >= prev.domande.length) {
+          clearInterval(svIntervalRef.current);
+          return { ...prev, fase:"risultato", punteggio:nuovoPunteggio, corrente:prossimo };
+        }
+        return { ...prev, punteggio:nuovoPunteggio, corrente:prossimo };
+      });
+    };
+
+    const salvaSvRecord = (punteggio) => {
+      setRecordGiochi(prev => {
+        const nuovi = { ...prev, sfida_velocita: { ...(prev.sfida_velocita||{}), [giocaArgomento]: Math.max((prev.sfida_velocita?.[giocaArgomento])||0, punteggio) } };
+        localStorage.setItem("lexyo_record_giochi", JSON.stringify(nuovi));
+        return nuovi;
+      });
+    };
+
+    // Schermata start
+    if (!svState) {
+      return (
+        <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+          <Head><title>Lexyo — Sfida Velocità</title></Head>
+          <div style={{ ...S.hdr, borderBottomColor:"rgba(255,229,0,0.3)" }}>
+            <button onClick={() => goScreen("gioca")} style={S.back}>←</button>
+            <div style={{ width:"44px", height:"44px", borderRadius:"14px", background:"linear-gradient(145deg,#FFE500,#FFB300)", boxShadow:"0 4px 16px rgba(255,200,0,0.4)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"24px", flexShrink:0 }}>⚡</div>
+            <div><p style={{ fontWeight:900, fontSize:"15px" }}>Sfida Velocità</p><p style={{ fontSize:"11px", color:"#FFE500", fontWeight:700 }}>{giocaArgomento}</p></div>
+          </div>
+          <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"24px", gap:"20px" }}>
+            <LexChar stato="happy" size={140} />
+            <div style={{ textAlign:"center" }}>
+              <p style={{ fontSize:"24px", fontWeight:900, marginBottom:"8px" }}>⚡ Sfida Velocità!</p>
+              <p style={{ color:"rgba(255,255,255,0.6)", fontSize:"14px", fontWeight:600, marginBottom:"4px" }}>20 domande su: <strong style={{ color:"#FFE500" }}>{giocaArgomento}</strong></p>
+              <p style={{ color:"rgba(255,255,255,0.5)", fontSize:"13px", fontWeight:600 }}>Hai 60 secondi — rispondi il più veloce possibile!</p>
+              {(recordGiochi?.sfida_velocita?.[giocaArgomento]) && <p style={{ color:"#fbbf24", fontSize:"13px", fontWeight:800, marginTop:"8px" }}>🏆 Il tuo record: {recordGiochi.sfida_velocita[giocaArgomento]} punti</p>}
+            </div>
+            <button onClick={avviaSfida} style={{ ...S.btn, background:"linear-gradient(135deg,#FFE500,#FFB300)", color:"#0a0a20", maxWidth:"280px", fontWeight:900 }}>Inizia! ⚡</button>
+          </div>
+        </div>
+      );
+    }
+
+    // Loading
+    if (svState.fase === "loading") {
+      return (
+        <div style={{ ...S.app, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"20px" }}>
+          <LexChar stato="thinking" size={120} />
+          <p style={{ fontWeight:800, fontSize:"16px" }}>Lex prepara le domande... ⚡</p>
+        </div>
+      );
+    }
+
+    // Countdown
+    if (svState.fase === "countdown") {
+      const label = svState.countdown > 0 ? String(svState.countdown) : "VIA!";
+      return (
+        <div style={{ ...S.app, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:`radial-gradient(circle at 50% 40%, ${matInfo.colore}33 0%, #0a0a1a 65%)` }}>
+          <div key={label} style={{ fontSize:"88px", fontWeight:900, color:"white", animation:"countdownAnim 1s ease forwards" }}>{label}</div>
+          <p style={{ color:"rgba(255,255,255,0.4)", fontSize:"14px", fontWeight:700, marginTop:"20px" }}>{giocaArgomento}</p>
+        </div>
+      );
+    }
+
+    // Gioco in corso
+    if (svState.fase === "gioco") {
+      const dom = svState.domande[svState.corrente];
+      if (!dom) return null;
+      const t = svState.tempoRimasto;
+      const timerColor = t > 30 ? "#00F090" : t > 10 ? "#FFE500" : "#ef4444";
+      const circumference = 2 * Math.PI * 46;
+      const dashOffset = circumference * (1 - t / 60);
+      return (
+        <div style={{ ...S.app, display:"flex", flexDirection:"column", background:`radial-gradient(circle at 50% 30%, ${matInfo.colore}22 0%, #0a0a1a 70%)` }}>
+          <Head><title>Sfida!</title></Head>
+          {/* Header timer + punteggio */}
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"16px 20px", flexShrink:0 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+              <div style={{ position:"relative", width:"60px", height:"60px", animation:t<=10?"timerPulse 0.5s ease infinite":undefined }}>
+                <svg width="60" height="60" style={{ transform:"rotate(-90deg)" }}>
+                  <circle cx="30" cy="30" r="23" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="5" />
+                  <circle cx="30" cy="30" r="23" fill="none" stroke={timerColor} strokeWidth="5"
+                    strokeDasharray={circumference} strokeDashoffset={dashOffset}
+                    style={{ transition:"stroke-dashoffset 1s linear, stroke 0.3s" }} />
+                </svg>
+                <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <span style={{ fontSize:"16px", fontWeight:900, color:timerColor }}>{t}</span>
+                </div>
+              </div>
+            </div>
+            <div style={{ textAlign:"center" }}>
+              <div style={{ position:"relative", display:"inline-block" }}>
+                <span style={{ fontSize:"32px", fontWeight:900, color:"white" }}>{svState.punteggio}</span>
+                {svPlusAnim && <span style={{ position:"absolute", top:"-8px", right:"-18px", fontSize:"16px", fontWeight:900, color:"#00F090", animation:"floatUp 0.7s ease forwards" }}>+1</span>}
+              </div>
+              <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.4)", fontWeight:700 }}>PUNTI</p>
+            </div>
+            <div style={{ fontSize:"12px", fontWeight:700, color:"rgba(255,255,255,0.4)" }}>{svState.corrente + 1}/{svState.domande.length}</div>
+          </div>
+
+          {/* Domanda */}
+          <div className="vfade" key={svState.corrente} style={{ flex:1, display:"flex", flexDirection:"column", justifyContent:"center", padding:"0 20px", gap:"16px" }}>
+            <div style={{ ...S.card, textAlign:"center", padding:"24px 20px", animation:svShake?"shake 0.5s ease":"none", borderColor:matInfo.colore+"44" }}>
+              <p style={{ fontSize:"20px", fontWeight:900, lineHeight:1.3 }}>{dom.domanda}</p>
+            </div>
+            <div style={{ display:"flex", gap:"12px" }}>
+              {[{label:dom.opzioneA, idx:0},{label:dom.opzioneB, idx:1}].map(op => (
+                <button key={op.idx} onClick={() => rispondiSv(op.idx)} className="hcard"
+                  style={{ flex:1, padding:"20px 12px", borderRadius:"18px", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer", textAlign:"center", "--card-border":"rgba(255,255,255,0.2)" }}>
+                  <div className="card-shine" />
+                  <div className="card-content">{op.label}</div>
+                  <div className="card-depth" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Risultato
+    if (svState.fase === "risultato") {
+      const recPrev = recordGiochi?.sfida_velocita?.[giocaArgomento] || 0;
+      const isRecord = svState.punteggio > recPrev;
+      if (isRecord) { salvaSvRecord(svState.punteggio); addStelle(svState.punteggio * 2); suona("obiettivo"); setMostraCoriandoli(true); setTimeout(() => setMostraCoriandoli(false), 4000); }
+      else { addStelle(svState.punteggio); suona("stelle"); }
+
+      const CORIANDOLI_D2 = Array.from({length:50},(_,i)=>({ left:((i*37+7)%100), dur:1.5+((i*13)%15)/10, delay:((i*23)%80)/100, size:8+(i%9), round:i%3!==0, color:['#FFE500','#FF70C8','#00F090','#29C9FF','#6C47FF','#FF8533'][i%6] }));
+
+      return (
+        <div style={{ ...S.app, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"24px", gap:"20px" }}>
+          {mostraCoriandoli && <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:9999 }}>
+            {CORIANDOLI_D2.map((c,i) => <div key={i} style={{ position:"absolute", left:`${c.left}%`, top:"-10px", width:`${c.size}px`, height:`${c.size}px`, background:c.color, borderRadius:c.round?"50%":"2px", animation:`confettiFall ${c.dur}s ${c.delay}s linear forwards` }} />)}
+          </div>}
+          <LexChar stato="happy" size={120} />
+          {isRecord && <p style={{ fontSize:"22px", fontWeight:900, color:"#FFE500", textAlign:"center", animation:"pulseSlow 1s ease infinite" }}>🏆 NUOVO RECORD!</p>}
+          <div style={{ textAlign:"center" }}>
+            <p style={{ fontSize:"60px", fontWeight:900, color:"white" }}>{svState.punteggio}</p>
+            <p style={{ fontSize:"16px", color:"rgba(255,255,255,0.6)", fontWeight:700 }}>su {svState.domande.length} domande</p>
+            <p style={{ fontSize:"14px", color:"#fbbf24", fontWeight:800, marginTop:"8px" }}>+{isRecord ? svState.punteggio * 2 : svState.punteggio} ⭐</p>
+          </div>
+          <div style={{ display:"flex", gap:"12px", width:"100%", maxWidth:"320px" }}>
+            <button onClick={() => { setSvState(null); avviaSfida(); }} style={{ flex:1, padding:"14px", borderRadius:"14px", background:"linear-gradient(135deg,#FFE500,#FFB300)", color:"#0a0a20", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", border:"none", cursor:"pointer" }}>Gioca ancora! ⚡</button>
+            <button onClick={() => goScreen("gioca")} style={{ flex:1, padding:"14px", borderRadius:"14px", background:"rgba(255,255,255,0.08)", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", border:"1px solid rgba(255,255,255,0.15)", cursor:"pointer" }}>Cambia gioco</button>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  }
+
+  // ── CHI SONO? ────────────────────────────────────────────────
+  if (screen === "chi_sono") {
+    const matInfo = MATERIE[materia] || MATERIE.matematica;
+    const prog2 = figlioAttivo ? CLASSI[figlioAttivo.classe] : null;
+
+    const avviaChiSono = async () => {
+      setCsState({ fase:"loading" });
+      try {
+        const r = await fetch("/api/chi-sono", {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ materia: matInfo.label, classe: prog2?.label, argomento: giocaArgomento }),
+        });
+        const d = await r.json();
+        if (d.errore || !d.soggetto) { setCsState(null); alert(d.errore || "Errore. Riprova."); return; }
+        setCsState({ fase:"gioco", soggetto:d.soggetto, emoji:d.emoji||"🎭", indizi:d.indizi||[], spiegazione:d.spiegazione||"", indizioCorrente:0, stelleGuadagnate:5, rivelato:false });
+      } catch { setCsState(null); alert("Errore di rete."); }
+    };
+
+    const verificaRisposta = async () => {
+      if (!csRisposta.trim() || !csState) return;
+      setCsLoading(true);
+      try {
+        const r = await fetch("/api/chi-sono", {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ fase:"verifica", soggetto:csState.soggetto, risposta:csRisposta }),
+        });
+        const d = await r.json();
+        if (d.corretta) {
+          suona("obiettivo");
+          const stelle = csState.stelleGuadagnate;
+          addStelle(stelle * 3);
+          setCsState(prev => prev ? { ...prev, fase:"vinto", messaggioVerifica:d.messaggio } : null);
+          setRecordGiochi(prev => {
+            const nuovi = { ...prev, chi_sono: { ...(prev.chi_sono||{}), [giocaArgomento]: Math.min((prev.chi_sono?.[giocaArgomento])||6, csState.indizioCorrente+1) } };
+            localStorage.setItem("lexyo_record_giochi", JSON.stringify(nuovi));
+            return nuovi;
+          });
+        } else {
+          suona("sbagliato");
+          setCsState(prev => prev ? { ...prev, messaggioVerifica:d.messaggio } : null);
+          setCsRisposta("");
+        }
+      } catch { alert("Errore verifica."); }
+      setCsLoading(false);
+    };
+
+    const prossimIndizio = () => {
+      if (!csState) return;
+      suona("click");
+      const nuovoIdx = csState.indizioCorrente + 1;
+      if (nuovoIdx >= csState.indizi.length) {
+        setCsState(prev => prev ? { ...prev, rivelato:true, fase:"perso" } : null);
+      } else {
+        setCsState(prev => prev ? { ...prev, indizioCorrente:nuovoIdx, stelleGuadagnate:Math.max(1, prev.stelleGuadagnate-1), messaggioVerifica:null } : null);
+      }
+    };
+
+    if (!csState) {
+      return (
+        <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+          <Head><title>Chi Sono?</title></Head>
+          <div style={{ ...S.hdr, borderBottomColor:"rgba(41,201,255,0.3)" }}>
+            <button onClick={() => goScreen("gioca")} style={S.back}>←</button>
+            <div style={{ width:"44px", height:"44px", borderRadius:"14px", background:"linear-gradient(145deg,#29C9FF,#007ACC)", boxShadow:"0 4px 16px rgba(41,201,255,0.4)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"24px", flexShrink:0 }}>🎭</div>
+            <div><p style={{ fontWeight:900, fontSize:"15px" }}>Chi Sono?</p><p style={{ fontSize:"11px", color:"#29C9FF", fontWeight:700 }}>{giocaArgomento}</p></div>
+          </div>
+          <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"24px", gap:"20px" }}>
+            <LexChar stato="happy" size={140} />
+            <div style={{ textAlign:"center" }}>
+              <p style={{ fontSize:"22px", fontWeight:900, marginBottom:"8px" }}>🎭 Chi Sono?</p>
+              <p style={{ color:"rgba(255,255,255,0.6)", fontSize:"14px", fontWeight:600, marginBottom:"4px" }}>Argomento: <strong style={{ color:"#29C9FF" }}>{giocaArgomento}</strong></p>
+              <p style={{ color:"rgba(255,255,255,0.5)", fontSize:"13px", fontWeight:600 }}>Indovina con meno indizi per guadagnare più stelle!</p>
+              <p style={{ color:"#fbbf24", fontSize:"13px", fontWeight:800, marginTop:"8px" }}>⭐ 1 indizio = 5 stelle · 5 indizi = 1 stella</p>
+            </div>
+            <button onClick={avviaChiSono} style={{ ...S.btn, background:"linear-gradient(135deg,#29C9FF,#007ACC)", maxWidth:"280px", fontWeight:900 }}>Inizia! 🎭</button>
+          </div>
+        </div>
+      );
+    }
+
+    if (csState.fase === "loading") {
+      return (
+        <div style={{ ...S.app, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"20px" }}>
+          <LexChar stato="thinking" size={120} />
+          <p style={{ fontWeight:800, fontSize:"16px" }}>Lex prepara il mistero... 🎭</p>
+        </div>
+      );
+    }
+
+    if (csState.fase === "gioco" || csState.fase === "vinto" || csState.fase === "perso") {
+      const indizioVisibili = csState.indizi.slice(0, csState.indizioCorrente + 1);
+      const rivelato = csState.fase === "vinto" || csState.fase === "perso";
+
+      return (
+        <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+          <Head><title>Chi Sono?</title></Head>
+          <div style={{ ...S.hdr, borderBottomColor:"rgba(41,201,255,0.3)" }}>
+            <button onClick={() => goScreen("gioca")} style={S.back}>←</button>
+            <div><p style={{ fontWeight:900, fontSize:"15px" }}>🎭 Chi Sono?</p><p style={{ fontSize:"11px", color:"#29C9FF", fontWeight:700 }}>{giocaArgomento}</p></div>
+            <div style={{ marginLeft:"auto", display:"flex", gap:"4px" }}>
+              {[5,4,3,2,1].map(s => <span key={s} style={{ fontSize:"18px", filter:csState.stelleGuadagnate>=s?"none":"grayscale(1)", opacity:csState.stelleGuadagnate>=s?1:0.35 }}>⭐</span>)}
+            </div>
+          </div>
+          <div style={{ flex:1, overflowY:"auto", padding:"16px 18px 100px" }}>
+            {/* Soggetto rivelato o ? */}
+            <div style={{ textAlign:"center", marginBottom:"20px" }}>
+              {rivelato ? (
+                <div style={{ animation:"revealAnim 0.6s ease forwards" }}>
+                  <div style={{ fontSize:"72px", marginBottom:"8px" }}>{csState.emoji}</div>
+                  <p style={{ fontSize:"22px", fontWeight:900, color:"#29C9FF" }}>{csState.soggetto}</p>
+                  {csState.spiegazione && <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.6)", fontWeight:600, marginTop:"8px" }}>{csState.spiegazione}</p>}
+                </div>
+              ) : (
+                <div style={{ width:"90px", height:"90px", borderRadius:"50%", background:"rgba(41,201,255,0.15)", border:"3px solid rgba(41,201,255,0.4)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto", animation:"pulseSlow 2s ease infinite" }}>
+                  <span style={{ fontSize:"44px", fontWeight:900, color:"#29C9FF" }}>?</span>
+                </div>
+              )}
+            </div>
+
+            {/* Indizi */}
+            <p style={{ fontSize:"12px", fontWeight:800, color:"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px" }}>Indizi usati</p>
+            {indizioVisibili.map((ind, i) => (
+              <div key={i} className="vfade" style={{ ...S.card, marginBottom:"8px", borderLeft:`3px solid ${"rgba(41,201,255," + (0.3 + i*0.14) + ")"}` }}>
+                <p style={{ fontSize:"11px", fontWeight:800, color:"rgba(41,201,255,0.7)", marginBottom:"3px" }}>Indizio {i+1}</p>
+                <p style={{ fontSize:"14px", fontWeight:700 }}>{ind}</p>
+              </div>
+            ))}
+
+            {/* Risposta / risultato */}
+            {csState.fase === "gioco" && (
+              <div style={{ marginTop:"16px" }}>
+                {csState.messaggioVerifica && <p style={{ textAlign:"center", fontSize:"13px", color:"#ef4444", fontWeight:700, marginBottom:"10px" }}>{csState.messaggioVerifica}</p>}
+                <div style={{ display:"flex", gap:"8px", marginBottom:"10px" }}>
+                  <input value={csRisposta} onChange={e => setCsRisposta(e.target.value)} onKeyDown={e => e.key==="Enter" && verificaRisposta()} placeholder="Chi sono? Scrivi la risposta..." style={{ flex:1, padding:"14px", borderRadius:"14px", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(41,201,255,0.3)", color:"white", fontFamily:"'Nunito'", fontWeight:700, fontSize:"14px", outline:"none" }} />
+                  <button onClick={verificaRisposta} disabled={csLoading||!csRisposta.trim()} style={{ padding:"14px 18px", borderRadius:"14px", background:"linear-gradient(135deg,#29C9FF,#007ACC)", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"14px", cursor:"pointer", opacity:csRisposta.trim()?1:0.5 }}>{csLoading?"...":"✓"}</button>
+                </div>
+                {csState.indizioCorrente < csState.indizi.length - 1 && (
+                  <button onClick={prossimIndizio} style={{ width:"100%", padding:"12px", borderRadius:"14px", background:"rgba(41,201,255,0.1)", border:"1px solid rgba(41,201,255,0.25)", color:"#29C9FF", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", cursor:"pointer" }}>
+                    Mostra prossimo indizio ({csState.stelleGuadagnate-1}⭐ rimanenti) →
+                  </button>
+                )}
+              </div>
+            )}
+
+            {csState.fase === "vinto" && (
+              <div style={{ textAlign:"center", marginTop:"16px" }}>
+                <p style={{ fontSize:"20px", fontWeight:900, color:"#00F090", marginBottom:"8px" }}>🎉 Bravo/a! Risposta corretta!</p>
+                <p style={{ color:"#fbbf24", fontWeight:800, fontSize:"15px", marginBottom:"16px" }}>+{csState.stelleGuadagnate * 3} ⭐</p>
+                <div style={{ display:"flex", gap:"12px", justifyContent:"center" }}>
+                  <button onClick={() => { setCsState(null); setCsRisposta(""); avviaChiSono(); }} style={{ padding:"14px 24px", borderRadius:"14px", background:"linear-gradient(135deg,#29C9FF,#007ACC)", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", cursor:"pointer" }}>Ancora! 🎭</button>
+                  <button onClick={() => goScreen("gioca")} style={{ padding:"14px 24px", borderRadius:"14px", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", cursor:"pointer" }}>Cambia gioco</button>
+                </div>
+              </div>
+            )}
+
+            {csState.fase === "perso" && (
+              <div style={{ textAlign:"center", marginTop:"16px" }}>
+                <p style={{ fontSize:"16px", fontWeight:800, color:"rgba(255,255,255,0.7)", marginBottom:"16px" }}>Ci vuole più pratica! 💪</p>
+                <div style={{ display:"flex", gap:"12px", justifyContent:"center" }}>
+                  <button onClick={() => { setCsState(null); setCsRisposta(""); avviaChiSono(); }} style={{ padding:"14px 24px", borderRadius:"14px", background:"linear-gradient(135deg,#29C9FF,#007ACC)", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", cursor:"pointer" }}>Riprova! 🎭</button>
+                  <button onClick={() => goScreen("gioca")} style={{ padding:"14px 24px", borderRadius:"14px", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", cursor:"pointer" }}>Cambia gioco</button>
+                </div>
+              </div>
+            )}
+          </div>
+          <Nav />
+        </div>
+      );
+    }
+    return null;
+  }
+
 
   // ── QUIZ A RISPOSTA MULTIPLA ─────────────────────────────────
   if (screen === "quiz_mc") {
@@ -3660,7 +4373,7 @@ export default function Home() {
             <div><p style={{ fontWeight:900, fontSize:"17px" }}>Quiz Multipla</p><p style={{ fontSize:"11px", color:t.primario, fontWeight:600 }}>{giocaArgomento}</p></div>
           </div>
           <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"24px", gap:"20px" }}>
-            <LexChar stato="happy" size={120} />
+            <LexChar stato="happy" size={150} />
             <div style={{ textAlign:"center" }}>
               <p style={{ fontSize:"22px", fontWeight:900, marginBottom:"8px" }}>Pronto per il quiz? 🎯</p>
               <p style={{ color:"rgba(255,255,255,0.5)", fontSize:"14px", fontWeight:600 }}>5 domande su: <strong style={{ color:"white" }}>{giocaArgomento}</strong></p>
@@ -3674,7 +4387,7 @@ export default function Home() {
 
     if (mcLoading) return (
       <div style={{ ...S.app, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"20px" }}>
-        <LexChar stato="thinking" size={100} />
+        <LexChar stato="thinking" size={130} />
         <p style={{ fontWeight:800, fontSize:"16px" }}>Lex prepara le domande...</p>
       </div>
     );
@@ -3726,7 +4439,7 @@ export default function Home() {
           ))}
           {mcFine && (
             <div style={{ ...S.card, background:corrette>=4?"rgba(16,185,129,0.15)":corrette>=2?"rgba(245,158,11,0.12)":"rgba(239,68,68,0.12)", border:`1px solid ${corrette>=4?"rgba(16,185,129,0.4)":corrette>=2?"rgba(245,158,11,0.35)":"rgba(239,68,68,0.3)"}`, textAlign:"center" }}>
-              <LexChar stato={corrette>=4?"happy":"idle"} size={80} style={{ margin:"0 auto 12px" }} />
+              <LexChar stato={corrette>=4?"happy":"idle"} size={110} style={{ margin:"0 auto 12px" }} />
               <p style={{ fontSize:"24px", fontWeight:900, marginBottom:"6px" }}>{corrette>=4?"Fantastico! 🎉":corrette>=2?"Bravo! 💪":"Riprova! 🔄"}</p>
               <p style={{ color:"rgba(255,255,255,0.6)", fontSize:"14px", fontWeight:600, marginBottom:"12px" }}>{corrette} risposte giuste su 5 — +{corrette*2} ⭐</p>
               <div style={{ display:"flex", gap:"8px", marginBottom:"8px" }}>
@@ -3878,7 +4591,7 @@ export default function Home() {
           <div><p style={{fontWeight:900,fontSize:"17px"}}>Parole Crociate</p><p style={{fontSize:"11px",color:t.primario,fontWeight:600}}>{giocaArgomento}</p></div>
         </div>
         <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"24px",gap:"20px"}}>
-          <LexChar stato="idle" size={120}/>
+          <LexChar stato="idle" size={150}/>
           <div style={{textAlign:"center"}}>
             <p style={{fontSize:"22px",fontWeight:900,marginBottom:"8px"}}>Parole Crociate! 🔤</p>
             <p style={{color:"rgba(255,255,255,0.5)",fontSize:"14px",fontWeight:600}}>6 parole su: <strong style={{color:"white"}}>{giocaArgomento}</strong></p>
@@ -3891,7 +4604,7 @@ export default function Home() {
 
     if (wordLoading) return (
       <div style={{...S.app,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"20px"}}>
-        <LexChar stato="thinking" size={100}/>
+        <LexChar stato="thinking" size={130}/>
         <p style={{fontWeight:800,fontSize:"16px"}}>Lex prepara le parole crociate...</p>
       </div>
     );
@@ -4040,7 +4753,7 @@ export default function Home() {
           {wordVerificato&&(
             <div style={{padding:"14px"}}>
               <div style={{...S.card,background:corrette>=(wordGame?.placed?.length||0)*0.8?"rgba(16,185,129,0.15)":"rgba(245,158,11,0.1)",textAlign:"center",marginBottom:"16px"}}>
-                <LexChar stato={corrette>=(wordGame?.placed?.length||0)*0.8?"happy":"idle"} size={80} style={{margin:"0 auto 12px"}}/>
+                <LexChar stato={corrette>=(wordGame?.placed?.length||0)*0.8?"happy":"idle"} size={110} style={{margin:"0 auto 12px"}}/>
                 <p style={{fontSize:"22px",fontWeight:900,marginBottom:"6px"}}>{corrette>=(wordGame?.placed?.length||0)*0.8?"Bravissimo! 🎉":"Quasi! 💪"}</p>
                 <p style={{color:"rgba(255,255,255,0.6)",fontSize:"14px",fontWeight:600,marginBottom:"14px"}}>{corrette} parole su {wordGame?.placed?.length} — +{corrette} ⭐</p>
                 <div style={{display:"flex",gap:"8px",marginBottom:"8px"}}>
@@ -4091,6 +4804,526 @@ export default function Home() {
               )}
             </div>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  // ── RIPASSO HOME ──────────────────────────────────────────────
+  if (screen === "ripasso_home") {
+    const materieList = Object.entries(MATERIE);
+    const livelloStudente = ripassoXp <= 100 ? "Novizio 📖" : ripassoXp <= 300 ? "Studente ⭐" : ripassoXp <= 600 ? "Esperto 🎯" : ripassoXp <= 1000 ? "Genio 🧠" : "Maestro 🏆";
+    const xpLivelloCorrente = ripassoXp <= 100 ? ripassoXp : ripassoXp <= 300 ? ripassoXp - 100 : ripassoXp <= 600 ? ripassoXp - 300 : ripassoXp <= 1000 ? ripassoXp - 600 : (ripassoXp - 1000) % 200;
+    const xpLivelloMax = ripassoXp <= 100 ? 100 : ripassoXp <= 300 ? 200 : ripassoXp <= 600 ? 300 : ripassoXp <= 1000 ? 400 : 200;
+    // Trova la materia con il punteggio più alto (dove sta Lex)
+    let materiaLex = "matematica";
+    let maxScore = -1;
+    materieList.forEach(([key]) => {
+      const scores = ripassoScores[key] || {};
+      const tot = Object.values(scores).reduce((a, v) => a + (v || 0), 0);
+      if (tot > maxScore) { maxScore = tot; materiaLex = key; }
+    });
+
+    return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <Head><title>Lexyo — Ripasso</title></Head>
+        <style>{`
+          @keyframes nodePulse { 0%,100%{box-shadow:0 0 0 0 var(--pulse-c,rgba(99,102,241,0.5))} 50%{box-shadow:0 0 0 12px transparent} }
+          @keyframes xpFill { from{width:0%} to{width:var(--xp-w,0%)} }
+          @keyframes lexFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+        `}</style>
+        <div style={S.hdr}>
+          <button onClick={() => goScreen("home")} style={S.back}>←</button>
+          <div style={{ width:"44px", height:"44px", borderRadius:"14px", background:"linear-gradient(135deg,#7c3aed,#a855f7)", boxShadow:"0 4px 16px rgba(168,85,247,0.3)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", flexShrink:0 }}>🏆</div>
+          <div><p style={{ fontWeight:900, fontSize:"17px" }}>Ripasso</p><p style={{ fontSize:"11px", color: luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.4)", fontWeight:600 }}>Allenati ogni giorno</p></div>
+          <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:"6px", background:"rgba(239,68,68,0.15)", border:"1px solid rgba(239,68,68,0.3)", borderRadius:"12px", padding:"6px 10px" }}>
+            <span style={{ fontSize:"16px" }}>🔥</span>
+            <span style={{ fontWeight:900, fontSize:"15px", color:"#fbbf24" }}>{ripassoStreak}</span>
+          </div>
+        </div>
+
+        <div style={{ flex:1, overflowY:"auto", padding:"14px 18px" }}>
+
+          {/* ── Card XP / Livello Studente ── */}
+          <div style={{ ...S.card, marginBottom:"18px", padding:"16px 18px", background: luce?"linear-gradient(135deg,rgba(99,102,241,0.08),rgba(168,85,247,0.06))":"linear-gradient(135deg,rgba(99,102,241,0.18),rgba(168,85,247,0.12))", border:`1px solid ${luce?"rgba(99,102,241,0.18)":"rgba(168,85,247,0.3)"}` }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"10px" }}>
+              <div>
+                <p style={{ fontSize:"12px", fontWeight:800, color:"#a855f7", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"3px" }}>Livello Studente</p>
+                <p style={{ fontSize:"20px", fontWeight:900 }}>{livelloStudente}</p>
+              </div>
+              <div style={{ textAlign:"right" }}>
+                <p style={{ fontSize:"11px", color: luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.4)", fontWeight:600 }}>XP Totali</p>
+                <p style={{ fontSize:"22px", fontWeight:900, color:"#fbbf24" }}>{ripassoXp}</p>
+              </div>
+            </div>
+            <div style={{ marginBottom:"4px", display:"flex", justifyContent:"space-between" }}>
+              <p style={{ fontSize:"10px", fontWeight:700, color: luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.4)" }}>Progresso livello</p>
+              <p style={{ fontSize:"10px", fontWeight:800, color:"#a855f7" }}>{xpLivelloCorrente}/{xpLivelloMax} XP</p>
+            </div>
+            <div style={{ height:"10px", borderRadius:"5px", background: luce?"rgba(0,0,0,0.08)":"rgba(255,255,255,0.08)", overflow:"hidden", position:"relative" }}>
+              <div style={{ height:"100%", width:`${Math.min(100, Math.round((xpLivelloCorrente / xpLivelloMax) * 100))}%`, background:"linear-gradient(90deg,#6366f1,#a78bfa)", borderRadius:"5px", transition:"width 0.8s cubic-bezier(0.22,1,0.36,1)" }} />
+            </div>
+            <div style={{ marginTop:"10px", padding:"8px 12px", borderRadius:"10px", background: luce?"rgba(0,0,0,0.04)":"rgba(255,255,255,0.05)", display:"flex", alignItems:"center", gap:"8px" }}>
+              <LexChar stato={ripassoStreak > 0 ? "happy" : "idle"} size={58} />
+              <p style={{ fontSize:"13px", fontWeight:700, lineHeight:1.4 }}>
+                {ripassoStreak === 0 && "Ciao! Scegli una materia qui sotto 👇"}
+                {ripassoStreak === 1 && "Ottimo inizio! Torna domani 🔥"}
+                {ripassoStreak >= 2 && ripassoStreak < 7 && `${ripassoStreak} giorni di fila! Sei in forma 💪`}
+                {ripassoStreak >= 7 && `${ripassoStreak} giorni consecutivi! Leggendario 🌟`}
+              </p>
+            </div>
+          </div>
+
+          {/* ── SKILL TREE ── */}
+          <p style={{ fontSize:"11px", fontWeight:800, color: luce?"rgba(0,0,30,0.35)":"rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"1.2px", marginBottom:"16px", textAlign:"center" }}>Scegli la materia</p>
+
+          <div style={{ position:"relative", paddingLeft:"50%", display:"flex", flexDirection:"column", alignItems:"flex-start" }}>
+            {/* Linea verticale centrale */}
+            <div style={{ position:"absolute", left:"50%", top:"40px", bottom:"40px", width:"3px", background: luce?"rgba(99,102,241,0.15)":"rgba(168,85,247,0.2)", transform:"translateX(-50%)", borderLeft:"3px dashed " + (luce?"rgba(99,102,241,0.2)":"rgba(168,85,247,0.25)"), width:"0" }} />
+
+            {materieList.map(([key, info], idx) => {
+              const temi = (PROGRAMMA[figlioAttivo?.classe]?.materie?.[key] || []).flatMap(m => m.temi || []);
+              const scores = ripassoScores[key] || {};
+              const completati = temi.filter((_, i) => scores[i] !== undefined && scores[i] !== null).length;
+              const pct = temi.length > 0 ? Math.round((completati / temi.length) * 100) : 0;
+              const inCorso = completati > 0 && completati < temi.length;
+              const isLex = key === materiaLex && maxScore > 0;
+              // Alterna sinistra/destra
+              const isDestra = idx % 2 === 0;
+
+              return (
+                <div key={key} style={{ width:"100%", display:"flex", flexDirection:"column", alignItems:"center", marginBottom:"18px", position:"relative" }}>
+                  {/* Connettore alla linea centrale */}
+                  {idx > 0 && (
+                    <div style={{ position:"absolute", top:"-9px", left:"50%", width:"0", height:"18px", borderLeft:`2px dashed ${luce?"rgba(99,102,241,0.2)":"rgba(168,85,247,0.25)"}`, transform:"translateX(-50%)" }} />
+                  )}
+
+                  <button onClick={() => { setMateriaRipasso(key); goScreen("ripasso_mappa"); }}
+                    style={{ display:"flex", flexDirection:"column", alignItems:"center", background:"none", border:"none", cursor:"pointer", fontFamily:"'Nunito', sans-serif", padding:0, position:"relative" }}>
+
+                    {/* Lex sopra il nodo */}
+                    {isLex && (
+                      <div style={{ animation:"lexFloat 2.8s ease-in-out infinite", marginBottom:"-8px", zIndex:2, position:"relative" }}>
+                        <LexChar stato="idle" size={68} />
+                      </div>
+                    )}
+
+                    {/* Cerchio nodo */}
+                    <div style={{
+                      width:"80px", height:"80px", borderRadius:"50%",
+                      background: pct === 100 ? `linear-gradient(135deg,${info.colore},${info.colore}cc)` : `${info.colore}22`,
+                      border: `3px solid ${info.colore}`,
+                      display:"flex", alignItems:"center", justifyContent:"center",
+                      fontSize:"30px", position:"relative", zIndex:1,
+                      animation: inCorso ? "nodePulse 2s infinite" : "none",
+                      "--pulse-c": info.colore + "55",
+                      boxShadow: pct === 100 ? `0 6px 24px ${info.colore}55` : inCorso ? `0 0 0 0 ${info.colore}44` : "none",
+                      transition:"all 0.2s"
+                    }}>
+                      {pct === 100 ? <span style={{ fontSize:"32px" }}>✓</span> : info.emoji}
+                    </div>
+
+                    {/* Label + progress sotto il nodo */}
+                    <div style={{ textAlign:"center", marginTop:"8px", maxWidth:"100px" }}>
+                      <p style={{ fontWeight:900, fontSize:"13px", color: luce?info.colore:"white", marginBottom:"4px" }}>{info.label}</p>
+                      <p style={{ fontSize:"10px", fontWeight:700, color: luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.4)", marginBottom:"4px" }}>{completati}/{temi.length} livelli</p>
+                      <div style={{ width:"80px", height:"5px", borderRadius:"3px", background: luce?"rgba(0,0,0,0.08)":"rgba(255,255,255,0.1)", overflow:"hidden" }}>
+                        <div style={{ height:"100%", width:`${pct}%`, background:info.colore, borderRadius:"3px", transition:"width 0.6s" }} />
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ height:"20px" }} />
+        </div>
+        <Nav />
+      </div>
+    );
+  }
+
+  // ── RIPASSO MAPPA ─────────────────────────────────────────────
+  if (screen === "ripasso_mappa") {
+    const info = MATERIE[materiaRipasso] || MATERIE.matematica;
+    const temi = (PROGRAMMA[figlioAttivo?.classe]?.materie?.[materiaRipasso] || []).flatMap(m => m.temi || []);
+    const scores = ripassoScores[materiaRipasso] || {};
+    let primoNonCompletato = 0;
+    for (let i = 0; i < temi.length; i++) {
+      if (scores[i] === 10) { primoNonCompletato = i + 1; } else { break; }
+    }
+    const completati = temi.filter((_, i) => scores[i] === 10).length;
+    const pct = temi.length > 0 ? Math.round((completati / temi.length) * 100) : 0;
+    // Lex si posiziona sul nodo corrente: top = 80 + idx * 110 px, centrato sul nodo
+    const lexNodoIdx = Math.max(0, primoNonCompletato - 1);
+    const lexTop = 80 + lexNodoIdx * 110;
+    const lexNuvoletta = primoNonCompletato < temi.length
+      ? `Avanti! "${temi[primoNonCompletato] || "..."}" ti aspetta! 💪`
+      : completati === temi.length ? "Hai completato tutto! Sei un campione! 🏆" : "Inizia il primo livello! 🚀";
+
+    return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column", opacity: ripassoTransizione ? 0 : 1, transform: ripassoTransizione ? "scale(0.95)" : "scale(1)", transition:"opacity 0.4s ease, transform 0.4s ease" }}>
+        <Head><title>Lexyo — Mappa Ripasso</title></Head>
+        <style>{`
+          @keyframes nodePulse2 { 0%,100%{box-shadow:0 0 0 0 var(--pc,rgba(99,102,241,0.5)),0 4px 16px var(--pc2,rgba(99,102,241,0.2))} 50%{box-shadow:0 0 0 14px transparent,0 4px 20px var(--pc2,rgba(99,102,241,0.3))} }
+          @keyframes lexSlide { from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:translateY(0)} }
+          @keyframes mapFadeIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        `}</style>
+        <div style={S.hdr}>
+          <button onClick={() => goScreen("ripasso_home")} style={S.back}>←</button>
+          <div style={{ width:"44px", height:"44px", borderRadius:"14px", background:`linear-gradient(135deg,${info.colore},${info.colore}99)`, boxShadow:`0 4px 16px ${info.colore}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", flexShrink:0 }}>{info.emoji}</div>
+          <div><p style={{ fontWeight:900, fontSize:"17px" }}>{info.label}</p><p style={{ fontSize:"11px", color:info.colore, fontWeight:600 }}>{completati}/{temi.length} livelli completati</p></div>
+          <div style={{ marginLeft:"auto", background:`${info.colore}22`, border:`1px solid ${info.colore}44`, borderRadius:"12px", padding:"6px 12px" }}>
+            <p style={{ fontWeight:900, color:info.colore, fontSize:"13px" }}>{pct}%</p>
+          </div>
+        </div>
+
+        {/* Barra progresso */}
+        <div style={{ padding:"8px 18px", background: luce?"rgba(0,0,0,0.015)":"rgba(255,255,255,0.015)", borderBottom:`1px solid ${luce?"rgba(0,0,0,0.06)":"rgba(255,255,255,0.06)"}`, flexShrink:0 }}>
+          <div style={{ height:"6px", borderRadius:"3px", background: luce?"rgba(0,0,0,0.07)":"rgba(255,255,255,0.07)", overflow:"hidden" }}>
+            <div style={{ height:"100%", width:`${pct}%`, background:`linear-gradient(90deg,${info.colore},${info.colore}cc)`, borderRadius:"3px", transition:"width 0.6s cubic-bezier(0.22,1,0.36,1)" }} />
+          </div>
+        </div>
+
+        <div style={{ flex:1, overflowY:"auto" }}>
+          {temi.length === 0 ? (
+            <div style={{ textAlign:"center", padding:"40px 20px" }}>
+              <LexChar stato="idle" size={110} style={{ margin:"0 auto 16px" }} />
+              <p style={{ fontWeight:800, fontSize:"16px", marginBottom:"6px" }}>Nessun argomento disponibile</p>
+              <p style={{ fontSize:"13px", color: luce?"rgba(0,0,30,0.45)":"rgba(255,255,255,0.45)", fontWeight:600 }}>Controlla la classe selezionata</p>
+            </div>
+          ) : (
+            /* PERCORSO DUOLINGO */
+            <div style={{ position:"relative", minHeight:`${temi.length * 110 + 160}px`, padding:"20px 0 40px" }}>
+
+              {/* Linea verticale centrale */}
+              <div style={{ position:"absolute", left:"50%", top:"40px", height:`${temi.length * 110}px`, width:"4px", background:`linear-gradient(180deg,${info.colore}44,${info.colore}11)`, transform:"translateX(-50%)", borderRadius:"2px" }} />
+
+              {/* LEX posizionato sulla mappa con transizione */}
+              <div style={{ position:"absolute", left:"50%", top:`${ripassoLexMappaTop - 56}px`, transform:"translateX(-50%)", zIndex:10, transition:"top 0.8s cubic-bezier(0.22,1,0.36,1)", animation:"lexSlide 0.5s ease forwards" }}>
+                <LexChar stato={primoNonCompletato > 0 ? "happy" : "idle"} size={88} />
+                {/* Nuvoletta Lex — lato opposto al nodo corrente */}
+                <div style={{ position:"absolute", ...(primoNonCompletato % 2 === 0 ? { right:"70px", left:"auto", borderRadius:"12px 12px 4px 12px" } : { left:"70px", borderRadius:"12px 12px 12px 4px" }), top:"4px", background: luce?"white":"#1A1B3A", border:`1px solid ${luce?"rgba(0,0,0,0.1)":"rgba(255,255,255,0.12)"}`, padding:"7px 11px", boxShadow:"0 4px 14px rgba(0,0,0,0.15)", minWidth:"120px", maxWidth:"160px" }}>
+                  <p style={{ fontSize:"10px", fontWeight:700, lineHeight:1.4 }}>{lexNuvoletta}</p>
+                </div>
+              </div>
+
+              {/* NODI LIVELLI */}
+              {temi.map((tema, idx) => {
+                const score = scores[idx];
+                const superato = score === 10;                              // 100% → sblocca il prossimo
+                const tentato = score !== undefined && score !== null && score < 10; // tentato ma non superato
+                const corrente = idx === primoNonCompletato;               // primo livello non superato
+                const bloccato = idx > primoNonCompletato;
+                const isDestra = idx % 2 === 0;
+                const nodoTop = 80 + idx * 110;
+                const nodoColor = superato ? "#10b981" : tentato ? "#f59e0b" : corrente ? info.colore : luce ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.15)";
+                const nodoBg = superato ? "rgba(16,185,129,0.2)" : tentato ? "rgba(245,158,11,0.15)" : corrente ? `${info.colore}22` : luce ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)";
+
+                return (
+                  <div key={idx} style={{ position:"absolute", top:`${nodoTop}px`, left: isDestra ? "calc(50% + 16px)" : "auto", right: !isDestra ? "calc(50% + 16px)" : "auto", width:"calc(50% - 40px)" }}>
+                    <button disabled={bloccato} onClick={() => { if (bloccato) return; setLivelloRipasso(idx); setRipassoLexMappaTop(nodoTop); goScreen("ripasso_quiz"); }}
+                      style={{ width:"100%", background:"none", border:"none", cursor:bloccato?"not-allowed":"pointer", fontFamily:"'Nunito', sans-serif", padding:0, opacity:bloccato?0.38:1, animation:"mapFadeIn 0.4s ease both", animationDelay:`${idx * 0.04}s` }}>
+
+                      <div style={{ display:"flex", flexDirection: isDestra?"row":"row-reverse", alignItems:"center", gap:"10px" }}>
+                        {/* Cerchio nodo */}
+                        <div style={{ width:"70px", height:"70px", borderRadius:"50%", background:nodoBg, border:`3px solid ${nodoColor}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, position:"relative",
+                          animation: corrente ? "nodePulse2 2.2s ease-in-out infinite" : "none",
+                          "--pc": info.colore + "55", "--pc2": info.colore + "33",
+                          boxShadow: superato ? `0 4px 18px ${nodoColor}44` : "none"
+                        }}>
+                          <span style={{ fontSize:"22px", fontWeight:900, color:nodoColor }}>
+                            {superato ? "✓" : tentato ? `${score*10}%` : bloccato ? "🔒" : "▶"}
+                          </span>
+                        </div>
+
+                        {/* Info testo */}
+                        <div style={{ flex:1, textAlign: isDestra?"left":"right" }}>
+                          <p style={{ fontWeight:800, fontSize:"12px", lineHeight:1.3, color: luce?(superato?"#059669":tentato?"#d97706":corrente?info.colore:"rgba(0,0,30,0.6)"):(superato?"#34d399":tentato?"#fbbf24":corrente?info.colore:"rgba(255,255,255,0.5)") }}>{tema}</p>
+                          {/* Mini barra progresso */}
+                          {(superato || tentato) && (
+                            <div style={{ marginTop:"5px" }}>
+                              <div style={{ height:"5px", borderRadius:"3px", background: luce?"rgba(0,0,0,0.07)":"rgba(255,255,255,0.08)", overflow:"hidden", width:"100%" }}>
+                                <div style={{ height:"100%", width:`${score * 10}%`, background: superato ? "#10b981" : "#f59e0b", borderRadius:"3px", boxShadow: superato ? "0 0 6px rgba(16,185,129,0.5)" : "none", transition:"width 0.6s" }} />
+                              </div>
+                              <p style={{ fontSize:"9px", fontWeight:800, color: superato ? "#34d399" : "#fbbf24", marginTop:"2px", textAlign: isDestra?"left":"right" }}>{score}/10 {superato ? "✓" : "— riprova!"}</p>
+                            </div>
+                          )}
+                          {corrente && <p style={{ fontSize:"10px", fontWeight:800, color:info.colore, marginTop:"3px" }}>{tentato ? "→ Riprova!" : "→ Inizia!"}</p>}
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        <Nav />
+      </div>
+    );
+  }
+
+  // ── RIPASSO QUIZ ──────────────────────────────────────────────
+  if (screen === "ripasso_quiz") {
+    const info = MATERIE[materiaRipasso] || MATERIE.matematica;
+    const temi = (PROGRAMMA[figlioAttivo?.classe]?.materie?.[materiaRipasso] || []).flatMap(m => m.temi || []);
+    const argomentoCorrente = temi[livelloRipasso] || "";
+
+    const avviaRipassoQuiz = async () => {
+      setRipassoLoading(true);
+      try {
+        const r = await fetch("/api/ripasso-genera", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ materia: info.label, classe: prog?.label, argomento: argomentoCorrente }),
+        });
+        const d = await r.json();
+        setRipassoQuiz(d.domande || []);
+        setRipassoRisposte([]);
+        setRipassoFine(false);
+      } catch { setRipassoQuiz([]); }
+      setRipassoLoading(false);
+    };
+
+    const rispondiRipasso = (domIdx, opzIdx) => {
+      if (ripassoRisposte[domIdx] !== undefined) return;
+      const nuove = [...ripassoRisposte];
+      nuove[domIdx] = opzIdx;
+      setRipassoRisposte(nuove);
+      if (nuove.filter(r => r !== undefined).length === (ripassoQuiz?.length || 0)) {
+        const corrette = ripassoQuiz.filter((d, i) => nuove[i] === d.corretta).length;
+        setRipassoScore(corrette);
+        setRipassoLexMsg(corrette >= 8 ? "Fantastico! Conosci benissimo questo argomento! 🎉" : corrette >= 5 ? "Bravo! Ancora un po' di pratica e sarai perfetto! 💪" : "Non mollare! Ripassare più volte è normale e utile! 🔄");
+        const prevScores = ripassoScores;
+        const prevBest = (prevScores[materiaRipasso] || {})[livelloRipasso];
+        const bestScore = prevBest !== undefined ? Math.max(prevBest, corrette) : corrette;
+        const nuoviScores = { ...prevScores, [materiaRipasso]: { ...(prevScores[materiaRipasso] || {}), [livelloRipasso]: bestScore } };
+        const nuovoXp = ripassoXp + corrette;
+        const oggi = new Date().toISOString().split("T")[0];
+        const ieri = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+        const ultiGiorno = figlioAttivo?.ripasso_ultimo_giorno;
+        const nuovoStreak = ultiGiorno === oggi ? ripassoStreak : ultiGiorno === ieri ? ripassoStreak + 1 : 1;
+        const eraCompletato = prevBest === 10;  // overlay solo al primo 10/10
+        setRipassoScores(nuoviScores);
+        setRipassoXp(nuovoXp);
+        setRipassoStreak(nuovoStreak);
+        setFiglioAttivo(prev => ({ ...prev, ripasso_scores: nuoviScores, ripasso_xp: nuovoXp, ripasso_streak: nuovoStreak, ripasso_ultimo_giorno: oggi }));
+        if (!eraCompletato) { setTimeout(() => suona("obiettivo"), 350); setRipassoNuovoLivelloOverlay(true); } else { setTimeout(() => suona("livello"), 350); }
+        supabase.from("figli").update({ ripasso_scores: nuoviScores, ripasso_xp: nuovoXp, ripasso_streak: nuovoStreak, ripasso_ultimo_giorno: oggi }).eq("id", figlioAttivo.id).then(() => {});
+        setTimeout(() => setScreen("ripasso_risultato"), 400);
+      }
+    };
+
+    const domandeRisposte = ripassoRisposte.filter(r => r !== undefined).length;
+    const domandeTotal = ripassoQuiz?.length || 10;
+
+    if (!ripassoQuiz && !ripassoLoading) return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <Head><title>Lexyo — Ripasso Quiz</title></Head>
+        <div style={S.hdr}>
+          <button onClick={() => goScreen("ripasso_mappa")} style={S.back}>←</button>
+          <div style={{ width:"44px", height:"44px", borderRadius:"14px", background:`linear-gradient(135deg,${info.colore},${info.colore}aa)`, boxShadow:`0 4px 16px ${info.colore}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", flexShrink:0 }}>{info.emoji}</div>
+          <div><p style={{ fontWeight:900, fontSize:"17px" }}>Livello {livelloRipasso + 1}</p><p style={{ fontSize:"11px", color:info.colore, fontWeight:600 }}>{argomentoCorrente}</p></div>
+        </div>
+        <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"24px", gap:"20px" }}>
+          <LexChar stato="happy" size={155} />
+          <div style={{ textAlign:"center" }}>
+            <p style={{ fontSize:"22px", fontWeight:900, marginBottom:"8px" }}>Pronto per il ripasso? 🎯</p>
+            <p style={{ color: luce?"rgba(0,0,30,0.5)":"rgba(255,255,255,0.5)", fontSize:"14px", fontWeight:600 }}>10 domande su: <strong style={{ color: luce?"#0a0a20":"white" }}>{argomentoCorrente}</strong></p>
+            <p style={{ color:info.colore, fontSize:"13px", fontWeight:700, marginTop:"4px" }}>Ogni risposta giusta = 1 XP 💫</p>
+          </div>
+          <button onClick={avviaRipassoQuiz} style={{ ...S.btn, ...S.btnP, maxWidth:"300px" }}>Inizia! →</button>
+        </div>
+      </div>
+    );
+
+    if (ripassoLoading) return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"20px" }}>
+        <LexChar stato="thinking" size={130} />
+        <p style={{ fontWeight:800, fontSize:"16px" }}>Lex prepara le domande...</p>
+      </div>
+    );
+
+    return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <Head><title>Lexyo — Quiz Ripasso</title></Head>
+        <div style={{ padding:"12px 18px 10px", background: luce?"linear-gradient(180deg,#ffffff 0%,#f5f7ff 100%)":"linear-gradient(180deg,#1A1B3A 0%,#141530 100%)", borderBottom:`1px solid ${luce?"rgba(0,0,0,0.07)":"rgba(255,255,255,0.07)"}`, flexShrink:0 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:"12px", marginBottom:"8px" }}>
+            <button onClick={() => goScreen("ripasso_mappa")} style={S.back}>←</button>
+            <div style={{ flex:1 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"5px" }}>
+                <p style={{ fontSize:"12px", fontWeight:800 }}>{info.emoji} {argomentoCorrente}</p>
+                <p style={{ fontSize:"12px", fontWeight:800, color:info.colore }}>{domandeRisposte}/{domandeTotal}</p>
+              </div>
+              <div style={{ height:"5px", borderRadius:"3px", background: luce?"rgba(0,0,0,0.07)":"rgba(255,255,255,0.07)", overflow:"hidden" }}>
+                <div style={{ height:"100%", width:`${(domandeRisposte / domandeTotal) * 100}%`, background:`linear-gradient(90deg,${info.colore},${info.colore}bb)`, borderRadius:"3px", transition:"width 0.3s" }} />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style={{ flex:1, overflowY:"auto", padding:"16px 18px", display:"flex", flexDirection:"column", gap:"14px" }}>
+          {ripassoQuiz.map((dom, di) => {
+            const risposta = ripassoRisposte[di] !== undefined;
+            return (
+              <div key={di} style={{ ...S.card }} className="vfade">
+                <p style={{ fontSize:"11px", color: luce?"rgba(0,0,30,0.35)":"rgba(255,255,255,0.4)", fontWeight:700, marginBottom:"6px" }}>Domanda {di + 1}/10</p>
+                <p style={{ fontWeight:800, fontSize:"15px", marginBottom:"12px", lineHeight:1.4 }}>{dom.testo}</p>
+                <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
+                  {dom.opzioni.map((op, oi) => {
+                    const scelta = ripassoRisposte[di] === oi;
+                    const corretta2 = oi === dom.corretta;
+                    let bg = luce ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.05)";
+                    let border = luce ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)";
+                    if (risposta && corretta2) { bg = "rgba(16,185,129,0.2)"; border = "#10b981"; }
+                    else if (risposta && scelta && !corretta2) { bg = "rgba(239,68,68,0.2)"; border = "#ef4444"; }
+                    return (
+                      <button key={oi} onClick={() => rispondiRipasso(di, oi)} style={{ padding:"12px 14px", borderRadius:"12px", background:bg, border:`2px solid ${border}`, color: luce?"#0a0a20":"white", fontFamily:"'Nunito'", fontWeight:700, fontSize:"14px", textAlign:"left", cursor:risposta?"default":"pointer", display:"flex", alignItems:"center", gap:"10px" }}>
+                        <span style={{ fontWeight:900, color: luce?"rgba(0,0,30,0.35)":"rgba(255,255,255,0.4)", flexShrink:0 }}>{["A","B","C","D"][oi]}</span>
+                        {op}
+                        {risposta && corretta2 && <span style={{ marginLeft:"auto", color:"#34d399", fontSize:"16px" }}>✓</span>}
+                        {risposta && scelta && !corretta2 && <span style={{ marginLeft:"auto", color:"#f87171", fontSize:"16px" }}>✗</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+                {risposta && ripassoRisposte[di] !== dom.corretta && (
+                  <div style={{ marginTop:"10px", padding:"10px 12px", borderRadius:"10px", background:"rgba(16,185,129,0.12)", border:"1px solid rgba(16,185,129,0.3)", display:"flex", alignItems:"flex-start", gap:"8px" }}>
+                    <span style={{ fontSize:"15px", flexShrink:0 }}>💡</span>
+                    <p style={{ fontSize:"13px", fontWeight:700, color:"#34d399", lineHeight:1.4 }}>Risposta corretta: <span style={{ color: luce?"#0a0a20":"white" }}>{dom.opzioni[dom.corretta]}</span></p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // ── RIPASSO RISULTATO ─────────────────────────────────────────
+  if (screen === "ripasso_risultato") {
+    const info = MATERIE[materiaRipasso] || MATERIE.matematica;
+    const temi = (PROGRAMMA[figlioAttivo?.classe]?.materie?.[materiaRipasso] || []).flatMap(m => m.temi || []);
+    const argomento = temi[livelloRipasso] || "";
+    const prossimoIdx = livelloRipasso + 1;
+    const haProssimo = prossimoIdx < temi.length;
+    const lexStato = ripassoScore >= 8 ? "happy" : ripassoScore >= 5 ? "talk" : "idle";
+    const settimanaP = ripassoStreak > 0 && ripassoStreak % 7 === 0;
+    // SVG ring: circumference = 2*π*44 ≈ 276.46
+    const CIRC = 276.46;
+    const dash = CIRC - (CIRC * (ripassoScoreAnim / 10));
+    // Particelle per overlay
+    const PARTICELLE = Array.from({ length: 20 }, (_, i) => ({
+      top: `${5 + Math.round(((i * 17 + 11) % 85))}%`,
+      left: `${5 + Math.round(((i * 23 + 7) % 88))}%`,
+      color: i % 3 === 0 ? info.colore : i % 3 === 1 ? "white" : "#fbbf24",
+      size: 6 + (i % 3) * 2,
+      delay: `${(i * 0.07).toFixed(2)}s`,
+      dur: `${1.2 + (i % 4) * 0.1}s`,
+      rot: `${i * 18}deg`,
+    }));
+
+    return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <Head><title>Lexyo — Risultato Ripasso</title></Head>
+        <style>{`
+          @keyframes rLevelPop{0%{transform:scale(0.3) rotate(-10deg);opacity:0}60%{transform:scale(1.2) rotate(3deg);opacity:1}100%{transform:scale(1) rotate(0deg);opacity:1}}
+          @keyframes particella{0%{transform:translateY(0) rotate(0deg);opacity:0}20%{opacity:1}100%{transform:translateY(-200px) rotate(360deg);opacity:0}}
+          @keyframes xpSlideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+          @keyframes ringFill{from{stroke-dashoffset:${CIRC}}to{stroke-dashoffset:${dash}}}
+        `}</style>
+
+        {/* Overlay nuovo livello con particelle */}
+        {ripassoNuovoLivelloOverlay && (
+          <div style={{ position:"fixed", inset:0, zIndex:10000, background:"rgba(0,0,0,0.90)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"20px" }} onClick={() => setRipassoNuovoLivelloOverlay(false)}>
+            {/* Particelle CSS */}
+            {PARTICELLE.map((p, i) => (
+              <div key={i} style={{ position:"absolute", top:p.top, left:p.left, width:`${p.size}px`, height:`${p.size}px`, borderRadius:"50%", background:p.color, animation:`particella ${p.dur} ${p.delay} ease-out both`, pointerEvents:"none" }} />
+            ))}
+            <div style={{ animation:"rLevelPop 0.6s cubic-bezier(0.175,0.885,0.32,1.275) forwards", position:"relative", zIndex:1 }}>
+              <LexChar stato="happy" size={180} />
+            </div>
+            <div style={{ textAlign:"center", position:"relative", zIndex:1 }}>
+              <p style={{ fontSize:"34px", fontWeight:900, background:"linear-gradient(135deg,#fbbf24,#f59e0b)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", marginBottom:"8px" }}>Livello {livelloRipasso + 1} completato!</p>
+              <p style={{ fontSize:"16px", color:"rgba(255,255,255,0.85)", fontWeight:700 }}>{haProssimo ? "Prossimo livello sbloccato! 🔓" : "Materia completata! 🏆"}</p>
+            </div>
+            <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.35)", fontWeight:600, position:"relative", zIndex:1 }}>Tocca per continuare</p>
+          </div>
+        )}
+
+        <div style={S.hdr}>
+          <button onClick={() => goScreen("ripasso_mappa")} style={S.back}>←</button>
+          <div style={{ width:"44px", height:"44px", borderRadius:"14px", background:`linear-gradient(135deg,${info.colore},${info.colore}aa)`, boxShadow:`0 4px 16px ${info.colore}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", flexShrink:0 }}>{info.emoji}</div>
+          <div><p style={{ fontWeight:900, fontSize:"17px" }}>Risultato</p><p style={{ fontSize:"11px", color:info.colore, fontWeight:600 }}>{argomento}</p></div>
+        </div>
+
+        <div style={{ flex:1, overflowY:"auto", padding:"20px 18px", display:"flex", flexDirection:"column", alignItems:"center", gap:"18px" }}>
+
+          {/* Lex + nuvoletta */}
+          <div style={{ display:"flex", alignItems:"flex-end", gap:"10px" }}>
+            <LexChar stato={lexStato} size={130} />
+            <div style={{ background: luce?"rgba(0,0,0,0.06)":"rgba(255,255,255,0.07)", border:`1px solid ${luce?"rgba(0,0,0,0.09)":"rgba(255,255,255,0.09)"}`, borderRadius:"14px 14px 14px 4px", padding:"10px 14px", maxWidth:"180px", marginBottom:"10px" }}>
+              <p style={{ fontSize:"13px", fontWeight:700, lineHeight:1.4 }}>{ripassoLexMsg}</p>
+            </div>
+          </div>
+
+          {/* Score con ring SVG */}
+          <div style={{ position:"relative", width:"120px", height:"120px", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <svg width="120" height="120" style={{ position:"absolute", inset:0, transform:"rotate(-90deg)" }}>
+              <circle cx="60" cy="60" r="44" fill="none" stroke={luce?"rgba(0,0,0,0.07)":"rgba(255,255,255,0.07)"} strokeWidth="8" />
+              <circle cx="60" cy="60" r="44" fill="none" stroke={info.colore} strokeWidth="8" strokeLinecap="round"
+                strokeDasharray={CIRC} strokeDashoffset={dash}
+                style={{ transition:"stroke-dashoffset 1.2s cubic-bezier(0.22,1,0.36,1)" }} />
+            </svg>
+            <div style={{ textAlign:"center" }}>
+              <p style={{ fontSize:"40px", fontWeight:900, lineHeight:1, background:`linear-gradient(135deg,${info.colore},${info.colore}bb)`, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>{ripassoScoreAnim}</p>
+              <p style={{ fontSize:"12px", fontWeight:800, color: luce?"rgba(0,0,30,0.35)":"rgba(255,255,255,0.35)" }}>/10</p>
+            </div>
+          </div>
+
+          {/* Card Streak */}
+          <div style={{ ...S.card, width:"100%", padding:"14px 16px" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
+              <span style={{ fontSize:"24px" }}>🔥</span>
+              <div style={{ flex:1 }}>
+                <p style={{ fontSize:"13px", fontWeight:800 }}>Streak Ripasso</p>
+                <p style={{ fontSize:"12px", color: luce?"rgba(0,0,30,0.45)":"rgba(255,255,255,0.45)", fontWeight:600 }}>{ripassoStreak} {ripassoStreak === 1 ? "giorno" : "giorni"} consecutivi</p>
+              </div>
+              <div style={{ background:"rgba(239,68,68,0.15)", border:"1px solid rgba(239,68,68,0.3)", borderRadius:"10px", padding:"6px 12px" }}>
+                <p style={{ fontWeight:900, color:"#fbbf24", fontSize:"16px" }}>{ripassoStreak}🔥</p>
+              </div>
+            </div>
+            {settimanaP && (
+              <div style={{ marginTop:"10px", padding:"8px 12px", borderRadius:"10px", background:"linear-gradient(135deg,rgba(239,68,68,0.15),rgba(245,158,11,0.1))", border:"1px solid rgba(239,68,68,0.25)", display:"flex", alignItems:"center", gap:"8px" }}>
+                <span style={{ fontSize:"18px" }}>🔥</span>
+                <p style={{ fontSize:"12px", fontWeight:800, color:"#fbbf24" }}>Settimana perfetta! Sei inarrestabile!</p>
+              </div>
+            )}
+          </div>
+
+          {/* Card XP con slideUp */}
+          <div style={{ ...S.card, width:"100%", padding:"14px 16px", animation:"xpSlideUp 0.5s 0.3s ease both" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
+              <span style={{ fontSize:"24px" }}>✨</span>
+              <div style={{ flex:1 }}>
+                <p style={{ fontSize:"13px", fontWeight:800 }}>XP Guadagnati</p>
+                <p style={{ fontSize:"12px", fontWeight:800, color:info.colore }}>+{ripassoScore} XP questo round</p>
+              </div>
+              <div style={{ background:`${info.colore}22`, border:`1px solid ${info.colore}44`, borderRadius:"10px", padding:"6px 12px" }}>
+                <p style={{ fontWeight:900, color:info.colore, fontSize:"16px" }}>{ripassoXp} XP</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottoni */}
+          <div style={{ width:"100%", display:"flex", flexDirection:"column", gap:"10px" }}>
+            {haProssimo && (
+              <button onClick={() => { setLivelloRipasso(prossimoIdx); goScreen("ripasso_quiz"); }} style={{ ...S.btn, ...S.btnP }}>Prossimo Livello →</button>
+            )}
+            <button onClick={() => goScreen("ripasso_quiz")} style={{ ...S.btn, background: luce?"rgba(0,0,0,0.06)":"rgba(255,255,255,0.07)", border:`1px solid ${luce?"rgba(0,0,0,0.1)":"rgba(255,255,255,0.1)"}`, color: luce?"#0a0a20":"white" }}>🔄 Riprova questo livello</button>
+            <button onClick={() => goScreen("ripasso_mappa")} style={{ ...S.btn, background:`${info.colore}22`, border:`1px solid ${info.colore}44`, color:info.colore }}>← Torna alla Mappa</button>
+          </div>
         </div>
       </div>
     );
