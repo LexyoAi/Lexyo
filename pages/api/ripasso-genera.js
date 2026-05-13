@@ -2,6 +2,16 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getAdattivita, getDifficoltaMateria } from "../../lib/adattivita";
 import { cacheGetOrFetch, ck } from "../../lib/cache";
 
+function fixCorrettaIndex(domande) {
+  return domande.map(d => {
+    if (!d.risposta_corretta) return d;
+    const target = String(d.risposta_corretta).trim().toLowerCase();
+    const idx = d.opzioni.findIndex(o => String(o).trim().toLowerCase() === target);
+    if (idx !== -1 && idx !== d.corretta) return { ...d, corretta: idx };
+    return d;
+  });
+}
+
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const MAX_VARIANTS = 3;
@@ -23,20 +33,24 @@ export default async function handler(req, res) {
         system: [{ type: "text", text: `Sei un creatore di quiz di ripasso scolastici per la ${classe} italiana.
 Genera ESATTAMENTE 10 domande a risposta multipla su "${argomento}" di ${materia}.
 ${difficolta ? `\n${difficolta}\n` : ""}
-REGOLE OBBLIGATORIE:
-- Niente domande banali o ovvie: ogni domanda deve richiedere studio e ragionamento.
-- Varia la difficoltà: prime 4 di comprensione, successive 4 di applicazione, ultime 2 di analisi/sintesi.
-- Risposte sbagliate plausibili, non assurde.
-Stile linguistico: ${adattivita}
-Rispondi SOLO con JSON valido (niente testo fuori, niente markdown):
-{"domande":[{"testo":"domanda chiara?","opzioni":["Risposta A","Risposta B","Risposta C","Risposta D"],"corretta":0}]}
-"corretta" = indice 0-3 della risposta giusta.`, cache_control: { type: "ephemeral" } }],
+PROCESSO OBBLIGATORIO PER OGNI DOMANDA:
+1. Calcola/determina la risposta corretta e verificala.
+2. Scrivila nel campo "risposta_corretta".
+3. Inseriscila nelle opzioni + 3 sbagliate plausibili.
+4. Imposta "corretta" = indice (0-3) che corrisponde a risposta_corretta in opzioni.
+5. Verifica che opzioni[corretta] == risposta_corretta.
+Varia difficoltà: prime 4 comprensione, successive 4 applicazione, ultime 2 analisi/sintesi.
+Stile: ${adattivita}
+Rispondi SOLO con JSON valido:
+{"domande":[{"testo":"domanda?","opzioni":["Op0","Op1","Op2","Op3"],"corretta":0,"risposta_corretta":"Op0"}]}`, cache_control: { type: "ephemeral" } }],
         messages: [{ role: "user", content: `Crea 10 domande di ripasso su "${argomento}" di ${materia} per ${classe}.` }],
       });
 
       const testo = risposta.content[0].text.trim();
       const match = testo.match(/\{[\s\S]*\}/);
-      return JSON.parse(match ? match[0] : testo);
+      const parsed = JSON.parse(match ? match[0] : testo);
+      parsed.domande = fixCorrettaIndex(parsed.domande || []);
+      return parsed;
     }, MAX_VARIANTS, TTL);
 
     res.setHeader("X-Cache", hit ? "HIT" : "MISS");
