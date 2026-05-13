@@ -503,6 +503,15 @@ export default function Home() {
     setRipassoStreak(figlioAttivo.ripasso_streak || 0);
     setRipassoScores(figlioAttivo.ripasso_scores || {});
     setRipassoXp(figlioAttivo.ripasso_xp || 0);
+    // Streak: priorità a Supabase, fallback localStorage
+    const streakDB = figlioAttivo.streak;
+    if (streakDB != null) {
+      setStreak(streakDB);
+      localStorage.setItem(`lexyo_streak_${figlioAttivo.id}`, String(streakDB));
+    } else {
+      const loc = parseInt(localStorage.getItem(`lexyo_streak_${figlioAttivo.id}`) || localStorage.getItem("lexyo_streak") || "0", 10);
+      setStreak(loc);
+    }
   }, [figlioAttivo?.id]);
 
   useEffect(() => {
@@ -570,16 +579,17 @@ export default function Home() {
   }, [svState?.fase]);
 
   const aggiornaStreak = () => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !figlioAttivo) return;
     const oggi = new Date().toDateString();
     const ieri = new Date(Date.now() - 86400000).toDateString();
-    const ultimoStudio = localStorage.getItem("lexyo_ultimo_studio");
-    const streakSalvato = parseInt(localStorage.getItem("lexyo_streak") || "0", 10);
+    const ultimoStudio = localStorage.getItem(`lexyo_ultimo_studio_${figlioAttivo.id}`) || localStorage.getItem("lexyo_ultimo_studio");
+    const streakSalvato = parseInt(localStorage.getItem(`lexyo_streak_${figlioAttivo.id}`) || localStorage.getItem("lexyo_streak") || "0", 10);
     if (ultimoStudio === oggi) return;
     const nuovoStreak = ultimoStudio === ieri ? streakSalvato + 1 : 1;
-    localStorage.setItem("lexyo_streak", String(nuovoStreak));
-    localStorage.setItem("lexyo_ultimo_studio", oggi);
+    localStorage.setItem(`lexyo_streak_${figlioAttivo.id}`, String(nuovoStreak));
+    localStorage.setItem(`lexyo_ultimo_studio_${figlioAttivo.id}`, oggi);
     setStreak(nuovoStreak);
+    if (utente) supabase.from("figli").update({ streak: nuovoStreak, ultima_attivita: new Date().toISOString() }).eq("id", figlioAttivo.id).then(() => {});
     if (nuovoStreak === 3) addBadge("streak3");
     if (nuovoStreak === 7) addBadge("streak7");
   };
@@ -687,8 +697,11 @@ export default function Home() {
     if (!figlioAttivo || figlioAttivo.badge?.includes(id)) return;
     setFigli((prev) => prev.map((f) => {
       if (f.id !== figlioAttivo.id) return f;
-      const u = { ...f, badge: [...(f.badge || []), id] };
-      setFiglioAttivo(u); return u;
+      const nuoviBadge = [...(f.badge || []), id];
+      const u = { ...f, badge: nuoviBadge };
+      setFiglioAttivo(u);
+      if (utente) supabase.from("figli").update({ badge: nuoviBadge }).eq("id", f.id).then(() => {});
+      return u;
     }));
     const b = BADGE.find((x) => x.id === id);
     setNewBadge(b); setTimeout(() => setNewBadge(null), 3000);
@@ -769,7 +782,9 @@ export default function Home() {
       const key = `${materiaN}_${argomento}`;
       prep[key] = stato;
       const u = { ...f, preparazione: prep };
-      setFiglioAttivo(u); return u;
+      setFiglioAttivo(u);
+      if (utente) supabase.from("figli").update({ preparazione: prep }).eq("id", f.id).then(() => {});
+      return u;
     }));
   };
 
