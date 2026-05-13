@@ -51,6 +51,9 @@ html[data-tema="light"] body {
    perché vengono gestiti direttamente nel JSX tramite la variabile luce. */
 html[data-tema="light"] p,
 html[data-tema="light"] span,
+html[data-tema="light"] strong,
+html[data-tema="light"] em,
+html[data-tema="light"] b,
 html[data-tema="light"] h1,
 html[data-tema="light"] h2,
 html[data-tema="light"] h3,
@@ -66,6 +69,14 @@ html[data-tema="light"] th {
 
 /* Button senza gradiente → testo scuro (quelli con gradiente es. Gioca/hcard restano bianchi) */
 html[data-tema="light"] button:not([style*="linear-gradient"]) {
+  color: rgba(10, 10, 32, 0.87) !important;
+}
+
+/* Qualsiasi elemento che abbia color:white o color rgba(255,255,255,...) SENZA gradiente */
+html[data-tema="light"] [style*="color: white"]:not([style*="linear-gradient"]),
+html[data-tema="light"] [style*="color:white"]:not([style*="linear-gradient"]),
+html[data-tema="light"] [style*="color: rgba(255,255,255"]:not([style*="linear-gradient"]),
+html[data-tema="light"] [style*="color:rgba(255,255,255"]:not([style*="linear-gradient"]) {
   color: rgba(10, 10, 32, 0.87) !important;
 }
 

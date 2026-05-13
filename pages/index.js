@@ -4018,12 +4018,12 @@ export default function Home() {
     const matInfo = MATERIE[materia] || MATERIE.matematica;
     const prog2 = figlioAttivo ? CLASSI[figlioAttivo.classe] : null;
 
-    const avviaSfida = async () => {
+    const avviaSfida = async (forceNew = false) => {
       setSvState({ fase: "loading" });
       try {
         const r = await fetch("/api/sfida-velocita", {
           method:"POST", headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({ materia: matInfo.label, classe: prog2?.label, argomento: giocaArgomento }),
+          body: JSON.stringify({ materia: matInfo.label, classe: prog2?.label, argomento: giocaArgomento, forceNew }),
         });
         const d = await r.json();
         if (d.errore || !d.domande?.length) { setSvState(null); alert("Errore: " + (d.errore || "nessuna domanda")); return; }
@@ -4089,7 +4089,7 @@ export default function Home() {
               <p style={{ color:"rgba(255,255,255,0.5)", fontSize:"13px", fontWeight:600 }}>Hai 60 secondi — rispondi il più veloce possibile!</p>
               {(recordGiochi?.sfida_velocita?.[giocaArgomento]) && <p style={{ color:"#fbbf24", fontSize:"13px", fontWeight:800, marginTop:"8px" }}>🏆 Il tuo record: {recordGiochi.sfida_velocita[giocaArgomento]} punti</p>}
             </div>
-            <button onClick={avviaSfida} style={{ ...S.btn, background:"linear-gradient(135deg,#FFE500,#FFB300)", color:"#0a0a20", maxWidth:"280px", fontWeight:900 }}>Inizia! ⚡</button>
+            <button onClick={() => avviaSfida()} style={{ ...S.btn, background:"linear-gradient(135deg,#FFE500,#FFB300)", color:"#0a0a20", maxWidth:"280px", fontWeight:900 }}>Inizia! ⚡</button>
           </div>
         </div>
       );
@@ -4195,7 +4195,7 @@ export default function Home() {
           </div>
           <div style={{ display:"flex", gap:"10px", width:"100%", maxWidth:"340px", flexWrap:"wrap" }}>
             <button onClick={() => { const d = svState.domande; setSvState({ fase:"countdown", countdown:3, domande:d, corrente:0, punteggio:0, tempoRimasto:60 }); }} style={{ flex:1, padding:"14px", borderRadius:"14px", background:"rgba(255,229,0,0.15)", color:"#FFE500", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", border:"1px solid rgba(255,229,0,0.35)", cursor:"pointer" }}>🔄 Rigioca</button>
-            <button onClick={() => { setSvState(null); avviaSfida(); }} style={{ flex:1, padding:"14px", borderRadius:"14px", background:"linear-gradient(135deg,#FFE500,#FFB300)", color:"#0a0a20", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", border:"none", cursor:"pointer" }}>🆕 Nuovo Gioco</button>
+            <button onClick={() => { setSvState(null); avviaSfida(true); }} style={{ flex:1, padding:"14px", borderRadius:"14px", background:"linear-gradient(135deg,#FFE500,#FFB300)", color:"#0a0a20", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", border:"none", cursor:"pointer" }}>🆕 Nuovo Gioco</button>
           </div>
           <button onClick={() => goScreen("gioca")} style={{ padding:"12px 28px", borderRadius:"14px", background:"rgba(255,255,255,0.08)", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", border:"1px solid rgba(255,255,255,0.15)", cursor:"pointer" }}>← Indietro</button>
         </div>
@@ -4381,15 +4381,16 @@ export default function Home() {
 
   // ── QUIZ A RISPOSTA MULTIPLA ─────────────────────────────────
   if (screen === "quiz_mc") {
-    const avviaQuizMC = async () => {
+    const avviaQuizMC = async (forceNew = false) => {
       setMcLoading(true);
       try {
         const r = await fetch("/api/quiz-multipla", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ materia: MATERIE[materia]?.label, classe: prog?.label, argomento: giocaArgomento }),
+          body: JSON.stringify({ materia: MATERIE[materia]?.label, classe: prog?.label, argomento: giocaArgomento, forceNew }),
         });
         const d = await r.json();
+        if (d.errore) { setMcQuiz([]); setMcLoading(false); return; }
         setMcQuiz(d.domande || []);
         setMcRisposte([]);
         setMcFine(false);
@@ -4426,10 +4427,10 @@ export default function Home() {
             <LexChar stato="happy" size={150} />
             <div style={{ textAlign:"center" }}>
               <p style={{ fontSize:"22px", fontWeight:900, marginBottom:"8px" }}>Pronto per il quiz? 🎯</p>
-              <p style={{ color:"rgba(255,255,255,0.5)", fontSize:"14px", fontWeight:600 }}>5 domande su: <strong style={{ color:"white" }}>{giocaArgomento}</strong></p>
+              <p style={{ color: luce?"rgba(0,0,30,0.55)":"rgba(255,255,255,0.5)", fontSize:"14px", fontWeight:600 }}>5 domande su: <strong style={{ color: luce?"#0a0a20":"white" }}>{giocaArgomento}</strong></p>
               <p style={{ color:"#fbbf24", fontSize:"13px", fontWeight:700, marginTop:"4px" }}>Ogni risposta giusta = 2 ⭐</p>
             </div>
-            <button onClick={avviaQuizMC} style={{ ...S.btn, ...S.btnP, maxWidth:"300px" }}>Inizia il Quiz! →</button>
+            <button onClick={() => avviaQuizMC()} style={{ ...S.btn, ...S.btnP, maxWidth:"300px" }}>Inizia il Quiz! →</button>
           </div>
         </div>
       );
@@ -4439,6 +4440,15 @@ export default function Home() {
       <div style={{ ...S.app, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"20px" }}>
         <LexChar stato="thinking" size={130} />
         <p style={{ fontWeight:800, fontSize:"16px" }}>Lex prepara le domande...</p>
+      </div>
+    );
+
+    if (mcQuiz && mcQuiz.length === 0) return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"20px", padding:"32px" }}>
+        <LexChar stato="idle" size={110} />
+        <p style={{ fontWeight:900, fontSize:"16px", textAlign:"center" }}>Ops! Non sono riuscito a caricare le domande.</p>
+        <p style={{ fontSize:"13px", fontWeight:600, color: luce?"rgba(0,0,30,0.5)":"rgba(255,255,255,0.5)", textAlign:"center" }}>Controlla la connessione e riprova.</p>
+        <button onClick={() => setMcQuiz(null)} style={{ ...S.btn, ...S.btnP, maxWidth:"220px" }}>🔄 Riprova</button>
       </div>
     );
 
@@ -4468,8 +4478,8 @@ export default function Home() {
                   if (risposta && corretta2) { bg = "rgba(16,185,129,0.2)"; border = "#10b981"; }
                   else if (risposta && scelta && !corretta2) { bg = "rgba(239,68,68,0.2)"; border = "#ef4444"; }
                   return (
-                    <button key={oi} onClick={() => rispondi(di, oi)} style={{ padding:"12px 14px", borderRadius:"12px", background:bg, border:`2px solid ${border}`, color:"white", fontFamily:"'Nunito'", fontWeight:700, fontSize:"14px", textAlign:"left", cursor:risposta?"default":"pointer", display:"flex", alignItems:"center", gap:"10px" }}>
-                      <span style={{ fontWeight:900, color:"rgba(255,255,255,0.4)" }}>{["A","B","C","D"][oi]}</span>
+                    <button key={oi} onClick={() => rispondi(di, oi)} style={{ padding:"12px 14px", borderRadius:"12px", background: luce?(risposta&&corretta2?"rgba(16,185,129,0.15)":risposta&&scelta&&!corretta2?"rgba(239,68,68,0.15)":"rgba(0,0,30,0.04)"):bg, border:`2px solid ${luce?(risposta&&corretta2?"#10b981":risposta&&scelta&&!corretta2?"#ef4444":"rgba(0,0,30,0.1)"):border}`, color: luce?"#0a0a20":"white", fontFamily:"'Nunito'", fontWeight:700, fontSize:"14px", textAlign:"left", cursor:risposta?"default":"pointer", display:"flex", alignItems:"center", gap:"10px" }}>
+                      <span style={{ fontWeight:900, color: luce?"rgba(0,0,30,0.35)":"rgba(255,255,255,0.4)" }}>{["A","B","C","D"][oi]}</span>
                       {op}
                       {risposta && corretta2 && <span style={{ marginLeft:"auto", color:"#34d399", fontSize:"16px" }}>✓</span>}
                       {risposta && scelta && !corretta2 && <span style={{ marginLeft:"auto", color:"#f87171", fontSize:"16px" }}>✗</span>}
@@ -4481,7 +4491,7 @@ export default function Home() {
                 <div style={{ marginTop:"10px", padding:"10px 12px", borderRadius:"10px", background:"rgba(16,185,129,0.12)", border:"1px solid rgba(16,185,129,0.3)", display:"flex", alignItems:"flex-start", gap:"8px" }}>
                   <span style={{ fontSize:"15px", flexShrink:0 }}>💡</span>
                   <p style={{ fontSize:"13px", fontWeight:700, color:"#34d399", lineHeight:1.4 }}>
-                    La risposta corretta era: <span style={{ color:"white" }}>{dom.opzioni[dom.corretta]}</span>
+                    La risposta corretta era: <span style={{ color: luce?"#0a0a20":"white", fontWeight:900 }}>{dom.opzioni[dom.corretta]}</span>
                   </p>
                 </div>
               )}
@@ -4494,7 +4504,7 @@ export default function Home() {
               <p style={{ color:"rgba(255,255,255,0.6)", fontSize:"14px", fontWeight:600, marginBottom:"12px" }}>{corrette} risposte giuste su 5 — +{corrette*2} ⭐</p>
               <div style={{ display:"flex", gap:"8px", marginBottom:"8px" }}>
                 <button onClick={() => { setMcRisposte([]); setMcFine(false); }} style={{ ...S.btn, ...S.btnS, flex:1 }}>🔄 Rigioca</button>
-                <button onClick={() => { setMcQuiz(null); setMcRisposte([]); setMcFine(false); avviaQuizMC(); }} style={{ ...S.btn, ...S.btnP, flex:1 }}>🆕 Nuovo Gioco</button>
+                <button onClick={() => { setMcQuiz(null); setMcRisposte([]); setMcFine(false); avviaQuizMC(true); }} style={{ ...S.btn, ...S.btnP, flex:1 }}>🆕 Nuovo Gioco</button>
               </div>
               <button onClick={() => goScreen("gioca")} style={{ ...S.btn, ...S.btnS }}>← Indietro</button>
             </div>
