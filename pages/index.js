@@ -161,6 +161,26 @@ export default function Home() {
   const [csState, setCsState] = useState(null);
   const [csRisposta, setCsRisposta] = useState("");
   const [csLoading, setCsLoading] = useState(false);
+  // ── Esame 5ª ──
+  const [esameScreen, setEsameScreen] = useState("hub");
+  const [esameItaliano, setEsameItaliano] = useState(null);
+  const [esameMatematica, setEsameMatematica] = useState(null);
+  const [esameOrale, setEsameOrale] = useState(null);
+  const [esameStorico, setEsameStorico] = useState(() => {
+    if (typeof window !== "undefined") {
+      try { return JSON.parse(localStorage.getItem("lexyo_esame_storico") || "[]"); } catch {}
+    }
+    return [];
+  });
+  const [esameDataEsame, setEsameDataEsame] = useState(() => {
+    if (typeof window !== "undefined") return localStorage.getItem("lexyo_data_esame") || "";
+    return "";
+  });
+  const [esameLoading, setEsameLoading] = useState(false);
+  const [esameSubTipo, setEsameSubTipo] = useState(null); // "elementare" | "media"
+  const [esameInterrMateria, setEsameInterrMateria] = useState(null);
+  const [esameInterrState, setEsameInterrState] = useState(null);
+  const [esameInterrRisposta, setEsameInterrRisposta] = useState("");
   // ── Coriandoli & record ──
   const [mostraCoriandoli, setMostraCoriandoli] = useState(false);
   const [recordGiochi, setRecordGiochi] = useState(() => {
@@ -795,6 +815,12 @@ export default function Home() {
     if (s === "parole_crociate") { setWordGame(null); setWordInputs({}); setWordVerificato(false); setWordLoading(false); setCwSelected(null); setCwDir('H'); }
     if (s === "sfida_velocita") { clearInterval(svIntervalRef.current); setSvState(null); setSvShake(false); setSvPlusAnim(false); }
     if (s === "chi_sono") { setCsState(null); setCsRisposta(""); setCsLoading(false); }
+    if (s === "esame5") { setEsameScreen("hub"); setEsameItaliano(null); setEsameMatematica(null); setEsameOrale(null); setEsameLoading(false); setEsameSubTipo(null); }
+    if (s === "esame5_italiano") { setEsameItaliano(null); setEsameLoading(false); }
+    if (s === "esame5_matematica") { setEsameMatematica(null); setEsameLoading(false); }
+    if (s === "esame5_orale") { setEsameOrale(null); setEsameLoading(false); }
+    if (s === "esame5_storico") { setEsameLoading(false); }
+    if (s === "esame5_interrogazione") { setEsameInterrState(null); setEsameLoading(false); }
     if (s === "ripasso_home") { setRipassoQuiz(null); setRipassoRisposte([]); setRipassoFine(false); setRipassoLoading(false); setRipassoNuovoLivelloOverlay(false); setRipassoTransizione(false); }
     if (s === "ripasso_mappa") { setRipassoQuiz(null); setRipassoRisposte([]); setRipassoFine(false); setRipassoLoading(false); setRipassoNuovoLivelloOverlay(false); setRipassoTransizione(false); }
     if (s === "ripasso_quiz") {
@@ -1506,6 +1532,7 @@ export default function Home() {
             <p style={{ fontSize:"15px", fontWeight:900, color:"#a78bfa", lineHeight:1.2 }}>Lv.{figlioAttivo.livello}</p>
             <p style={{ fontSize:"9px", color: luce ? "rgba(0,0,30,0.4)" : "rgba(255,255,255,0.4)", fontWeight:800, textTransform:"uppercase", letterSpacing:"0.5px" }}>livello</p>
           </div>
+          <button onClick={() => goScreen("badge")} style={{ width:"38px", height:"38px", background: luce ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)", border: luce ? "1px solid rgba(0,0,0,0.1)" : "1px solid rgba(255,255,255,0.1)", borderRadius:"12px", fontSize:"19px", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>🏆</button>
           <button onClick={() => goScreen("famiglia")} style={{ width:"38px", height:"38px", background: luce ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)", border: luce ? "1px solid rgba(0,0,0,0.1)" : "1px solid rgba(255,255,255,0.1)", borderRadius:"12px", fontSize:"19px", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>👨‍👩‍👧</button>
         </div>
       </div>
@@ -1557,10 +1584,10 @@ export default function Home() {
 
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"13px", marginBottom:"14px" }}>
           {[
-            { label:"Studia con Lex", sub:"Foto, chat e dettato", emoji:"📚", screen:"studia", bg:"linear-gradient(145deg,#29C9FF,#00AAFF,#007ACC)", border:"linear-gradient(135deg,#005FA3,#003D6B)" },
-            { label:"Verifiche e Interrogazioni", sub:"Quiz e orale", emoji:"✏️", screen:"verifiche", bg:"linear-gradient(145deg,#FF70C8,#FF3FA3,#E0008A)", border:"linear-gradient(135deg,#C026D3,#7C3AED)" },
-            { label:"Estate con Lex", sub:"Compiti e ripasso", emoji:"🌊", screen:"estate", bg:"linear-gradient(145deg,#FFE135,#FFC200,#FF9A00)", border:"linear-gradient(135deg,#FFB300,#FF6D00)" },
-            { label:"Imparare è un Gioco", sub:"Gioca, Impara, Diventa Leggendario!", emoji:"🎮", screen:"gioca", bg:"linear-gradient(145deg,#FF8533,#FF6000,#DD4400)", border:"linear-gradient(135deg,#FF3D00,#FFD600)" },
+            { label:"Studia con Lex", sub:"Foto, chat e dettato", emoji:"📚", screen:"studia", bg:"linear-gradient(145deg,#00CFFF,#0088FF,#0044DD)", border:"linear-gradient(135deg,#0022CC,#0099FF)" },
+            { label:"Verifiche e Interrogazioni", sub:"Quiz e orale", emoji:"✏️", screen:"verifiche", bg:"linear-gradient(145deg,#FF44BB,#FF0099,#CC0066)", border:"linear-gradient(135deg,#AA0055,#FF44BB)" },
+            { label:"Estate con Lex", sub:"Compiti e ripasso", emoji:"🌊", screen:"estate", bg:"linear-gradient(145deg,#FFE500,#FFC200,#FF9900)", border:"linear-gradient(135deg,#FF7700,#FFE500)" },
+            { label:"Imparare è un Gioco", sub:"Gioca, Impara, Diventa Leggendario!", emoji:"🎮", screen:"gioca", bg:"linear-gradient(145deg,#FF4444,#FF0000,#CC0000)", border:"linear-gradient(135deg,#990000,#FF4444)" },
           ].map(c => (
             <button key={c.screen} className="hcard" onClick={() => goScreen(c.screen)} style={{ padding:"22px 16px", borderRadius:"22px", background:c.bg, boxShadow:"0 6px 18px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", textAlign:"left", cursor:"pointer", "--card-border":c.border }}>
               <div className="card-shine" />
@@ -1574,6 +1601,20 @@ export default function Home() {
           ))}
         </div>
 
+        {/* ── PREPARAZIONE ESAME ── */}
+        <button onClick={() => goScreen("esame5")} className="hcard" style={{ width:"100%", marginBottom:"12px", padding:"0", borderRadius:"22px", background:"linear-gradient(145deg,#AA33FF,#8800EE,#6600BB)", boxShadow:"0 6px 18px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", cursor:"pointer", "--card-border":"linear-gradient(135deg,#4400AA,#CC55FF)" }}>
+          <div className="card-shine" />
+          <div className="card-content" style={{ padding:"18px 20px", display:"flex", alignItems:"center", gap:"14px" }}>
+            <div style={{ fontSize:"36px", lineHeight:1, flexShrink:0 }}>🎓</div>
+            <div style={{ flex:1 }}>
+              <p style={{ fontSize:"15px", fontWeight:900, color:"white", marginBottom:"3px" }}>Preparazione Esame</p>
+              <p style={{ fontSize:"11px", fontWeight:800, color:"rgba(255,255,255,0.75)" }}>Allenati con Lex per l'esame</p>
+            </div>
+            <span style={{ fontSize:"22px", color:"rgba(255,255,255,0.8)", flexShrink:0 }}>→</span>
+          </div>
+          <div className="card-depth" />
+        </button>
+
         {/* ── SFIDA LEGGENDA LEX ── */}
         <button onClick={() => {}} className="hcard" style={{ width:"100%", marginBottom:"12px", padding:"0", borderRadius:"22px", background:"linear-gradient(145deg,#00F090,#00CC70,#00A855)", boxShadow:"0 6px 18px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", cursor:"pointer", textAlign:"left", fontFamily:"'Nunito'", "--card-border":"linear-gradient(135deg,#00BFA5,#007A3D)" }}>
           <div className="card-shine" />
@@ -1586,15 +1627,6 @@ export default function Home() {
             <span style={{ fontSize:"28px", flexShrink:0 }}>→</span>
           </div>
           <div className="card-depth" />
-        </button>
-
-        <button onClick={() => goScreen("badge")} style={{ width:"100%", padding:"14px 18px", borderRadius:"16px", background: luce ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.04)", border: luce ? "1px solid rgba(0,0,0,0.08)" : "1px solid rgba(255,255,255,0.08)", color: luce ? "#0a0a20" : "white", fontFamily:"'Nunito'", textAlign:"left", cursor:"pointer", display:"flex", alignItems:"center", gap:"12px", marginBottom:"10px" }}>
-          <span style={{ fontSize:"22px" }}>🏆</span>
-          <div style={{ flex:1 }}>
-            <p style={{ fontSize:"13px", fontWeight:800, color: luce ? "#0a0a20" : "white" }}>Badge e Traguardi</p>
-            <p style={{ fontSize:"11px", color:"#fbbf24", fontWeight:700 }}>{figlioAttivo.badge?.length||0} badge sbloccati</p>
-          </div>
-          <span style={{ fontSize:"14px", color: luce ? "rgba(0,0,30,0.3)" : "rgba(255,255,255,0.3)" }}>→</span>
         </button>
 
         <button onClick={() => goScreen("famiglia")} style={{ width:"100%", padding:"14px 18px", borderRadius:"16px", background:"linear-gradient(135deg,rgba(108,71,255,0.15),rgba(155,63,212,0.1))", border:"1px solid rgba(108,71,255,0.25)", color: luce ? "#0a0a20" : "white", fontFamily:"'Nunito'", textAlign:"left", cursor:"pointer", display:"flex", alignItems:"center", gap:"12px", marginBottom:"16px" }}>
@@ -4146,10 +4178,11 @@ export default function Home() {
             <p style={{ fontSize:"16px", color:"rgba(255,255,255,0.6)", fontWeight:700 }}>su {svState.domande.length} domande</p>
             <p style={{ fontSize:"14px", color:"#fbbf24", fontWeight:800, marginTop:"8px" }}>+{isRecord ? svState.punteggio * 2 : svState.punteggio} ⭐</p>
           </div>
-          <div style={{ display:"flex", gap:"12px", width:"100%", maxWidth:"320px" }}>
-            <button onClick={() => { setSvState(null); avviaSfida(); }} style={{ flex:1, padding:"14px", borderRadius:"14px", background:"linear-gradient(135deg,#FFE500,#FFB300)", color:"#0a0a20", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", border:"none", cursor:"pointer" }}>Gioca ancora! ⚡</button>
-            <button onClick={() => goScreen("gioca")} style={{ flex:1, padding:"14px", borderRadius:"14px", background:"rgba(255,255,255,0.08)", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", border:"1px solid rgba(255,255,255,0.15)", cursor:"pointer" }}>Cambia gioco</button>
+          <div style={{ display:"flex", gap:"10px", width:"100%", maxWidth:"340px", flexWrap:"wrap" }}>
+            <button onClick={() => { const d = svState.domande; setSvState({ fase:"countdown", countdown:3, domande:d, corrente:0, punteggio:0, tempoRimasto:60 }); }} style={{ flex:1, padding:"14px", borderRadius:"14px", background:"rgba(255,229,0,0.15)", color:"#FFE500", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", border:"1px solid rgba(255,229,0,0.35)", cursor:"pointer" }}>🔄 Rigioca</button>
+            <button onClick={() => { setSvState(null); avviaSfida(); }} style={{ flex:1, padding:"14px", borderRadius:"14px", background:"linear-gradient(135deg,#FFE500,#FFB300)", color:"#0a0a20", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", border:"none", cursor:"pointer" }}>🆕 Nuovo Gioco</button>
           </div>
+          <button onClick={() => goScreen("gioca")} style={{ padding:"12px 28px", borderRadius:"14px", background:"rgba(255,255,255,0.08)", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", border:"1px solid rgba(255,255,255,0.15)", cursor:"pointer" }}>← Indietro</button>
         </div>
       );
     }
@@ -4304,9 +4337,10 @@ export default function Home() {
               <div style={{ textAlign:"center", marginTop:"16px" }}>
                 <p style={{ fontSize:"20px", fontWeight:900, color:"#00F090", marginBottom:"8px" }}>🎉 Bravo/a! Risposta corretta!</p>
                 <p style={{ color:"#fbbf24", fontWeight:800, fontSize:"15px", marginBottom:"16px" }}>+{csState.stelleGuadagnate * 3} ⭐</p>
-                <div style={{ display:"flex", gap:"12px", justifyContent:"center" }}>
-                  <button onClick={() => { setCsState(null); setCsRisposta(""); avviaChiSono(); }} style={{ padding:"14px 24px", borderRadius:"14px", background:"linear-gradient(135deg,#29C9FF,#007ACC)", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", cursor:"pointer" }}>Ancora! 🎭</button>
-                  <button onClick={() => goScreen("gioca")} style={{ padding:"14px 24px", borderRadius:"14px", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", cursor:"pointer" }}>Cambia gioco</button>
+                <div style={{ display:"flex", gap:"10px", justifyContent:"center", flexWrap:"wrap" }}>
+                  <button onClick={() => { setCsRisposta(""); setCsState(prev => ({ ...prev, fase:"gioco", indizioCorrente:0, stelleGuadagnate:5, messaggioVerifica:null })); }} style={{ padding:"12px 18px", borderRadius:"14px", background:"rgba(41,201,255,0.15)", border:"1px solid rgba(41,201,255,0.35)", color:"#29C9FF", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", cursor:"pointer" }}>🔄 Rigioca</button>
+                  <button onClick={() => { setCsState(null); setCsRisposta(""); avviaChiSono(); }} style={{ padding:"12px 18px", borderRadius:"14px", background:"linear-gradient(135deg,#29C9FF,#007ACC)", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", cursor:"pointer" }}>🆕 Nuovo Gioco</button>
+                  <button onClick={() => goScreen("gioca")} style={{ padding:"12px 18px", borderRadius:"14px", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", cursor:"pointer" }}>← Indietro</button>
                 </div>
               </div>
             )}
@@ -4314,9 +4348,10 @@ export default function Home() {
             {csState.fase === "perso" && (
               <div style={{ textAlign:"center", marginTop:"16px" }}>
                 <p style={{ fontSize:"16px", fontWeight:800, color:"rgba(255,255,255,0.7)", marginBottom:"16px" }}>Ci vuole più pratica! 💪</p>
-                <div style={{ display:"flex", gap:"12px", justifyContent:"center" }}>
-                  <button onClick={() => { setCsState(null); setCsRisposta(""); avviaChiSono(); }} style={{ padding:"14px 24px", borderRadius:"14px", background:"linear-gradient(135deg,#29C9FF,#007ACC)", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", cursor:"pointer" }}>Riprova! 🎭</button>
-                  <button onClick={() => goScreen("gioca")} style={{ padding:"14px 24px", borderRadius:"14px", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", cursor:"pointer" }}>Cambia gioco</button>
+                <div style={{ display:"flex", gap:"10px", justifyContent:"center", flexWrap:"wrap" }}>
+                  <button onClick={() => { setCsRisposta(""); setCsState(prev => ({ ...prev, fase:"gioco", indizioCorrente:0, stelleGuadagnate:5, messaggioVerifica:null })); }} style={{ padding:"12px 18px", borderRadius:"14px", background:"rgba(41,201,255,0.15)", border:"1px solid rgba(41,201,255,0.35)", color:"#29C9FF", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", cursor:"pointer" }}>🔄 Rigioca</button>
+                  <button onClick={() => { setCsState(null); setCsRisposta(""); avviaChiSono(); }} style={{ padding:"12px 18px", borderRadius:"14px", background:"linear-gradient(135deg,#29C9FF,#007ACC)", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", cursor:"pointer" }}>🆕 Nuovo Gioco</button>
+                  <button onClick={() => goScreen("gioca")} style={{ padding:"12px 18px", borderRadius:"14px", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", cursor:"pointer" }}>← Indietro</button>
                 </div>
               </div>
             )}
@@ -4443,10 +4478,10 @@ export default function Home() {
               <p style={{ fontSize:"24px", fontWeight:900, marginBottom:"6px" }}>{corrette>=4?"Fantastico! 🎉":corrette>=2?"Bravo! 💪":"Riprova! 🔄"}</p>
               <p style={{ color:"rgba(255,255,255,0.6)", fontSize:"14px", fontWeight:600, marginBottom:"12px" }}>{corrette} risposte giuste su 5 — +{corrette*2} ⭐</p>
               <div style={{ display:"flex", gap:"8px", marginBottom:"8px" }}>
-                <button onClick={() => { setMcRisposte([]); setMcFine(false); }} style={{ ...S.btn, ...S.btnS, flex:1 }}>🔄 Riprova</button>
-                <button onClick={() => { setMcQuiz(null); setMcRisposte([]); setMcFine(false); avviaQuizMC(); }} style={{ ...S.btn, ...S.btnP, flex:1 }}>⚡ Nuova Sfida</button>
+                <button onClick={() => { setMcRisposte([]); setMcFine(false); }} style={{ ...S.btn, ...S.btnS, flex:1 }}>🔄 Rigioca</button>
+                <button onClick={() => { setMcQuiz(null); setMcRisposte([]); setMcFine(false); avviaQuizMC(); }} style={{ ...S.btn, ...S.btnP, flex:1 }}>🆕 Nuovo Gioco</button>
               </div>
-              <button onClick={() => goScreen("gioca")} style={{ ...S.btn, ...S.btnS }}>Esci</button>
+              <button onClick={() => goScreen("gioca")} style={{ ...S.btn, ...S.btnS }}>← Indietro</button>
             </div>
           )}
         </div>
@@ -4757,10 +4792,10 @@ export default function Home() {
                 <p style={{fontSize:"22px",fontWeight:900,marginBottom:"6px"}}>{corrette>=(wordGame?.placed?.length||0)*0.8?"Bravissimo! 🎉":"Quasi! 💪"}</p>
                 <p style={{color:"rgba(255,255,255,0.6)",fontSize:"14px",fontWeight:600,marginBottom:"14px"}}>{corrette} parole su {wordGame?.placed?.length} — +{corrette} ⭐</p>
                 <div style={{display:"flex",gap:"8px",marginBottom:"8px"}}>
-                  <button onClick={()=>{setWordInputs({});setWordVerificato(false);setCwSelected(null);setCwDir('H');}} style={{...S.btn,...S.btnS,flex:1}}>🔄 Riprova</button>
-                  <button onClick={()=>{setWordGame(null);setWordInputs({});setWordVerificato(false);setCwSelected(null);setCwDir('H');avviaParole();}} style={{...S.btn,...S.btnP,flex:1}}>⚡ Nuova Sfida</button>
+                  <button onClick={()=>{setWordInputs({});setWordVerificato(false);setCwSelected(null);setCwDir('H');}} style={{...S.btn,...S.btnS,flex:1}}>🔄 Rigioca</button>
+                  <button onClick={()=>{setWordGame(null);setWordInputs({});setWordVerificato(false);setCwSelected(null);setCwDir('H');avviaParole();}} style={{...S.btn,...S.btnP,flex:1}}>🆕 Nuovo Gioco</button>
                 </div>
-                <button onClick={()=>goScreen("gioca")} style={{...S.btn,...S.btnS}}>Esci</button>
+                <button onClick={()=>goScreen("gioca")} style={{...S.btn,...S.btnS}}>← Indietro</button>
               </div>
               {/* Per-word corrections with explanations */}
               {wordGame?.placed?.filter((_,i)=>!wordResults[i]).length>0&&(
@@ -4965,10 +5000,10 @@ export default function Home() {
       <div style={{ ...S.app, display:"flex", flexDirection:"column", opacity: ripassoTransizione ? 0 : 1, transform: ripassoTransizione ? "scale(0.95)" : "scale(1)", transition:"opacity 0.4s ease, transform 0.4s ease" }}>
         <Head><title>Lexyo — Mappa Ripasso</title></Head>
         <style>{`
-          @keyframes nodePulse2 { 0%,100%{box-shadow:0 0 0 0 var(--pc,rgba(99,102,241,0.5)),0 4px 16px var(--pc2,rgba(99,102,241,0.2))} 50%{box-shadow:0 0 0 14px transparent,0 4px 20px var(--pc2,rgba(99,102,241,0.3))} }
+          @keyframes nodePulse2 { 0%,100%{box-shadow:0 0 0 0 var(--pc,rgba(99,102,241,0.5)),0 4px 16px var(--pc2,rgba(99,102,241,0.2))} 50%{box-shadow:0 0 0 14px transparent,0 4px 20px var(--pc2,rgba(99,102,241,0.35))} }
           @keyframes lexSlide { from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:translateY(0)} }
-          @keyframes mapFadeIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
         `}</style>
+
         <div style={S.hdr}>
           <button onClick={() => goScreen("ripasso_home")} style={S.back}>←</button>
           <div style={{ width:"44px", height:"44px", borderRadius:"14px", background:`linear-gradient(135deg,${info.colore},${info.colore}99)`, boxShadow:`0 4px 16px ${info.colore}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", flexShrink:0 }}>{info.emoji}</div>
@@ -4978,7 +5013,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Barra progresso */}
         <div style={{ padding:"8px 18px", background: luce?"rgba(0,0,0,0.015)":"rgba(255,255,255,0.015)", borderBottom:`1px solid ${luce?"rgba(0,0,0,0.06)":"rgba(255,255,255,0.06)"}`, flexShrink:0 }}>
           <div style={{ height:"6px", borderRadius:"3px", background: luce?"rgba(0,0,0,0.07)":"rgba(255,255,255,0.07)", overflow:"hidden" }}>
             <div style={{ height:"100%", width:`${pct}%`, background:`linear-gradient(90deg,${info.colore},${info.colore}cc)`, borderRadius:"3px", transition:"width 0.6s cubic-bezier(0.22,1,0.36,1)" }} />
@@ -4992,72 +5026,90 @@ export default function Home() {
               <p style={{ fontWeight:800, fontSize:"16px", marginBottom:"6px" }}>Nessun argomento disponibile</p>
               <p style={{ fontSize:"13px", color: luce?"rgba(0,0,30,0.45)":"rgba(255,255,255,0.45)", fontWeight:600 }}>Controlla la classe selezionata</p>
             </div>
-          ) : (
-            /* PERCORSO DUOLINGO */
-            <div style={{ position:"relative", minHeight:`${temi.length * 110 + 160}px`, padding:"20px 0 40px" }}>
+          ) : (() => {
+            const NH = 130, NR = 36, SVG_W = 375;
+            const totalH = temi.length * NH + 140;
+            const ncx = i => i % 2 === 0 ? SVG_W - 30 - NR : 30 + NR;
+            const ncy = i => 70 + i * NH + NR;
+            const lexIdx = Math.min(primoNonCompletato, temi.length - 1);
+            const lexTopPx = ripassoLexMappaTop === 80 ? ncy(primoNonCompletato < temi.length ? primoNonCompletato : temi.length - 1) : ripassoLexMappaTop;
 
-              {/* Linea verticale centrale */}
-              <div style={{ position:"absolute", left:"50%", top:"40px", height:`${temi.length * 110}px`, width:"4px", background:`linear-gradient(180deg,${info.colore}44,${info.colore}11)`, transform:"translateX(-50%)", borderRadius:"2px" }} />
+            return (
+              <div style={{ position:"relative", minHeight:`${totalH}px`, padding:"20px 0 60px" }}>
 
-              {/* LEX posizionato sulla mappa con transizione */}
-              <div style={{ position:"absolute", left:"50%", top:`${ripassoLexMappaTop - 56}px`, transform:"translateX(-50%)", zIndex:10, transition:"top 0.8s cubic-bezier(0.22,1,0.36,1)", animation:"lexSlide 0.5s ease forwards" }}>
-                <LexChar stato={primoNonCompletato > 0 ? "happy" : "idle"} size={88} />
-                {/* Nuvoletta Lex — lato opposto al nodo corrente */}
-                <div style={{ position:"absolute", ...(primoNonCompletato % 2 === 0 ? { right:"70px", left:"auto", borderRadius:"12px 12px 4px 12px" } : { left:"70px", borderRadius:"12px 12px 12px 4px" }), top:"4px", background: luce?"white":"#1A1B3A", border:`1px solid ${luce?"rgba(0,0,0,0.1)":"rgba(255,255,255,0.12)"}`, padding:"7px 11px", boxShadow:"0 4px 14px rgba(0,0,0,0.15)", minWidth:"120px", maxWidth:"160px" }}>
-                  <p style={{ fontSize:"10px", fontWeight:700, lineHeight:1.4 }}>{lexNuvoletta}</p>
+                {/* Strada SVG tratteggiata */}
+                <svg style={{ position:"absolute", top:0, left:0, width:"100%", height:"100%", pointerEvents:"none" }}
+                  viewBox={`0 0 ${SVG_W} ${totalH}`} preserveAspectRatio="xMidYMin meet">
+                  {temi.slice(0, -1).map((_, i) => {
+                    const x1=ncx(i), y1=ncy(i), x2=ncx(i+1), y2=ncy(i+1);
+                    const midY = (y1+y2)/2;
+                    const d=`M ${x1} ${y1} C ${x1} ${midY} ${x2} ${midY} ${x2} ${y2}`;
+                    const done = scores[i] === 10;
+                    return (
+                      <g key={i}>
+                        <path d={d} fill="none" stroke={luce?"rgba(0,0,30,0.10)":"rgba(255,255,255,0.14)"} strokeWidth={10} strokeDasharray="16 10" strokeLinecap="round" />
+                        {done && <path d={d} fill="none" stroke={info.colore} strokeWidth={10} strokeDasharray="16 10" strokeLinecap="round" opacity={0.75} />}
+                      </g>
+                    );
+                  })}
+                </svg>
+
+                {/* LEX che si muove sulla mappa */}
+                <div style={{ position:"absolute", left:"50%", top:`${lexTopPx - 54}px`, transform:"translateX(-50%)", zIndex:10, transition:"top 0.85s cubic-bezier(0.22,1,0.36,1)", animation:"lexSlide 0.4s ease" }}>
+                  <LexChar stato={primoNonCompletato > 0 ? "happy" : "idle"} size={76} />
+                  <div style={{ position:"absolute", ...(lexIdx % 2 === 0 ? { right:"68px" } : { left:"68px" }), top:"8px", background: luce?"rgba(255,255,255,0.96)":"rgba(28,28,58,0.96)", border:`1px solid ${info.colore}55`, borderRadius:"12px", padding:"7px 10px", boxShadow:"0 4px 16px rgba(0,0,0,0.22)", width:"118px" }}>
+                    <p style={{ fontSize:"10px", fontWeight:700, lineHeight:1.4, color: luce?"#0a0a20":"rgba(255,255,255,0.88)" }}>{lexNuvoletta}</p>
+                  </div>
                 </div>
-              </div>
 
-              {/* NODI LIVELLI */}
-              {temi.map((tema, idx) => {
-                const score = scores[idx];
-                const superato = score === 10;                              // 100% → sblocca il prossimo
-                const tentato = score !== undefined && score !== null && score < 10; // tentato ma non superato
-                const corrente = idx === primoNonCompletato;               // primo livello non superato
-                const bloccato = idx > primoNonCompletato;
-                const isDestra = idx % 2 === 0;
-                const nodoTop = 80 + idx * 110;
-                const nodoColor = superato ? "#10b981" : tentato ? "#f59e0b" : corrente ? info.colore : luce ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.15)";
-                const nodoBg = superato ? "rgba(16,185,129,0.2)" : tentato ? "rgba(245,158,11,0.15)" : corrente ? `${info.colore}22` : luce ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)";
+                {/* NODI livelli */}
+                {temi.map((tema, idx) => {
+                  const score = scores[idx];
+                  const superato = score === 10;
+                  const tentato = score !== undefined && score !== null && score < 10;
+                  const corrente = idx === primoNonCompletato;
+                  const bloccato = idx > primoNonCompletato;
+                  const isDestra = idx % 2 === 0;
+                  const nodoTop = 70 + idx * NH;
+                  const nodoColor = superato ? "#10b981" : tentato ? "#f59e0b" : corrente ? info.colore : luce ? "rgba(0,0,0,0.22)" : "rgba(255,255,255,0.22)";
+                  const nodoBg = superato ? "rgba(16,185,129,0.18)" : tentato ? "rgba(245,158,11,0.14)" : corrente ? `${info.colore}20` : luce ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.05)";
 
-                return (
-                  <div key={idx} style={{ position:"absolute", top:`${nodoTop}px`, left: isDestra ? "calc(50% + 16px)" : "auto", right: !isDestra ? "calc(50% + 16px)" : "auto", width:"calc(50% - 40px)" }}>
-                    <button disabled={bloccato} onClick={() => { if (bloccato) return; setLivelloRipasso(idx); setRipassoLexMappaTop(nodoTop); goScreen("ripasso_quiz"); }}
-                      style={{ width:"100%", background:"none", border:"none", cursor:bloccato?"not-allowed":"pointer", fontFamily:"'Nunito', sans-serif", padding:0, opacity:bloccato?0.38:1, animation:"mapFadeIn 0.4s ease both", animationDelay:`${idx * 0.04}s` }}>
+                  return (
+                    <div key={idx} style={{ position:"absolute", top:`${nodoTop}px`, ...(isDestra ? { right:"6%" } : { left:"6%" }), zIndex:5 }}>
+                      <button disabled={bloccato} onClick={() => { if(bloccato) return; setLivelloRipasso(idx); setRipassoLexMappaTop(ncy(idx)); goScreen("ripasso_quiz"); }}
+                        style={{ background:"none", border:"none", cursor:bloccato?"not-allowed":"pointer", fontFamily:"'Nunito', sans-serif", padding:0, opacity:bloccato?0.38:1, display:"flex", flexDirection:isDestra?"row":"row-reverse", alignItems:"center", gap:"10px" }}>
 
-                      <div style={{ display:"flex", flexDirection: isDestra?"row":"row-reverse", alignItems:"center", gap:"10px" }}>
                         {/* Cerchio nodo */}
-                        <div style={{ width:"70px", height:"70px", borderRadius:"50%", background:nodoBg, border:`3px solid ${nodoColor}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, position:"relative",
+                        <div style={{ width:`${NR*2}px`, height:`${NR*2}px`, borderRadius:"50%", background:nodoBg, border:`3px solid ${nodoColor}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0,
                           animation: corrente ? "nodePulse2 2.2s ease-in-out infinite" : "none",
-                          "--pc": info.colore + "55", "--pc2": info.colore + "33",
-                          boxShadow: superato ? `0 4px 18px ${nodoColor}44` : "none"
+                          "--pc": info.colore+"55", "--pc2": info.colore+"33",
+                          boxShadow: superato ? `0 4px 18px ${nodoColor}55` : corrente ? `0 0 14px ${nodoColor}44` : "none"
                         }}>
-                          <span style={{ fontSize:"22px", fontWeight:900, color:nodoColor }}>
-                            {superato ? "✓" : tentato ? `${score*10}%` : bloccato ? "🔒" : "▶"}
+                          <span style={{ fontSize:"20px", fontWeight:900, color:nodoColor }}>
+                            {superato ? "✓" : tentato ? `${score}` : bloccato ? "🔒" : "▶"}
                           </span>
                         </div>
 
-                        {/* Info testo */}
-                        <div style={{ flex:1, textAlign: isDestra?"left":"right" }}>
-                          <p style={{ fontWeight:800, fontSize:"12px", lineHeight:1.3, color: luce?(superato?"#059669":tentato?"#d97706":corrente?info.colore:"rgba(0,0,30,0.6)"):(superato?"#34d399":tentato?"#fbbf24":corrente?info.colore:"rgba(255,255,255,0.5)") }}>{tema}</p>
-                          {/* Mini barra progresso */}
-                          {(superato || tentato) && (
-                            <div style={{ marginTop:"5px" }}>
-                              <div style={{ height:"5px", borderRadius:"3px", background: luce?"rgba(0,0,0,0.07)":"rgba(255,255,255,0.08)", overflow:"hidden", width:"100%" }}>
-                                <div style={{ height:"100%", width:`${score * 10}%`, background: superato ? "#10b981" : "#f59e0b", borderRadius:"3px", boxShadow: superato ? "0 0 6px rgba(16,185,129,0.5)" : "none", transition:"width 0.6s" }} />
+                        {/* Label */}
+                        <div style={{ width:"110px", textAlign: isDestra?"left":"right" }}>
+                          <p style={{ fontWeight:800, fontSize:"12px", lineHeight:1.3, color: luce?(superato?"#059669":tentato?"#d97706":corrente?info.colore:"rgba(0,0,30,0.45)"):(superato?"#34d399":tentato?"#fbbf24":corrente?"white":"rgba(255,255,255,0.38)") }}>{tema}</p>
+                          {(superato||tentato) && (
+                            <div style={{ marginTop:"4px" }}>
+                              <div style={{ height:"4px", borderRadius:"2px", background: luce?"rgba(0,0,0,0.07)":"rgba(255,255,255,0.08)", overflow:"hidden" }}>
+                                <div style={{ height:"100%", width:`${score*10}%`, background: superato?"#10b981":"#f59e0b", borderRadius:"2px" }} />
                               </div>
-                              <p style={{ fontSize:"9px", fontWeight:800, color: superato ? "#34d399" : "#fbbf24", marginTop:"2px", textAlign: isDestra?"left":"right" }}>{score}/10 {superato ? "✓" : "— riprova!"}</p>
+                              <p style={{ fontSize:"9px", fontWeight:800, color: superato?"#34d399":"#fbbf24", marginTop:"2px", textAlign: isDestra?"left":"right" }}>{score}/10</p>
                             </div>
                           )}
-                          {corrente && <p style={{ fontSize:"10px", fontWeight:800, color:info.colore, marginTop:"3px" }}>{tentato ? "→ Riprova!" : "→ Inizia!"}</p>}
+                          {corrente && <p style={{ fontSize:"10px", fontWeight:800, color:info.colore, marginTop:"3px" }}>{tentato?"Riprova! →":"Inizia! →"}</p>}
                         </div>
-                      </div>
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </div>
         <Nav />
       </div>
@@ -5328,6 +5380,842 @@ export default function Home() {
       </div>
     );
   }
+
+  // ── PREPARAZIONE ESAME — HUB ─────────────────────────────────
+  if (screen === "esame5") {
+    const classeAttiva = esameSubTipo === "media" ? "3ª media" : "5ª elementare";
+    const HUB_CARDS = [
+      { id:"italiano", emoji:"📝", titolo:"Tema di Italiano", sub:"Traccia + svolgimento + correzione", bg:"linear-gradient(145deg,#FF70C8,#E0008A)", border:"linear-gradient(135deg,#C026D3,#7C3AED)", screen:"esame5_italiano" },
+      { id:"matematica", emoji:"🔢", titolo:"Matematica e Scienze", sub:"Problemi scritti con correzione", bg:"linear-gradient(145deg,#FFE500,#FFB300)", border:"linear-gradient(135deg,#F59E0B,#D97706)", screen:"esame5_matematica" },
+      { id:"storia", emoji:"📜", titolo:"Storia", sub:"Interrogazione simulata con Lex", bg:"linear-gradient(145deg,#FF9500,#E06000)", border:"linear-gradient(135deg,#C04000,#FF9500)", materia:"storia" },
+      { id:"geografia", emoji:"🌍", titolo:"Geografia", sub:"Interrogazione simulata con Lex", bg:"linear-gradient(145deg,#00CC66,#008844)", border:"linear-gradient(135deg,#006633,#00CC66)", materia:"geografia" },
+      ...(esameSubTipo === "media" ? [{ id:"inglese", emoji:"🇬🇧", titolo:"Inglese", sub:"Comprensione e conversazione", bg:"linear-gradient(145deg,#6C47FF,#4A00CC)", border:"linear-gradient(135deg,#3300AA,#6C47FF)", materia:"inglese" }] : []),
+      { id:"orale", emoji:"🎤", titolo:"Colloquio Orale", sub:"Simulazione multidisciplinare", bg:"linear-gradient(145deg,#29C9FF,#007ACC)", border:"linear-gradient(135deg,#0369A1,#075985)", screen:"esame5_orale" },
+      { id:"storico", emoji:"📊", titolo:"Le mie Simulazioni", sub:"Storico e progressi", bg:"linear-gradient(145deg,#AA33FF,#6600BB)", border:"linear-gradient(135deg,#4400AA,#AA33FF)", screen:"esame5_storico" },
+    ];
+    return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <Head><title>Lexyo — Preparazione Esame</title></Head>
+        <div style={{ ...S.hdr, borderBottomColor:"rgba(255,179,0,0.3)" }}>
+          <button onClick={() => esameSubTipo ? setEsameSubTipo(null) : goScreen("home")} style={S.back}>←</button>
+          <div style={{ width:"44px", height:"44px", borderRadius:"14px", background:"linear-gradient(145deg,#FFB300,#FF6000)", boxShadow:"0 4px 16px rgba(255,179,0,0.4)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"24px", flexShrink:0 }}>🎓</div>
+          <div>
+            <p style={{ fontWeight:900, fontSize:"15px" }}>Preparazione Esame</p>
+            <p style={{ fontSize:"11px", color:"#FFB300", fontWeight:700 }}>{esameSubTipo ? `Allenati con Lex — ${classeAttiva}` : "Scegli il tuo esame"}</p>
+          </div>
+        </div>
+        <div style={{ flex:1, overflowY:"auto", padding:"20px 16px 100px" }}>
+          {!esameSubTipo ? (
+            <div style={{ display:"flex", flexDirection:"column", gap:"14px" }}>
+              <p style={{ fontSize:"13px", fontWeight:700, color: luce?"rgba(0,0,30,0.5)":"rgba(255,255,255,0.5)", textAlign:"center", marginBottom:"4px" }}>Quale esame vuoi preparare?</p>
+              <button className="hcard" onClick={() => setEsameSubTipo("elementare")} style={{ width:"100%", padding:"0", borderRadius:"22px", background:"linear-gradient(145deg,#FF70C8,#E0008A,#C026D3)", boxShadow:"0 6px 18px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", cursor:"pointer", "--card-border":"linear-gradient(135deg,#C026D3,#FF70C8)" }}>
+                <div className="card-shine" />
+                <div className="card-content" style={{ padding:"22px 20px", display:"flex", alignItems:"center", gap:"16px" }}>
+                  <div style={{ fontSize:"44px", lineHeight:1, flexShrink:0 }}>🎒</div>
+                  <div style={{ flex:1, textAlign:"left" }}>
+                    <p style={{ fontSize:"17px", fontWeight:900, color:"white", marginBottom:"4px" }}>Esame 5° Elementare</p>
+                    <p style={{ fontSize:"12px", fontWeight:700, color:"rgba(255,255,255,0.75)" }}>Italiano · Matematica · Colloquio orale</p>
+                  </div>
+                  <span style={{ fontSize:"24px", color:"rgba(255,255,255,0.8)", flexShrink:0 }}>→</span>
+                </div>
+                <div className="card-depth" />
+              </button>
+              <button className="hcard" onClick={() => setEsameSubTipo("media")} style={{ width:"100%", padding:"0", borderRadius:"22px", background:"linear-gradient(145deg,#29C9FF,#0088FF,#0044DD)", boxShadow:"0 6px 18px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", cursor:"pointer", "--card-border":"linear-gradient(135deg,#0022CC,#29C9FF)" }}>
+                <div className="card-shine" />
+                <div className="card-content" style={{ padding:"22px 20px", display:"flex", alignItems:"center", gap:"16px" }}>
+                  <div style={{ fontSize:"44px", lineHeight:1, flexShrink:0 }}>🎓</div>
+                  <div style={{ flex:1, textAlign:"left" }}>
+                    <p style={{ fontSize:"17px", fontWeight:900, color:"white", marginBottom:"4px" }}>Esame 3° Media</p>
+                    <p style={{ fontSize:"12px", fontWeight:700, color:"rgba(255,255,255,0.75)" }}>Italiano · Matematica · Colloquio multidisciplinare</p>
+                  </div>
+                  <span style={{ fontSize:"24px", color:"rgba(255,255,255,0.8)", flexShrink:0 }}>→</span>
+                </div>
+                <div className="card-depth" />
+              </button>
+            </div>
+          ) : (
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"13px" }}>
+              {HUB_CARDS.map(c => (
+                <button key={c.id} className="hcard" onClick={() => { if(c.materia){ setEsameInterrMateria(c.materia); setEsameInterrState(null); goScreen("esame5_interrogazione"); } else { goScreen(c.screen); } }} style={{ padding:"22px 14px", borderRadius:"22px", background:c.bg, boxShadow:"0 6px 18px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", textAlign:"left", cursor:"pointer", "--card-border":c.border }}>
+                  <div className="card-shine" /><div className="card-depth" />
+                  <div className="card-content">
+                    <div style={{ fontSize:"30px", marginBottom:"10px" }}>{c.emoji}</div>
+                    <p style={{ fontSize:"13px", fontWeight:900, color:"white", lineHeight:1.2, marginBottom:"4px" }}>{c.titolo}</p>
+                    <p style={{ fontSize:"10px", color:"rgba(255,255,255,0.65)", fontWeight:700 }}>{c.sub}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <Nav />
+      </div>
+    );
+  }
+
+  // ── TEMA DI ITALIANO ─────────────────────────────────────────
+  if (screen === "esame5_italiano") {
+    const classe = esameSubTipo === "media" ? "3ª media" : "5ª elementare";
+    const it = esameItaliano || {};
+
+    const generaTracce = async () => {
+      setEsameLoading(true);
+      try {
+        const r = await fetch("/api/esame-tracce", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ classe }) });
+        const d = await r.json();
+        if (d.errore) throw new Error(d.errore);
+        setEsameItaliano({ fase:"scegli_traccia", tracce: d.tracce || [] });
+      } catch (e) { alert("Errore: " + e.message); }
+      setEsameLoading(false);
+    };
+
+    const correggi = async () => {
+      if (!it.traccia) return;
+      if (it.modalita === "foto" && !it.foto) return alert("Carica la foto del tema.");
+      if (it.modalita === "scrivi" && !it.testo?.trim()) return alert("Scrivi il tema.");
+      setEsameLoading(true);
+      try {
+        const body = { classe, traccia: it.traccia.testo_traccia, testo: it.testo || null, foto: it.foto || null };
+        const r = await fetch("/api/esame-correggi-italiano", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body) });
+        const d = await r.json();
+        if (d.errore) throw new Error(d.errore);
+        const stelle = (d.voto_finale || 5) * 2;
+        addStelle(stelle);
+        suona(d.voto_finale >= 7 ? "obiettivo" : "stelle");
+        const sim = { tipo:"italiano", voto_finale: d.voto_finale, traccia: it.traccia.titolo, data: new Date().toLocaleDateString("it-IT"), dettagli: d };
+        const nuovoStorico = [sim, ...esameStorico].slice(0, 30);
+        setEsameStorico(nuovoStorico);
+        localStorage.setItem("lexyo_esame_storico", JSON.stringify(nuovoStorico));
+        setEsameItaliano(prev => ({ ...prev, fase:"risultato", correzione: d, stelleGuadagnate: stelle }));
+      } catch (e) { alert("Errore: " + e.message); }
+      setEsameLoading(false);
+    };
+
+    const handleFotoTema = (file) => {
+      compressPhoto(file, (compressed) => {
+        setEsameItaliano(prev => ({ ...prev, foto: compressed }));
+      });
+    };
+
+    const votoColor = (v) => v >= 7 ? "#10b981" : v >= 5 ? "#f59e0b" : "#ef4444";
+
+    // Start screen
+    if (!it.fase) return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <Head><title>Lexyo — Tema di Italiano</title></Head>
+        <div style={{ ...S.hdr, borderBottomColor:"rgba(255,112,200,0.3)" }}>
+          <button onClick={() => goScreen("esame5")} style={S.back}>←</button>
+          <div style={{ width:"44px", height:"44px", borderRadius:"14px", background:"linear-gradient(145deg,#FF70C8,#E0008A)", boxShadow:"0 4px 16px rgba(255,112,200,0.4)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"24px", flexShrink:0 }}>📝</div>
+          <div><p style={{ fontWeight:900, fontSize:"15px" }}>Tema di Italiano</p><p style={{ fontSize:"11px", color:"#FF70C8", fontWeight:700 }}>{classe}</p></div>
+        </div>
+        <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"24px", gap:"20px" }}>
+          <LexChar stato="happy" size={140} />
+          <div style={{ textAlign:"center" }}>
+            <p style={{ fontSize:"22px", fontWeight:900, marginBottom:"8px" }}>📝 Tema di Italiano</p>
+            <p style={{ color:"rgba(255,255,255,0.6)", fontSize:"14px", fontWeight:600 }}>Lex ti darà 3 tracce tra cui scegliere,{"\n"}poi potrai scrivere o fotografare il tema!</p>
+          </div>
+          {esameLoading
+            ? <LexChar stato="thinking" size={80} />
+            : <button onClick={generaTracce} style={{ ...S.btn, background:"linear-gradient(135deg,#FF70C8,#E0008A)", maxWidth:"280px", fontWeight:900 }}>Genera le tracce →</button>
+          }
+        </div>
+        <Nav />
+      </div>
+    );
+
+    // Scegli traccia
+    if (it.fase === "scegli_traccia") return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <Head><title>Scegli la traccia</title></Head>
+        <div style={{ ...S.hdr, borderBottomColor:"rgba(255,112,200,0.3)" }}>
+          <button onClick={() => setEsameItaliano(null)} style={S.back}>←</button>
+          <p style={{ fontWeight:900, fontSize:"16px" }}>Scegli la tua traccia</p>
+        </div>
+        <div style={{ flex:1, overflowY:"auto", padding:"16px 16px 100px", display:"flex", flexDirection:"column", gap:"12px" }}>
+          {(it.tracce || []).map((tr, i) => (
+            <button key={i} onClick={() => setEsameItaliano(prev => ({ ...prev, fase:"svolgi", traccia: tr }))}
+              style={{ ...S.card, textAlign:"left", border:"none", cursor:"pointer", background: luce?"rgba(255,112,200,0.08)":"rgba(255,112,200,0.1)", borderLeft:"4px solid #FF70C8", padding:"16px" }}>
+              <p style={{ fontSize:"10px", fontWeight:900, color:"#FF70C8", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"4px" }}>{tr.tipo}</p>
+              <p style={{ fontWeight:900, fontSize:"15px", marginBottom:"8px" }}>{tr.titolo}</p>
+              <p style={{ fontSize:"13px", color: luce?"rgba(0,0,30,0.65)":"rgba(255,255,255,0.65)", fontWeight:600, lineHeight:1.5 }}>{tr.testo_traccia}</p>
+              <p style={{ fontSize:"11px", color:"#FF70C8", fontWeight:800, marginTop:"10px" }}>Scegli questa traccia →</p>
+            </button>
+          ))}
+        </div>
+        <Nav />
+      </div>
+    );
+
+    // Svolgi
+    if (it.fase === "svolgi") return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <Head><title>Svolgi il tema</title></Head>
+        <div style={{ ...S.hdr, borderBottomColor:"rgba(255,112,200,0.3)" }}>
+          <button onClick={() => setEsameItaliano(prev => ({ ...prev, fase:"scegli_traccia" }))} style={S.back}>←</button>
+          <p style={{ fontWeight:900, fontSize:"15px", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{it.traccia?.titolo}</p>
+        </div>
+        <div style={{ flex:1, overflowY:"auto", padding:"16px 16px 120px" }}>
+          <div style={{ ...S.card, background:"rgba(255,112,200,0.08)", borderColor:"rgba(255,112,200,0.25)", marginBottom:"16px" }}>
+            <p style={{ fontSize:"10px", fontWeight:900, color:"#FF70C8", textTransform:"uppercase", marginBottom:"6px" }}>La tua traccia</p>
+            <p style={{ fontSize:"13px", fontWeight:600, lineHeight:1.5, color: luce?"rgba(0,0,30,0.75)":"rgba(255,255,255,0.75)" }}>{it.traccia?.testo_traccia}</p>
+          </div>
+          {/* Tab modalità */}
+          <div style={{ display:"flex", gap:"8px", marginBottom:"16px" }}>
+            {[["foto","✍️ Scrivo a mano"],["scrivi","⌨️ Scrivo sul telefono"]].map(([k,lab]) => (
+              <button key={k} onClick={() => setEsameItaliano(prev => ({ ...prev, modalita: k }))}
+                style={{ flex:1, padding:"12px 8px", borderRadius:"12px", border:`2px solid ${it.modalita===k?"#FF70C8":"rgba(255,255,255,0.12)"}`, background: it.modalita===k?"rgba(255,112,200,0.15)":"transparent", color: it.modalita===k?"#FF70C8": luce?"rgba(0,0,0,0.5)":"rgba(255,255,255,0.5)", fontFamily:"'Nunito'", fontWeight:800, fontSize:"12px", cursor:"pointer" }}>
+                {lab}
+              </button>
+            ))}
+          </div>
+          {it.modalita === "foto" && (
+            <div style={{ textAlign:"center", padding:"20px", background: luce?"rgba(0,0,0,0.04)":"rgba(255,255,255,0.05)", borderRadius:"16px", border:`2px dashed rgba(255,112,200,0.3)` }}>
+              {it.foto
+                ? <><img src={it.foto} alt="tema" style={{ maxWidth:"100%", borderRadius:"12px", marginBottom:"12px" }} /><button onClick={() => setEsameItaliano(prev => ({ ...prev, foto: null }))} style={{ fontSize:"12px", color:"#ef4444", background:"none", border:"none", fontFamily:"'Nunito'", fontWeight:700, cursor:"pointer" }}>Rimuovi foto</button></>
+                : <><div style={{ fontSize:"48px", marginBottom:"12px" }}>📸</div><p style={{ fontSize:"13px", fontWeight:700, color:"rgba(255,255,255,0.5)", marginBottom:"16px" }}>Fotografa il tuo tema scritto a mano</p>
+                  <label style={{ ...S.btn, background:"linear-gradient(135deg,#FF70C8,#E0008A)", display:"inline-block", cursor:"pointer" }}>
+                    📷 Apri fotocamera<input type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={e => { const f=e.target.files[0]; if(f) handleFotoTema(f); e.target.value=""; }} />
+                  </label></>
+              }
+            </div>
+          )}
+          {it.modalita === "scrivi" && (
+            <textarea value={it.testo || ""} onChange={e => setEsameItaliano(prev => ({ ...prev, testo: e.target.value }))} placeholder="Scrivi il tuo tema qui..." rows={12}
+              style={{ width:"100%", padding:"14px", borderRadius:"14px", background: luce?"rgba(0,0,0,0.04)":"rgba(255,255,255,0.06)", border:`1px solid rgba(255,112,200,0.3)`, color: luce?"#0a0a20":"white", fontFamily:"'Nunito'", fontWeight:600, fontSize:"14px", outline:"none", resize:"none", boxSizing:"border-box", lineHeight:1.7 }} />
+          )}
+        </div>
+        <div style={{ position:"fixed", bottom:"80px", left:0, right:0, padding:"0 16px" }}>
+          {esameLoading
+            ? <div style={{ textAlign:"center", padding:"16px" }}><LexChar stato="thinking" size={70} /></div>
+            : <button onClick={correggi} disabled={!it.modalita} style={{ ...S.btn, width:"100%", background: it.modalita?"linear-gradient(135deg,#FF70C8,#E0008A)":"rgba(255,255,255,0.08)", opacity: it.modalita?1:0.5, fontWeight:900 }}>
+                {it.modalita === "foto" ? "📸 Invia per correzione" : "✅ Correggi tema"}
+              </button>
+          }
+        </div>
+        <Nav />
+      </div>
+    );
+
+    // Risultato correzione
+    if (it.fase === "risultato" && it.correzione) {
+      const c = it.correzione;
+      const vF = c.voto_finale;
+      return (
+        <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+          <Head><title>Correzione Tema</title></Head>
+          <div style={{ ...S.hdr, borderBottomColor:"rgba(255,112,200,0.3)" }}>
+            <button onClick={() => goScreen("esame5_italiano")} style={S.back}>←</button>
+            <p style={{ fontWeight:900, fontSize:"16px" }}>Correzione Tema</p>
+          </div>
+          <div style={{ flex:1, overflowY:"auto", padding:"16px 16px 100px" }}>
+            {/* Voto grande */}
+            <div style={{ textAlign:"center", marginBottom:"20px" }}>
+              <div style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:"100px", height:"100px", borderRadius:"50%", background:`${votoColor(vF)}22`, border:`4px solid ${votoColor(vF)}`, marginBottom:"12px" }}>
+                <p style={{ fontSize:"40px", fontWeight:900, color:votoColor(vF) }}>{vF}</p>
+              </div>
+              <p style={{ fontSize:"14px", fontWeight:800, color:"rgba(255,255,255,0.6)" }}>voto finale /10</p>
+              <p style={{ fontSize:"13px", fontWeight:800, color:"#fbbf24", marginTop:"6px" }}>+{it.stelleGuadagnate} ⭐</p>
+            </div>
+            {/* Pill voti */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px", marginBottom:"16px" }}>
+              {[["Contenuto", c.voti?.aderenza],["Ortografia", c.voti?.ortografia],["Struttura", c.voti?.struttura],["Stile", c.voti?.stile]].map(([lab, v]) => (
+                <div key={lab} style={{ padding:"10px", borderRadius:"12px", background:`${votoColor(v||5)}18`, border:`1px solid ${votoColor(v||5)}44`, textAlign:"center" }}>
+                  <p style={{ fontSize:"18px", fontWeight:900, color:votoColor(v||5) }}>{v||"—"}</p>
+                  <p style={{ fontSize:"10px", fontWeight:800, color:"rgba(255,255,255,0.6)" }}>{lab}</p>
+                </div>
+              ))}
+            </div>
+            {/* Punti di forza */}
+            {c.punti_forza?.length > 0 && <div style={{ ...S.card, marginBottom:"12px", background:"rgba(16,185,129,0.08)", borderColor:"rgba(16,185,129,0.3)" }}>
+              <p style={{ fontSize:"11px", fontWeight:900, color:"#10b981", textTransform:"uppercase", marginBottom:"8px" }}>✅ Punti di forza</p>
+              {c.punti_forza.map((p,i) => <p key={i} style={{ fontSize:"13px", fontWeight:600, marginBottom:"6px", lineHeight:1.4 }}>✅ {p}</p>)}
+            </div>}
+            {/* Errori */}
+            {c.errori?.length > 0 && <div style={{ ...S.card, marginBottom:"12px", background:"rgba(239,68,68,0.07)", borderColor:"rgba(239,68,68,0.25)" }}>
+              <p style={{ fontSize:"11px", fontWeight:900, color:"#ef4444", textTransform:"uppercase", marginBottom:"8px" }}>❌ Da migliorare</p>
+              {c.errori.map((e,i) => <div key={i} style={{ marginBottom:"10px" }}>
+                <p style={{ fontSize:"12px", fontWeight:800, color:"#f87171" }}>❌ {e.errore}</p>
+                <p style={{ fontSize:"12px", fontWeight:600, color:"rgba(255,255,255,0.6)", marginTop:"2px" }}>{e.spiegazione}</p>
+              </div>)}
+            </div>}
+            {/* Consigli */}
+            {c.consigli?.length > 0 && <div style={{ ...S.card, marginBottom:"12px", background:"rgba(99,102,241,0.08)", borderColor:"rgba(99,102,241,0.25)" }}>
+              <p style={{ fontSize:"11px", fontWeight:900, color:"#818cf8", textTransform:"uppercase", marginBottom:"8px" }}>💡 Consigli</p>
+              {c.consigli.map((cv,i) => <p key={i} style={{ fontSize:"13px", fontWeight:600, marginBottom:"6px", lineHeight:1.4 }}>💡 {cv}</p>)}
+            </div>}
+            {/* Messaggio Lex */}
+            <div style={{ display:"flex", gap:"12px", alignItems:"flex-start", ...S.card, background:"rgba(255,112,200,0.08)", borderColor:"rgba(255,112,200,0.25)" }}>
+              <LexChar stato="happy" size={50} />
+              <p style={{ fontSize:"13px", fontWeight:700, lineHeight:1.5, flex:1 }}>{c.messaggio_incoraggiamento}</p>
+            </div>
+            <div style={{ display:"flex", gap:"10px", marginTop:"16px" }}>
+              <button onClick={() => goScreen("esame5_italiano")} style={{ ...S.btn, ...S.btnS, flex:1 }}>🔄 Riprova</button>
+              <button onClick={() => goScreen("esame5")} style={{ ...S.btn, background:"linear-gradient(135deg,#FF70C8,#E0008A)", flex:1, fontWeight:900 }}>← Hub esame</button>
+            </div>
+          </div>
+          <Nav />
+        </div>
+      );
+    }
+    return null;
+  }
+
+  // ── MATEMATICA E SCIENZE ──────────────────────────────────────
+  if (screen === "esame5_matematica") {
+    const classe = esameSubTipo === "media" ? "3ª media" : "5ª elementare";
+    const mat = esameMatematica || {};
+
+    const generaProva = async (tipo) => {
+      setEsameLoading(true);
+      try {
+        const r = await fetch("/api/esame-matematica", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ classe, tipo }) });
+        const d = await r.json();
+        if (d.errore) throw new Error(d.errore);
+        const problemi = [...(d.problemi_matematica||[]), ...(d.domande_scienze||[]).map(ds => ({ ...ds, testo: ds.domanda, risposta_corretta: ds.risposta_modello, isScienze: true }))];
+        setEsameMatematica({ fase:"prova", tipo, problemi, risposte:{}, correzioni:{}, fotoProblemi:{} });
+      } catch (e) { alert("Errore: " + e.message); }
+      setEsameLoading(false);
+    };
+
+    const correggiProblema = async (idx) => {
+      const prob = mat.problemi[idx];
+      if (!prob) return;
+      const risposta = mat.risposte?.[idx] || "";
+      const foto = mat.fotoProblemi?.[idx] || null;
+      if (!risposta.trim() && !foto) return alert("Inserisci una risposta o fotografa i calcoli.");
+      setEsameMatematica(prev => ({ ...prev, correzioni: { ...prev.correzioni, [idx]: { loading: true } } }));
+      try {
+        const r = await fetch("/api/esame-correggi-matematica", { method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ classe, problema: prob.testo, risposta_corretta: prob.risposta_corretta, risposta, foto }) });
+        const d = await r.json();
+        if (d.errore) throw new Error(d.errore);
+        setEsameMatematica(prev => ({ ...prev, correzioni: { ...prev.correzioni, [idx]: { ...d, loading: false } } }));
+      } catch (e) { alert("Errore: " + e.message); setEsameMatematica(prev => ({ ...prev, correzioni: { ...prev.correzioni, [idx]: { loading: false } } })); }
+    };
+
+    const mostraRisultato = () => {
+      const corrette = Object.values(mat.correzioni||{}).filter(c => c.corretta).length;
+      const totale = mat.problemi?.length || 0;
+      const voto = Math.round((corrette / totale) * 10);
+      const stelle = corrette * 2;
+      addStelle(stelle);
+      suona(voto >= 7 ? "obiettivo" : "stelle");
+      const sim = { tipo:"matematica", voto_finale: voto, sottotipo: mat.tipo, data: new Date().toLocaleDateString("it-IT"), dettagli: { corrette, totale } };
+      const nuovoStorico = [sim, ...esameStorico].slice(0, 30);
+      setEsameStorico(nuovoStorico);
+      localStorage.setItem("lexyo_esame_storico", JSON.stringify(nuovoStorico));
+      setEsameMatematica(prev => ({ ...prev, fase:"risultato", corrette, totale, voto, stelle }));
+    };
+
+    const handleFotoCalcoli = (file, idx) => {
+      compressPhoto(file, (compressed) => {
+        setEsameMatematica(prev => ({ ...prev, fotoProblemi: { ...prev.fotoProblemi, [idx]: compressed } }));
+      });
+    };
+
+    // Start
+    if (!mat.fase) return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <Head><title>Matematica e Scienze</title></Head>
+        <div style={{ ...S.hdr, borderBottomColor:"rgba(255,179,0,0.3)" }}>
+          <button onClick={() => goScreen("esame5")} style={S.back}>←</button>
+          <div style={{ width:"44px", height:"44px", borderRadius:"14px", background:"linear-gradient(145deg,#FFE500,#FFB300)", boxShadow:"0 4px 16px rgba(255,179,0,0.4)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"24px", flexShrink:0 }}>🔢</div>
+          <div><p style={{ fontWeight:900, fontSize:"15px" }}>Matematica e Scienze</p><p style={{ fontSize:"11px", color:"#FFB300", fontWeight:700 }}>{classe}</p></div>
+        </div>
+        <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"24px", gap:"16px" }}>
+          <LexChar stato="happy" size={120} />
+          <p style={{ fontSize:"20px", fontWeight:900, textAlign:"center" }}>Scegli il tipo di prova</p>
+          {esameLoading
+            ? <LexChar stato="thinking" size={80} />
+            : <div style={{ width:"100%", maxWidth:"320px", display:"flex", flexDirection:"column", gap:"10px" }}>
+                {[["matematica","🔢 Solo Matematica"],["scienze","🔬 Solo Scienze"],["completa","📋 Matematica + Scienze"]].map(([k,lab]) => (
+                  <button key={k} onClick={() => generaProva(k)} style={{ ...S.btn, background: k==="matematica"?"linear-gradient(135deg,#FFE500,#FFB300)": k==="scienze"?"linear-gradient(135deg,#29C9FF,#007ACC)":"linear-gradient(135deg,#6C47FF,#4A2FD4)", color: k==="matematica"?"#0a0a20":"white", fontWeight:900 }}>{lab}</button>
+                ))}
+              </div>
+          }
+        </div>
+        <Nav />
+      </div>
+    );
+
+    // Prova
+    if (mat.fase === "prova") {
+      const tutteCorrette = mat.problemi?.every((_, i) => mat.correzioni?.[i] && !mat.correzioni[i].loading);
+      return (
+        <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+          <Head><title>Prova Matematica</title></Head>
+          <div style={{ ...S.hdr, borderBottomColor:"rgba(255,179,0,0.3)" }}>
+            <button onClick={() => goScreen("esame5_matematica")} style={S.back}>←</button>
+            <p style={{ fontWeight:900, fontSize:"15px" }}>Prova in corso</p>
+            <div style={{ marginLeft:"auto", background:"rgba(255,179,0,0.2)", borderRadius:"10px", padding:"5px 10px" }}>
+              <p style={{ fontSize:"12px", fontWeight:800, color:"#FFB300" }}>{Object.keys(mat.correzioni||{}).length}/{mat.problemi?.length}</p>
+            </div>
+          </div>
+          <div style={{ flex:1, overflowY:"auto", padding:"12px 16px 120px", display:"flex", flexDirection:"column", gap:"14px" }}>
+            {(mat.problemi||[]).map((prob, idx) => {
+              const corr = mat.correzioni?.[idx];
+              return (
+                <div key={idx} style={{ ...S.card, borderColor: corr?.corretta?"rgba(16,185,129,0.4)":corr?.corretta===false?"rgba(239,68,68,0.4)":"rgba(255,255,255,0.1)" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"8px" }}>
+                    <p style={{ fontSize:"10px", fontWeight:900, color:"#FFB300", textTransform:"uppercase" }}>{prob.isScienze ? "🔬 Scienze" : `🔢 Problema ${prob.numero || idx+1}`}</p>
+                    {corr && !corr.loading && <span style={{ fontSize:"16px" }}>{corr.corretta?"✅":"❌"}</span>}
+                  </div>
+                  <p style={{ fontSize:"14px", fontWeight:700, lineHeight:1.5, marginBottom:"8px" }}>{prob.testo}</p>
+                  {prob.dati && <p style={{ fontSize:"12px", fontWeight:800, color:"#FFB300", marginBottom:"10px" }}>📊 Dati: {prob.dati}</p>}
+                  {corr?.loading && <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.5)", fontWeight:600 }}>Lex corregge... 🤔</p>}
+                  {corr && !corr.loading && <>
+                    <div style={{ padding:"10px", borderRadius:"10px", background: corr.corretta?"rgba(16,185,129,0.1)":"rgba(239,68,68,0.1)", marginBottom:"8px" }}>
+                      <p style={{ fontSize:"12px", fontWeight:700, lineHeight:1.4 }}>{corr.spiegazione_errore || corr.incoraggiamento}</p>
+                    </div>
+                    {!corr.corretta && corr.procedimento_corretto && <div style={{ padding:"10px", borderRadius:"10px", background:"rgba(99,102,241,0.1)", border:"1px solid rgba(99,102,241,0.25)" }}>
+                      <p style={{ fontSize:"10px", fontWeight:900, color:"#818cf8", marginBottom:"4px" }}>📐 Procedimento corretto</p>
+                      <p style={{ fontSize:"12px", fontWeight:600, lineHeight:1.5 }}>{corr.procedimento_corretto}</p>
+                    </div>}
+                  </>}
+                  {!corr && <>
+                    <div style={{ display:"flex", gap:"8px", marginBottom:"8px" }}>
+                      <button onClick={() => setEsameMatematica(prev => ({ ...prev, risposte: { ...prev.risposte, [idx]: "" }, _inputFocus: idx }))}
+                        style={{ flex:1, padding:"10px", borderRadius:"10px", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", color:"white", fontFamily:"'Nunito'", fontWeight:700, fontSize:"12px", cursor:"pointer" }}>⌨️ Scrivi risposta</button>
+                      <label style={{ flex:1, padding:"10px", borderRadius:"10px", background:"rgba(255,179,0,0.15)", border:"1px solid rgba(255,179,0,0.35)", color:"#FFB300", fontFamily:"'Nunito'", fontWeight:700, fontSize:"12px", cursor:"pointer", textAlign:"center" }}>
+                        📸 Fotografa{mat.fotoProblemi?.[idx]&&" ✓"}
+                        <input type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={e => { const f=e.target.files[0]; if(f) handleFotoCalcoli(f,idx); e.target.value=""; }} />
+                      </label>
+                    </div>
+                    {mat.risposte?.[idx] !== undefined && <textarea value={mat.risposte[idx]} onChange={e => setEsameMatematica(prev => ({ ...prev, risposte: { ...prev.risposte, [idx]: e.target.value } }))} placeholder="Scrivi qui la risposta..." rows={2} style={{ width:"100%", padding:"10px", borderRadius:"10px", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", color:"white", fontFamily:"'Nunito'", fontWeight:600, fontSize:"13px", resize:"none", outline:"none", boxSizing:"border-box", marginBottom:"8px" }} />}
+                    <button onClick={() => correggiProblema(idx)} style={{ width:"100%", padding:"10px", borderRadius:"10px", background:"linear-gradient(135deg,#FFE500,#FFB300)", border:"none", color:"#0a0a20", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", cursor:"pointer" }}>Correggi →</button>
+                  </>}
+                </div>
+              );
+            })}
+            {tutteCorrette && <button onClick={mostraRisultato} style={{ ...S.btn, background:"linear-gradient(135deg,#FFE500,#FFB300)", color:"#0a0a20", fontWeight:900, marginTop:"8px" }}>📊 Vedi risultato finale</button>}
+          </div>
+          <Nav />
+        </div>
+      );
+    }
+
+    // Risultato
+    if (mat.fase === "risultato") return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"24px", gap:"16px" }}>
+        <LexChar stato={mat.voto >= 7 ? "happy" : "idle"} size={120} />
+        <div style={{ textAlign:"center" }}>
+          <p style={{ fontSize:"48px", fontWeight:900, color: mat.voto>=7?"#10b981":mat.voto>=5?"#f59e0b":"#ef4444" }}>{mat.voto}/10</p>
+          <p style={{ fontSize:"16px", fontWeight:800, color:"rgba(255,255,255,0.7)", marginBottom:"4px" }}>{mat.corrette}/{mat.totale} problemi corretti</p>
+          <p style={{ color:"#fbbf24", fontWeight:800 }}>+{mat.stelle} ⭐</p>
+        </div>
+        <div style={{ display:"flex", gap:"10px", width:"100%", maxWidth:"320px" }}>
+          <button onClick={() => goScreen("esame5_matematica")} style={{ ...S.btn, ...S.btnS, flex:1 }}>🔄 Riprova</button>
+          <button onClick={() => goScreen("esame5")} style={{ ...S.btn, background:"linear-gradient(135deg,#FFE500,#FFB300)", color:"#0a0a20", flex:1, fontWeight:900 }}>← Hub</button>
+        </div>
+      </div>
+    );
+
+    return null;
+  }
+
+  // ── COLLOQUIO ORALE ───────────────────────────────────────────
+  if (screen === "esame5_orale") {
+    const classe = esameSubTipo === "media" ? "3ª media" : "5ª elementare";
+    const or = esameOrale || {};
+    const TOTALE_DOMANDE = 8;
+
+    const iniziaColloquio = async () => {
+      setEsameOrale({ fase:"loading", storico:[], domandaNum:1 });
+      try {
+        const r = await fetch("/api/esame-colloquio", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ classe, storico:[], domandaNum:1 }) });
+        const d = await r.json();
+        if (d.errore) throw new Error(d.errore);
+        setEsameOrale({ fase:"domanda", storico:[], domandaNum:1, domandaCorrente: d.prossima_domanda, materia: d.materia, valutazionePrecedente: null, rispostaBambino:"" });
+      } catch (e) { alert("Errore: " + e.message); setEsameOrale(null); }
+    };
+
+    const rispondi = async () => {
+      if (!or.rispostaBambino?.trim()) return;
+      const nuovoStorico = [...(or.storico||[]), { domanda: or.domandaCorrente, materia: or.materia, risposta: or.rispostaBambino }];
+      const prossimaNum = or.domandaNum + 1;
+      if (prossimaNum > TOTALE_DOMANDE) {
+        setEsameLoading(true);
+        try {
+          const r = await fetch("/api/esame-voto-colloquio", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ classe, storico: nuovoStorico }) });
+          const d = await r.json();
+          if (d.errore) throw new Error(d.errore);
+          const stelle = (d.voto_finale || 5) * 3;
+          addStelle(stelle);
+          suona(d.voto_finale >= 7 ? "obiettivo" : "stelle");
+          const sim = { tipo:"orale", voto_finale: d.voto_finale, data: new Date().toLocaleDateString("it-IT"), dettagli: d };
+          const nuovoStorS = [sim, ...esameStorico].slice(0, 30);
+          setEsameStorico(nuovoStorS);
+          localStorage.setItem("lexyo_esame_storico", JSON.stringify(nuovoStorS));
+          setEsameOrale(prev => ({ ...prev, fase:"risultato", storico: nuovoStorico, votoFinale: d, stelleGuadagnate: stelle }));
+        } catch (e) { alert("Errore: " + e.message); }
+        setEsameLoading(false);
+        return;
+      }
+      setEsameOrale(prev => ({ ...prev, fase:"loading_domanda", storico: nuovoStorico }));
+      try {
+        const r = await fetch("/api/esame-colloquio", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ classe, storico: nuovoStorico, domandaNum: prossimaNum }) });
+        const d = await r.json();
+        if (d.errore) throw new Error(d.errore);
+        setEsameOrale(prev => ({ ...prev, fase:"domanda", domandaNum: prossimaNum, domandaCorrente: d.prossima_domanda, materia: d.materia, valutazionePrecedente: d.valutazione_precedente, rispostaBambino:"" }));
+      } catch (e) { alert("Errore: " + e.message); }
+    };
+
+    // Intro
+    if (!or.fase) return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <Head><title>Colloquio Orale</title></Head>
+        <div style={{ ...S.hdr, borderBottomColor:"rgba(41,201,255,0.3)" }}>
+          <button onClick={() => goScreen("esame5")} style={S.back}>←</button>
+          <div style={{ width:"44px", height:"44px", borderRadius:"14px", background:"linear-gradient(145deg,#29C9FF,#007ACC)", boxShadow:"0 4px 16px rgba(41,201,255,0.4)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"24px", flexShrink:0 }}>🎤</div>
+          <div><p style={{ fontWeight:900, fontSize:"15px" }}>Colloquio Orale</p><p style={{ fontSize:"11px", color:"#29C9FF", fontWeight:700 }}>{classe}</p></div>
+        </div>
+        <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"24px", gap:"20px", textAlign:"center" }}>
+          <LexChar stato="talk" size={150} />
+          <div>
+            <p style={{ fontSize:"18px", fontWeight:900, marginBottom:"12px" }}>🎤 Simulazione Colloquio</p>
+            <p style={{ fontSize:"14px", fontWeight:600, color:"rgba(255,255,255,0.65)", lineHeight:1.6 }}>Ciao! Sono la tua commissione d'esame. Ti farò {TOTALE_DOMANDE} domande su tutte le materie. Cerca di rispondere in modo completo. Sei pronto/a?</p>
+          </div>
+          <div style={{ width:"100%", maxWidth:"300px", display:"flex", flexDirection:"column", gap:"10px" }}>
+            <button onClick={iniziaColloquio} style={{ ...S.btn, background:"linear-gradient(135deg,#29C9FF,#007ACC)", fontWeight:900 }}>Inizia il colloquio →</button>
+          </div>
+        </div>
+        <Nav />
+      </div>
+    );
+
+    if (or.fase === "loading" || or.fase === "loading_domanda") return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"20px" }}>
+        <LexChar stato="thinking" size={130} />
+        <p style={{ fontWeight:800, fontSize:"16px" }}>La commissione pensa... 🎓</p>
+      </div>
+    );
+
+    if (or.fase === "domanda") return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <Head><title>Colloquio</title></Head>
+        <div style={{ ...S.hdr, borderBottomColor:"rgba(41,201,255,0.3)" }}>
+          <button onClick={() => { if(window.confirm("Vuoi interrompere il colloquio?")) goScreen("esame5"); }} style={S.back}>←</button>
+          <p style={{ fontWeight:900, fontSize:"14px", flex:1, textAlign:"center" }}>Domanda {or.domandaNum}/{TOTALE_DOMANDE}</p>
+          <div style={{ background:"rgba(41,201,255,0.2)", borderRadius:"10px", padding:"5px 10px" }}>
+            <p style={{ fontSize:"11px", fontWeight:800, color:"#29C9FF" }}>{or.materia}</p>
+          </div>
+        </div>
+        {/* Progress bar */}
+        <div style={{ height:"4px", background:"rgba(255,255,255,0.08)" }}>
+          <div style={{ height:"100%", width:`${(or.domandaNum/TOTALE_DOMANDE)*100}%`, background:"linear-gradient(90deg,#29C9FF,#007ACC)", transition:"width 0.5s ease" }} />
+        </div>
+        <div style={{ flex:1, overflowY:"auto", padding:"16px 16px 120px" }}>
+          {or.valutazionePrecedente && (
+            <div className="vfade" style={{ display:"flex", gap:"10px", alignItems:"flex-start", marginBottom:"16px" }}>
+              <LexChar stato="happy" size={40} />
+              <div style={{ background:"rgba(16,185,129,0.1)", border:"1px solid rgba(16,185,129,0.25)", borderRadius:"4px 14px 14px 14px", padding:"10px 14px", flex:1 }}>
+                <p style={{ fontSize:"12px", fontWeight:700, color:"#34d399" }}>{or.valutazionePrecedente}</p>
+              </div>
+            </div>
+          )}
+          <div style={{ ...S.card, background:"rgba(41,201,255,0.08)", borderColor:"rgba(41,201,255,0.3)", marginBottom:"16px" }}>
+            <p style={{ fontSize:"10px", fontWeight:900, color:"#29C9FF", textTransform:"uppercase", marginBottom:"8px" }}>🎓 Commissione</p>
+            <p style={{ fontSize:"16px", fontWeight:800, lineHeight:1.5 }}>{or.domandaCorrente}</p>
+          </div>
+          <p style={{ fontSize:"13px", fontWeight:700, color:"rgba(255,255,255,0.5)", marginBottom:"10px" }}>La tua risposta:</p>
+          <textarea value={or.rispostaBambino || ""} onChange={e => setEsameOrale(prev => ({ ...prev, rispostaBambino: e.target.value }))} placeholder="Rispondi qui..." rows={5}
+            style={{ width:"100%", padding:"14px", borderRadius:"14px", background: luce?"rgba(0,0,0,0.04)":"rgba(255,255,255,0.06)", border:`1px solid rgba(41,201,255,0.3)`, color: luce?"#0a0a20":"white", fontFamily:"'Nunito'", fontWeight:600, fontSize:"14px", outline:"none", resize:"none", boxSizing:"border-box", lineHeight:1.6 }} />
+        </div>
+        <div style={{ position:"fixed", bottom:"80px", left:0, right:0, padding:"0 16px" }}>
+          {esameLoading
+            ? <div style={{ textAlign:"center" }}><LexChar stato="thinking" size={60} /></div>
+            : <button onClick={rispondi} disabled={!or.rispostaBambino?.trim()} style={{ ...S.btn, width:"100%", background: or.rispostaBambino?.trim()?"linear-gradient(135deg,#29C9FF,#007ACC)":"rgba(255,255,255,0.08)", opacity: or.rispostaBambino?.trim()?1:0.5, fontWeight:900 }}>
+                {or.domandaNum < TOTALE_DOMANDE ? "Risposta successiva →" : "Termina il colloquio ✓"}
+              </button>
+          }
+        </div>
+        <Nav />
+      </div>
+    );
+
+    if (or.fase === "risultato" && or.votoFinale) {
+      const vF = or.votoFinale;
+      const votoColor = (v) => v >= 7 ? "#10b981" : v >= 5 ? "#f59e0b" : "#ef4444";
+      const MATERIE_LABEL = { italiano:"🇮🇹 Italiano", matematica:"🔢 Matematica", scienze:"🔬 Scienze", storia:"📜 Storia", geografia:"🌍 Geografia", inglese:"🇬🇧 Inglese" };
+      return (
+        <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+          <Head><title>Risultato Colloquio</title></Head>
+          <div style={{ ...S.hdr, borderBottomColor:"rgba(41,201,255,0.3)" }}>
+            <button onClick={() => goScreen("esame5")} style={S.back}>←</button>
+            <p style={{ fontWeight:900, fontSize:"16px" }}>Risultato Colloquio</p>
+          </div>
+          <div style={{ flex:1, overflowY:"auto", padding:"16px 16px 100px" }}>
+            <div style={{ textAlign:"center", marginBottom:"20px" }}>
+              <div style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:"100px", height:"100px", borderRadius:"50%", background:`${votoColor(vF.voto_finale)}22`, border:`4px solid ${votoColor(vF.voto_finale)}`, marginBottom:"10px" }}>
+                <p style={{ fontSize:"40px", fontWeight:900, color:votoColor(vF.voto_finale) }}>{vF.voto_finale}</p>
+              </div>
+              <p style={{ fontSize:"14px", fontWeight:800, color:"rgba(255,255,255,0.6)" }}>voto colloquio /10</p>
+              <p style={{ color:"#fbbf24", fontWeight:800, marginTop:"4px" }}>+{or.stelleGuadagnate} ⭐</p>
+            </div>
+            {/* Voti per materia */}
+            {vF.voti_materie && <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px", marginBottom:"16px" }}>
+              {Object.entries(vF.voti_materie).map(([k,v]) => (
+                <div key={k} style={{ padding:"10px", borderRadius:"12px", background:`${votoColor(v)}18`, border:`1px solid ${votoColor(v)}44`, textAlign:"center" }}>
+                  <p style={{ fontSize:"9px", fontWeight:800, color:"rgba(255,255,255,0.5)", marginBottom:"2px" }}>{MATERIE_LABEL[k]||k}</p>
+                  <p style={{ fontSize:"20px", fontWeight:900, color:votoColor(v) }}>{v}</p>
+                </div>
+              ))}
+            </div>}
+            {vF.punti_forza?.length>0 && <div style={{ ...S.card, background:"rgba(16,185,129,0.08)", borderColor:"rgba(16,185,129,0.3)", marginBottom:"12px" }}>
+              <p style={{ fontSize:"11px", fontWeight:900, color:"#10b981", textTransform:"uppercase", marginBottom:"8px" }}>✅ Punti di forza</p>
+              {vF.punti_forza.map((p,i) => <p key={i} style={{ fontSize:"13px", fontWeight:600, marginBottom:"6px" }}>✅ {p}</p>)}
+            </div>}
+            {vF.aree_miglioramento?.length>0 && <div style={{ ...S.card, background:"rgba(245,158,11,0.08)", borderColor:"rgba(245,158,11,0.25)", marginBottom:"12px" }}>
+              <p style={{ fontSize:"11px", fontWeight:900, color:"#f59e0b", textTransform:"uppercase", marginBottom:"8px" }}>💪 Da migliorare</p>
+              {vF.aree_miglioramento.map((p,i) => <p key={i} style={{ fontSize:"13px", fontWeight:600, marginBottom:"6px" }}>💪 {p}</p>)}
+            </div>}
+            {vF.consiglio_finale && <div style={{ display:"flex", gap:"12px", alignItems:"flex-start", ...S.card, background:"rgba(41,201,255,0.08)", borderColor:"rgba(41,201,255,0.25)", marginBottom:"16px" }}>
+              <LexChar stato="happy" size={50} />
+              <p style={{ fontSize:"13px", fontWeight:700, lineHeight:1.5, flex:1 }}>{vF.consiglio_finale}</p>
+            </div>}
+            <div style={{ display:"flex", gap:"10px" }}>
+              <button onClick={() => goScreen("esame5_orale")} style={{ ...S.btn, ...S.btnS, flex:1 }}>🔄 Rifai colloquio</button>
+              <button onClick={() => goScreen("esame5")} style={{ ...S.btn, background:"linear-gradient(135deg,#29C9FF,#007ACC)", flex:1, fontWeight:900 }}>← Hub</button>
+            </div>
+          </div>
+          <Nav />
+        </div>
+      );
+    }
+    return null;
+  }
+
+  // ── STORICO SIMULAZIONI ───────────────────────────────────────
+  if (screen === "esame5_storico") {
+    const votoColor = (v) => v >= 7 ? "#10b981" : v >= 5 ? "#f59e0b" : "#ef4444";
+    const oggi = new Date();
+    const dataEsameObj = esameDataEsame ? new Date(esameDataEsame) : null;
+    const giorniAlEsame = dataEsameObj ? Math.max(0, Math.ceil((dataEsameObj - oggi) / 86400000)) : null;
+
+    const TIPO_ICON = { italiano:"📝", matematica:"🔢", orale:"🎤" };
+    const mediaPerTipo = {};
+    esameStorico.forEach(s => {
+      if (!mediaPerTipo[s.tipo]) mediaPerTipo[s.tipo] = [];
+      mediaPerTipo[s.tipo].push(s.voto_finale);
+    });
+    const matForte = Object.entries(mediaPerTipo).sort((a,b) => (b[1].reduce((x,y)=>x+y,0)/b[1].length) - (a[1].reduce((x,y)=>x+y,0)/a[1].length))[0]?.[0];
+    const matDebole = Object.entries(mediaPerTipo).sort((a,b) => (a[1].reduce((x,y)=>x+y,0)/a[1].length) - (b[1].reduce((x,y)=>x+y,0)/b[1].length))[0]?.[0];
+
+    return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <Head><title>Le mie Simulazioni</title></Head>
+        <div style={{ ...S.hdr, borderBottomColor:"rgba(108,71,255,0.3)" }}>
+          <button onClick={() => goScreen("esame5")} style={S.back}>←</button>
+          <div style={{ width:"44px", height:"44px", borderRadius:"14px", background:"linear-gradient(145deg,#6C47FF,#4A2FD4)", boxShadow:"0 4px 16px rgba(108,71,255,0.4)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", flexShrink:0 }}>📊</div>
+          <div><p style={{ fontWeight:900, fontSize:"15px" }}>Le mie Simulazioni</p><p style={{ fontSize:"11px", color:"#6C47FF", fontWeight:700 }}>Storico e progressi</p></div>
+        </div>
+        <div style={{ flex:1, overflowY:"auto", padding:"16px 16px 100px" }}>
+          {/* Countdown esame */}
+          <div style={{ ...S.card, background:"rgba(108,71,255,0.1)", borderColor:"rgba(108,71,255,0.3)", marginBottom:"16px" }}>
+            <p style={{ fontSize:"11px", fontWeight:900, color:"#818cf8", textTransform:"uppercase", marginBottom:"8px" }}>📅 Data esame</p>
+            <input type="date" value={esameDataEsame} onChange={e => { setEsameDataEsame(e.target.value); localStorage.setItem("lexyo_data_esame", e.target.value); }}
+              style={{ width:"100%", padding:"10px 12px", borderRadius:"10px", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(108,71,255,0.35)", color:"white", fontFamily:"'Nunito'", fontWeight:700, fontSize:"14px", outline:"none", boxSizing:"border-box" }} />
+            {giorniAlEsame !== null && (
+              <div style={{ textAlign:"center", marginTop:"14px" }}>
+                <p style={{ fontSize:"42px", fontWeight:900, color:"#818cf8" }}>{giorniAlEsame}</p>
+                <p style={{ fontSize:"13px", fontWeight:800, color:"rgba(255,255,255,0.6)" }}>{giorniAlEsame === 1 ? "giorno all'esame!" : "giorni all'esame!"}</p>
+              </div>
+            )}
+          </div>
+          {/* Badge */}
+          {esameStorico.length > 0 && <div style={{ display:"flex", gap:"8px", marginBottom:"16px" }}>
+            {matForte && <div style={{ flex:1, padding:"12px", borderRadius:"14px", background:"rgba(16,185,129,0.1)", border:"1px solid rgba(16,185,129,0.3)", textAlign:"center" }}>
+              <p style={{ fontSize:"18px" }}>{TIPO_ICON[matForte]}</p>
+              <p style={{ fontSize:"10px", fontWeight:800, color:"#34d399", marginTop:"4px" }}>Materia più forte</p>
+            </div>}
+            {matDebole && matDebole !== matForte && <div style={{ flex:1, padding:"12px", borderRadius:"14px", background:"rgba(245,158,11,0.1)", border:"1px solid rgba(245,158,11,0.3)", textAlign:"center" }}>
+              <p style={{ fontSize:"18px" }}>{TIPO_ICON[matDebole]}</p>
+              <p style={{ fontSize:"10px", fontWeight:800, color:"#fbbf24", marginTop:"4px" }}>Da allenare</p>
+            </div>}
+          </div>}
+          {/* Lista simulazioni */}
+          <p style={{ fontSize:"12px", fontWeight:900, color:"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px" }}>Simulazioni svolte</p>
+          {esameStorico.length === 0
+            ? <div style={{ textAlign:"center", padding:"40px 20px" }}>
+                <LexChar stato="idle" size={100} style={{ margin:"0 auto 16px" }} />
+                <p style={{ fontWeight:800, fontSize:"16px", marginBottom:"6px" }}>Nessuna simulazione ancora!</p>
+                <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.5)", fontWeight:600 }}>Inizia la tua prima simulazione</p>
+                <button onClick={() => goScreen("esame5")} style={{ ...S.btn, background:"linear-gradient(135deg,#6C47FF,#4A2FD4)", marginTop:"20px", maxWidth:"240px", fontWeight:900 }}>Vai all'hub →</button>
+              </div>
+            : esameStorico.map((s, i) => (
+                <div key={i} style={{ display:"flex", alignItems:"center", gap:"12px", padding:"14px", borderRadius:"14px", background: luce?"rgba(0,0,0,0.04)":"rgba(255,255,255,0.05)", border:`1px solid ${luce?"rgba(0,0,0,0.08)":"rgba(255,255,255,0.08)"}`, marginBottom:"8px" }}>
+                  <div style={{ fontSize:"28px" }}>{TIPO_ICON[s.tipo] || "📋"}</div>
+                  <div style={{ flex:1 }}>
+                    <p style={{ fontWeight:800, fontSize:"13px", marginBottom:"2px" }}>{s.tipo === "italiano" ? "Tema di Italiano" : s.tipo === "matematica" ? `Matematica${s.sottotipo?" ("+s.sottotipo+")":""}` : "Colloquio Orale"}</p>
+                    <p style={{ fontSize:"11px", fontWeight:600, color:"rgba(255,255,255,0.45)" }}>{s.data}</p>
+                  </div>
+                  <div style={{ width:"40px", height:"40px", borderRadius:"50%", background:`${votoColor(s.voto_finale)}22`, border:`2px solid ${votoColor(s.voto_finale)}`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <p style={{ fontSize:"15px", fontWeight:900, color:votoColor(s.voto_finale) }}>{s.voto_finale}</p>
+                  </div>
+                </div>
+              ))
+          }
+        </div>
+        <Nav />
+      </div>
+    );
+  }
+
+  // ── INTERROGAZIONE (Storia / Geografia / Inglese) ────────────────────────
+  if (screen === "esame5_interrogazione") {
+    const classe = esameSubTipo === "media" ? "3ª media" : "5ª elementare";
+    const matNome = { storia:"Storia", geografia:"Geografia", inglese:"Inglese" }[esameInterrMateria] || "";
+    const matEmoji = { storia:"📜", geografia:"🌍", inglese:"🇬🇧" }[esameInterrMateria] || "📚";
+    const matBg = { storia:"linear-gradient(145deg,#FF9500,#E06000)", geografia:"linear-gradient(145deg,#00CC66,#008844)", inglese:"linear-gradient(145deg,#6C47FF,#4A00CC)" }[esameInterrMateria] || "linear-gradient(145deg,#666,#333)";
+    const st = esameInterrState || {};
+
+    const generaDomande = async () => {
+      setEsameLoading(true);
+      try {
+        const r = await fetch("/api/esame-interrogazione", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ classe, materia: esameInterrMateria }) });
+        const d = await r.json();
+        if (d.errore) throw new Error(d.errore);
+        setEsameInterrRisposta("");
+        setEsameInterrState({ fase:"domanda", domande: d.domande || [], corrente:0, risposte:[] });
+      } catch(e) { alert("Errore: " + e.message); }
+      setEsameLoading(false);
+    };
+
+    const valutaRisposte = async (risposte) => {
+      setEsameInterrState(prev => ({ ...prev, fase:"correzione_loading" }));
+      try {
+        const payload = st.domande.map((d,i) => ({ domanda: d.domanda, risposta: risposte[i] || "" }));
+        const r = await fetch("/api/esame-valuta-interrogazione", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ classe, materia: esameInterrMateria, domande: payload }) });
+        const d = await r.json();
+        if (d.errore) throw new Error(d.errore);
+        addStelle(Math.round((d.voto_finale || 6) * 1.5));
+        setEsameInterrState(prev => ({ ...prev, fase:"risultato", risultato: d }));
+      } catch(e) { alert("Errore: " + e.message); setEsameInterrState(prev => ({ ...prev, fase:"domanda" })); }
+    };
+
+    const rispondi = (testo) => {
+      const nuoveRisposte = [...(st.risposte || [])];
+      nuoveRisposte[st.corrente] = testo;
+      const isUltima = st.corrente >= (st.domande?.length || 5) - 1;
+      if (isUltima) {
+        valutaRisposte(nuoveRisposte);
+      } else {
+        setEsameInterrRisposta("");
+        setEsameInterrState(prev => ({ ...prev, corrente: prev.corrente + 1, risposte: nuoveRisposte }));
+      }
+    };
+
+    return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <Head><title>Lexyo — {matNome}</title></Head>
+        <div style={{ ...S.hdr }}>
+          <button onClick={() => goScreen("esame5")} style={S.back}>←</button>
+          <div style={{ width:"44px", height:"44px", borderRadius:"14px", background:matBg, boxShadow:"0 4px 16px rgba(0,0,0,0.3)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"24px", flexShrink:0 }}>{matEmoji}</div>
+          <div><p style={{ fontWeight:900, fontSize:"15px" }}>{matNome}</p><p style={{ fontSize:"11px", color:"rgba(255,255,255,0.5)", fontWeight:700 }}>Interrogazione simulata — {classe}</p></div>
+        </div>
+        <div style={{ flex:1, overflowY:"auto", padding:"20px 16px 100px" }}>
+
+          {/* START */}
+          {!st.fase && (
+            <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"20px", paddingTop:"20px" }}>
+              <LexChar stato="talk" size={110} />
+              <div style={{ textAlign:"center", maxWidth:"320px" }}>
+                <p style={{ fontSize:"18px", fontWeight:900, marginBottom:"8px" }}>Interrogazione di {matNome}</p>
+                <p style={{ fontSize:"13px", color: luce?"rgba(0,0,30,0.55)":"rgba(255,255,255,0.55)", fontWeight:600, lineHeight:1.5 }}>Ti farò 5 domande su {matNome} per {classe}. Rispondi con parole tue, come se fosse una vera interrogazione! 💪</p>
+              </div>
+              <button onClick={generaDomande} disabled={esameLoading} style={{ ...S.btn, background:matBg, fontSize:"15px", padding:"14px 36px", opacity:esameLoading?0.6:1 }}>
+                {esameLoading ? "Preparo le domande…" : `Inizia interrogazione ${matEmoji}`}
+              </button>
+            </div>
+          )}
+
+          {/* DOMANDA */}
+          {st.fase === "domanda" && st.domande && (() => {
+            const dIdx = st.corrente;
+            const d = st.domande[dIdx];
+            return (
+              <div style={{ display:"flex", flexDirection:"column", gap:"16px" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <span style={{ fontSize:"12px", fontWeight:800, color: luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.4)" }}>Domanda {dIdx+1} di {st.domande.length}</span>
+                  <div style={{ display:"flex", gap:"5px" }}>
+                    {st.domande.map((_,i) => <div key={i} style={{ width:"22px", height:"5px", borderRadius:"3px", background: i < dIdx ? "#22c55e" : i === dIdx ? "#fbbf24" : (luce?"rgba(0,0,30,0.12)":"rgba(255,255,255,0.12)") }} />)}
+                  </div>
+                </div>
+                <div style={{ background: luce?"rgba(0,0,0,0.04)":"rgba(255,255,255,0.05)", borderRadius:"18px", padding:"20px 18px", border: luce?"1px solid rgba(0,0,0,0.07)":"1px solid rgba(255,255,255,0.08)" }}>
+                  <p style={{ fontSize:"16px", fontWeight:800, lineHeight:1.45, marginBottom:"10px" }}>{d.domanda}</p>
+                  {d.suggerimento && <p style={{ fontSize:"11px", color:"#fbbf24", fontWeight:700 }}>💡 {d.suggerimento}</p>}
+                </div>
+                <LexChar stato="thinking" size={70} />
+                <textarea value={esameInterrRisposta} onChange={e=>setEsameInterrRisposta(e.target.value)} placeholder="Scrivi la tua risposta…" style={{ ...S.inp, minHeight:"120px", resize:"vertical" }} />
+                <button onClick={() => rispondi(esameInterrRisposta)} disabled={!esameInterrRisposta.trim()} style={{ ...S.btn, background:matBg, opacity:esameInterrRisposta.trim()?1:0.5 }}>
+                  {dIdx < st.domande.length - 1 ? "Avanti →" : "Consegna e correggi ✓"}
+                </button>
+              </div>
+            );
+          })()}
+
+          {/* CORREZIONE LOADING */}
+          {st.fase === "correzione_loading" && (
+            <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"20px", paddingTop:"30px" }}>
+              <LexChar stato="thinking" size={100} />
+              <p style={{ fontWeight:800, fontSize:"15px" }}>Lex sta correggendo…</p>
+              <p style={{ fontSize:"12px", color: luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.4)", fontWeight:600 }}>Un momento, sto valutando le tue risposte</p>
+            </div>
+          )}
+
+          {/* RISULTATO */}
+          {st.fase === "risultato" && st.risultato && (() => {
+            const r = st.risultato;
+            const voto = r.voto_finale || 0;
+            const votoColor = voto >= 8 ? "#22c55e" : voto >= 6 ? "#fbbf24" : "#ef4444";
+            return (
+              <div style={{ display:"flex", flexDirection:"column", gap:"16px" }}>
+                <div style={{ textAlign:"center", padding:"24px 16px", background: luce?"rgba(0,0,0,0.04)":"rgba(255,255,255,0.04)", borderRadius:"20px", border: luce?"1px solid rgba(0,0,0,0.07)":"1px solid rgba(255,255,255,0.07)" }}>
+                  <LexChar stato="happy" size={90} />
+                  <p style={{ fontSize:"48px", fontWeight:900, color:votoColor, lineHeight:1.1, marginTop:"12px" }}>{voto}/10</p>
+                  <p style={{ fontSize:"14px", fontWeight:800, marginTop:"4px" }}>Interrogazione di {matNome}</p>
+                  <p style={{ fontSize:"13px", color: luce?"rgba(0,0,30,0.55)":"rgba(255,255,255,0.55)", fontWeight:600, marginTop:"8px", lineHeight:1.4 }}>{r.commento_generale}</p>
+                </div>
+                {r.punti_forza?.length > 0 && (
+                  <div style={{ background:"rgba(34,197,94,0.1)", borderRadius:"16px", padding:"14px 16px", border:"1px solid rgba(34,197,94,0.2)" }}>
+                    <p style={{ fontSize:"12px", fontWeight:900, color:"#22c55e", marginBottom:"8px" }}>PUNTI DI FORZA</p>
+                    {r.punti_forza.map((p,i) => <p key={i} style={{ fontSize:"12px", fontWeight:700, color: luce?"#0a0a20":"white", marginBottom:"4px" }}>✓ {p}</p>)}
+                  </div>
+                )}
+                {r.da_ripassare?.length > 0 && (
+                  <div style={{ background:"rgba(245,158,11,0.1)", borderRadius:"16px", padding:"14px 16px", border:"1px solid rgba(245,158,11,0.2)" }}>
+                    <p style={{ fontSize:"12px", fontWeight:900, color:"#fbbf24", marginBottom:"8px" }}>DA RIPASSARE</p>
+                    {r.da_ripassare.map((p,i) => <p key={i} style={{ fontSize:"12px", fontWeight:700, color: luce?"#0a0a20":"white", marginBottom:"4px" }}>📌 {p}</p>)}
+                  </div>
+                )}
+                <div style={{ background: luce?"rgba(0,0,0,0.04)":"rgba(255,255,255,0.04)", borderRadius:"16px", padding:"14px 16px" }}>
+                  <p style={{ fontSize:"12px", fontWeight:900, color: luce?"rgba(0,0,30,0.5)":"rgba(255,255,255,0.5)", marginBottom:"10px" }}>DETTAGLIO RISPOSTE</p>
+                  {(r.valutazioni||[]).map((v,i) => (
+                    <div key={i} style={{ marginBottom:"14px", paddingBottom:"14px", borderBottom: i < (r.valutazioni.length-1) ? (luce?"1px solid rgba(0,0,0,0.07)":"1px solid rgba(255,255,255,0.07)") : "none" }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"4px" }}>
+                        <p style={{ fontSize:"12px", fontWeight:800, flex:1, paddingRight:"10px", lineHeight:1.35 }}>D{i+1}. {v.domanda}</p>
+                        <span style={{ fontSize:"14px", fontWeight:900, color: (v.voto||0)>=7?"#22c55e":(v.voto||0)>=5?"#fbbf24":"#ef4444", flexShrink:0 }}>{v.voto}/10</span>
+                      </div>
+                      <p style={{ fontSize:"11px", color: luce?"rgba(0,0,30,0.45)":"rgba(255,255,255,0.45)", fontWeight:600, marginBottom:"4px" }}>La tua risposta: {v.risposta_data}</p>
+                      <p style={{ fontSize:"11px", fontWeight:700, lineHeight:1.4 }}>{v.feedback}</p>
+                    </div>
+                  ))}
+                </div>
+                {r.consiglio && <div style={{ background: luce?"rgba(0,0,0,0.04)":"rgba(255,255,255,0.04)", borderRadius:"16px", padding:"14px 16px" }}><p style={{ fontSize:"12px", fontWeight:700, lineHeight:1.4 }}>💡 {r.consiglio}</p></div>}
+                <div style={{ display:"flex", gap:"10px" }}>
+                  <button onClick={() => { setEsameInterrState(null); }} style={{ ...S.btn, ...S.btnS, flex:1 }}>🔄 Riprova</button>
+                  <button onClick={() => goScreen("esame5")} style={{ ...S.btn, background:matBg, flex:1, fontWeight:900 }}>← Hub</button>
+                </div>
+              </div>
+            );
+          })()}
+
+        </div>
+        <Nav />
+      </div>
+    );
+  }
+
 
   return null;
 }
