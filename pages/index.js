@@ -181,6 +181,9 @@ export default function Home() {
   const [esameInterrMateria, setEsameInterrMateria] = useState(null);
   const [esameInterrState, setEsameInterrState] = useState(null);
   const [esameInterrRisposta, setEsameInterrRisposta] = useState("");
+  const [cookieBannerVisible, setCookieBannerVisible] = useState(false);
+  const [accettaTermini, setAccettaTermini] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
   // ── Coriandoli & record ──
   const [mostraCoriandoli, setMostraCoriandoli] = useState(false);
   const [recordGiochi, setRecordGiochi] = useState(() => {
@@ -495,6 +498,12 @@ export default function Home() {
     } else if (ultimoStudio) {
       setStreak(0);
       localStorage.setItem("lexyo_streak", "0");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && localStorage.getItem("lexyo_cookie_accepted") !== "true") {
+      setCookieBannerVisible(true);
     }
   }, []);
 
@@ -1174,6 +1183,7 @@ export default function Home() {
 
 
   if (screen === "login") return (
+    <>
     <div style={{ ...S.app, ...S.center }}>
       <Head><title>Lexyo — Accesso</title></Head>
       <LexChar stato="idle" size={130} style={{ marginBottom:"16px" }} />
@@ -1191,7 +1201,23 @@ export default function Home() {
         <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder={authMode==="register"?"Scegli una password (min. 6 caratteri)":"La tua password"} type="password" style={S.inp} onKeyDown={(e) => e.key==="Enter" && handleAuth()} />
         {authError && <p style={{ color:"#ef4444", fontSize:"13px", fontWeight:700, textAlign:"center" }}>{authError}</p>}
         {authSuccess && <p style={{ color:"#10b981", fontSize:"13px", fontWeight:700, textAlign:"center" }}>{authSuccess}</p>}
-        <button onClick={handleAuth} disabled={authLoading || !email.trim() || !password.trim()} style={{ ...S.btn, ...S.btnP, opacity: email.trim() && password.trim() ? 1 : 0.4 }}>
+        {authMode === "register" && (
+          <div style={{ display:"flex", flexDirection:"column", gap:"10px", padding:"14px 16px", background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:"12px" }}>
+            <label style={{ display:"flex", gap:"10px", alignItems:"flex-start", cursor:"pointer" }}>
+              <input type="checkbox" checked={accettaTermini} onChange={e => setAccettaTermini(e.target.checked)} style={{ marginTop:"2px", accentColor:"#6366f1", width:"16px", height:"16px", flexShrink:0, cursor:"pointer" }} />
+              <span style={{ fontSize:"12px", color:"rgba(255,255,255,0.65)", lineHeight:1.55, fontWeight:600 }}>
+                Ho letto e accetto i <a href="/termini" target="_blank" rel="noreferrer" style={{ color:"#a78bfa" }}>Termini di Servizio</a> e la <a href="/privacy" target="_blank" rel="noreferrer" style={{ color:"#a78bfa" }}>Privacy Policy</a> <span style={{ color:"#ef4444" }}>*</span>
+              </span>
+            </label>
+            <label style={{ display:"flex", gap:"10px", alignItems:"flex-start", cursor:"pointer" }}>
+              <input type="checkbox" checked={marketingConsent} onChange={e => setMarketingConsent(e.target.checked)} style={{ marginTop:"2px", accentColor:"#6366f1", width:"16px", height:"16px", flexShrink:0, cursor:"pointer" }} />
+              <span style={{ fontSize:"12px", color:"rgba(255,255,255,0.4)", lineHeight:1.55, fontWeight:600 }}>
+                Acconsento a ricevere aggiornamenti e offerte via email (facoltativo)
+              </span>
+            </label>
+          </div>
+        )}
+        <button onClick={handleAuth} disabled={authLoading || !email.trim() || !password.trim() || (authMode === "register" && !accettaTermini)} style={{ ...S.btn, ...S.btnP, opacity: email.trim() && password.trim() && (authMode !== "register" || accettaTermini) ? 1 : 0.4 }}>
           {authLoading ? "⏳ Caricamento..." : authMode==="login" ? "Accedi →" : "Crea Account →"}
         </button>
         {authMode==="login" && (
@@ -1207,6 +1233,19 @@ export default function Home() {
         <p style={{ ...S.gray, fontSize:"12px" }}>🔒 Nessun dato del bambino richiesto</p>
       </div>
     </div>
+    {cookieBannerVisible && (
+      <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:9999, background:"rgba(9,9,24,0.97)", backdropFilter:"blur(20px)", borderTop:"1px solid rgba(99,102,241,0.3)", padding:"14px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:"12px" }}>
+        <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.65)", flex:1, lineHeight:1.55, fontWeight:500, minWidth:"200px" }}>
+          🍪 Usiamo solo cookie tecnici essenziali. Nessun tracciamento, nessuna pubblicità.{" "}
+          <a href="/cookie" target="_blank" rel="noreferrer" style={{ color:"#a78bfa", fontWeight:700 }}>Cookie Policy</a>{" · "}
+          <a href="/privacy" target="_blank" rel="noreferrer" style={{ color:"#a78bfa", fontWeight:700 }}>Privacy</a>
+        </p>
+        <button onClick={() => { localStorage.setItem("lexyo_cookie_accepted","true"); setCookieBannerVisible(false); }} style={{ background:"linear-gradient(135deg,#6366f1,#8b5cf6)", border:"none", borderRadius:"10px", padding:"11px 24px", color:"white", fontWeight:800, fontSize:"14px", cursor:"pointer", fontFamily:"'Nunito'", flexShrink:0 }}>
+          Accetto
+        </button>
+      </div>
+    )}
+    </>
   );
 
   if (screen === "scegli_piano") return (
@@ -3834,6 +3873,20 @@ export default function Home() {
           >
             <div style={{ position:"absolute", top:"3px", left: luce ? "27px" : "3px", width:"22px", height:"22px", borderRadius:"50%", background:"white", boxShadow:"0 2px 6px rgba(0,0,0,0.25)", transition:"left 0.3s ease" }} />
           </button>
+        </div>
+
+        {/* ── Link Legali ── */}
+        <div style={{ marginTop:"14px", padding:"14px 16px", background: luce ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)", border: luce ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.07)", borderRadius:"14px" }}>
+          <p style={{ fontSize:"11px", fontWeight:800, color: luce ? "rgba(0,0,30,0.4)" : "rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"10px" }}>Note Legali</p>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:"8px" }}>
+            {[
+              { href:"/privacy", label:"Privacy Policy" },
+              { href:"/termini", label:"Termini di Servizio" },
+              { href:"/cookie", label:"Cookie Policy" },
+            ].map(({ href, label }) => (
+              <a key={href} href={href} target="_blank" rel="noreferrer" style={{ fontSize:"13px", fontWeight:700, color: luce ? "#6366f1" : "#a78bfa", textDecoration:"none", background: luce ? "rgba(99,102,241,0.08)" : "rgba(167,139,250,0.1)", border: luce ? "1px solid rgba(99,102,241,0.15)" : "1px solid rgba(167,139,250,0.2)", borderRadius:"20px", padding:"5px 12px" }}>{label}</a>
+            ))}
+          </div>
         </div>
       </div>
 

@@ -11,6 +11,7 @@ export default function Landing({ onEntra }) {
   const [showIosModal, setShowIosModal] = useState(false);
   const [pwaPromptReady, setPwaPromptReady] = useState(false);
   const [refBanner, setRefBanner] = useState(false);
+  const [cookieAccepted, setCookieAccepted] = useState(true);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -27,6 +28,12 @@ export default function Landing({ onEntra }) {
     const onReady = () => setPwaPromptReady(true);
     window.addEventListener("pwaPromptReady", onReady);
     return () => window.removeEventListener("pwaPromptReady", onReady);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setCookieAccepted(localStorage.getItem("lexyo_cookie_accepted") === "true");
+    }
   }, []);
 
   const handleInstallAndroid = async () => {
@@ -886,11 +893,29 @@ export default function Landing({ onEntra }) {
           <span style={{ fontSize:"12px", color:"rgba(255,255,255,0.2)" }}>© 2026 · Made with ❤️ in Italy 🇮🇹</span>
         </div>
         <div style={{ display:"flex", gap:"22px" }}>
-          {["Privacy Policy","Termini di Servizio","Contatti"].map(l => (
-            <a key={l} href="#" style={{ fontSize:"13px", color:"rgba(255,255,255,0.28)", textDecoration:"none", fontWeight:600 }}>{l}</a>
-          ))}
+          <a href="/privacy" style={{ fontSize:"13px", color:"rgba(255,255,255,0.28)", textDecoration:"none", fontWeight:600 }}>Privacy Policy</a>
+          <a href="/termini" style={{ fontSize:"13px", color:"rgba(255,255,255,0.28)", textDecoration:"none", fontWeight:600 }}>Termini di Servizio</a>
+          <a href="/cookie" style={{ fontSize:"13px", color:"rgba(255,255,255,0.28)", textDecoration:"none", fontWeight:600 }}>Cookie Policy</a>
+          <a href="mailto:info@lexyo.it" style={{ fontSize:"13px", color:"rgba(255,255,255,0.28)", textDecoration:"none", fontWeight:600 }}>Contatti</a>
         </div>
       </footer>
+
+      {/* ── COOKIE BANNER ── */}
+      {!cookieAccepted && (
+        <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:600, background:"rgba(9,9,24,0.97)", backdropFilter:"blur(20px)", borderTop:"1px solid rgba(99,102,241,0.3)", padding:"14px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:"12px" }}>
+          <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.65)", flex:1, lineHeight:1.55, fontWeight:500, minWidth:"220px" }}>
+            🍪 Usiamo solo cookie tecnici essenziali per il funzionamento del servizio. Nessun cookie pubblicitario, nessun tracciamento.{" "}
+            <a href="/cookie" style={{ color:"#a78bfa", fontWeight:700 }}>Cookie Policy</a>{" · "}
+            <a href="/privacy" style={{ color:"#a78bfa", fontWeight:700 }}>Privacy Policy</a>
+          </p>
+          <button
+            onClick={() => { localStorage.setItem("lexyo_cookie_accepted","true"); setCookieAccepted(true); }}
+            style={{ background:"linear-gradient(135deg,#6366f1,#8b5cf6)", border:"none", borderRadius:"10px", padding:"11px 24px", color:"white", fontFamily:"'Plus Jakarta Sans'", fontWeight:800, fontSize:"14px", cursor:"pointer", flexShrink:0 }}
+          >
+            Accetto
+          </button>
+        </div>
+      )}
     </>
   );
 }
