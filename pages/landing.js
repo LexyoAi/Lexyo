@@ -178,12 +178,19 @@ export default function Landing({ onEntra }) {
           .spot-grid { gap:36px !important; }
         }
 
+        .hero-badge-row { display:none; }
+
         /* ── Tablet piccolo / landscape mobile (≤ 768px) ── */
         @media(max-width:768px){
           .spot-grid { grid-template-columns:1fr !important; gap:32px; }
           .spot-grid > div { width:100%; max-width:520px; margin:0 auto; }
           .hero-grid { grid-template-columns:1fr !important; }
-          .hero-lex { order:-1; }
+          .hero-badge-row { display:flex; justify-content:center; order:-2; margin-bottom:8px; }
+          .hero-badge-desktop { display:none !important; }
+          .hero-lex { order:-1; width:100%; }
+          .hero-text { text-align:center; }
+          .hero-btn-group { margin-left:auto !important; margin-right:auto !important; }
+          .hero-classi { justify-content:center !important; }
           .nav-install-btn { display:none !important; }
           .nav-wrap { padding:0 16px !important; }
           .confronto-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:6px; }
@@ -212,7 +219,7 @@ export default function Landing({ onEntra }) {
       {/* NAV */}
       <nav className="nav-wrap" style={{ position:"fixed", top:0, left:0, right:0, zIndex:100, padding:"0 28px", height:"64px", display:"flex", justifyContent:"space-between", alignItems:"center", background: scrollY>40 ? "rgba(255,255,255,0.96)" : "rgba(255,255,255,0.85)", backdropFilter:"blur(20px)", borderBottom: scrollY>40 ? "1px solid rgba(99,102,241,0.1)" : "1px solid transparent", boxShadow: scrollY>40 ? "0 2px 20px rgba(0,0,0,0.06)" : "none", transition:"all 0.3s ease" }}>
         <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-          <img src="/icons/icon-192.png" alt="Lex" style={{ width:"36px", height:"36px", objectFit:"contain" }} />
+          <img src="/Lex-prof.png" alt="Lex" style={{ width:"40px", height:"40px", objectFit:"contain" }} />
           <span style={{ fontWeight:900, fontSize:"22px", letterSpacing:"-0.5px", color:"#0D0F2B" }}>Lexyo</span>
           <span className="nav-logo-badge" style={{ background:"rgba(99,102,241,0.1)", border:"1px solid rgba(99,102,241,0.2)", borderRadius:"20px", padding:"2px 10px", fontSize:"11px", fontWeight:700, color:"#6366f1" }}>🇮🇹 Made in Italy</span>
         </div>
@@ -240,6 +247,14 @@ export default function Landing({ onEntra }) {
 
         <div className="hero-grid" style={{ maxWidth:"980px", margin:"0 auto", width:"100%", display:"grid", gridTemplateColumns:"1fr 1fr", gap:"40px", alignItems:"center" }}>
 
+          {/* BADGE mobile-only — appare sopra il leone su smartphone */}
+          <div className="hero-badge-row">
+            <div style={{ display:"inline-flex", alignItems:"center", gap:"8px", background:"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.18)", borderRadius:"100px", padding:"6px 16px" }}>
+              <span style={{ width:"7px", height:"7px", borderRadius:"50%", background:"#6366f1", display:"block", animation:"glow 2s ease-in-out infinite" }} />
+              <span style={{ fontSize:"12px", fontWeight:800, color:"#6366f1", letterSpacing:"0.5px" }}>La prima app AI educativa italiana</span>
+            </div>
+          </div>
+
           {/* SINISTRA: Lex */}
           <div className="hero-lex" style={{ display:"flex", justifyContent:"center", alignItems:"center", animation:"fadeUp 0.8s ease 0.1s both" }}>
             <div style={{ position:"relative" }}>
@@ -249,8 +264,8 @@ export default function Landing({ onEntra }) {
           </div>
 
           {/* DESTRA: testo */}
-          <div style={{ animation:"fadeUp 0.8s ease 0.2s both" }}>
-            <div style={{ display:"inline-flex", alignItems:"center", gap:"8px", background:"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.18)", borderRadius:"100px", padding:"6px 16px", marginBottom:"20px" }}>
+          <div className="hero-text" style={{ animation:"fadeUp 0.8s ease 0.2s both" }}>
+            <div className="hero-badge-desktop" style={{ display:"inline-flex", alignItems:"center", gap:"8px", background:"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.18)", borderRadius:"100px", padding:"6px 16px", marginBottom:"20px" }}>
               <span style={{ width:"7px", height:"7px", borderRadius:"50%", background:"#6366f1", display:"block", animation:"glow 2s ease-in-out infinite" }} />
               <span style={{ fontSize:"12px", fontWeight:800, color:"#6366f1", letterSpacing:"0.5px" }}>La prima app AI educativa italiana</span>
             </div>
@@ -265,7 +280,7 @@ export default function Landing({ onEntra }) {
               Programma MIUR. <strong style={{ color:"#0D0F2B" }}>Zero pubblicità. Mai.</strong>
             </p>
 
-            <div style={{ display:"flex", flexDirection:"column", gap:"10px", maxWidth:"380px", marginBottom:"24px" }}>
+            <div className="hero-btn-group" style={{ display:"flex", flexDirection:"column", gap:"10px", maxWidth:"380px", marginBottom:"24px" }}>
               <button onClick={onEntra} className="btn-cta" style={{ padding:"18px 28px", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", border:"none", borderRadius:"16px", color:"white", fontFamily:"'Plus Jakarta Sans'", fontWeight:800, fontSize:"17px" }}>
                 Inizia gratis — 3 giorni
               </button>
@@ -276,7 +291,7 @@ export default function Landing({ onEntra }) {
               </div>
             </div>
 
-            <div style={{ display:"flex", flexWrap:"wrap", gap:"8px" }}>
+            <div className="hero-classi" style={{ display:"flex", flexWrap:"wrap", gap:"8px" }}>
               {classi.map((c,i) => (
                 <div key={i} style={{ display:"flex", alignItems:"center", gap:"6px", background:`${c.colore}0f`, border:`1px solid ${c.colore}28`, borderRadius:"20px", padding:"5px 12px" }}>
                   <span style={{ fontSize:"10px", fontWeight:900, color:c.colore }}>{c.emoji}</span>
@@ -303,7 +318,6 @@ export default function Landing({ onEntra }) {
       <section style={{ padding:"60px 24px 32px", maxWidth:"880px", margin:"0 auto" }}>
         <div id="problema" data-animate className={V("problema")} style={{ background:"linear-gradient(135deg,rgba(239,68,68,0.18),rgba(220,38,38,0.10))", border:"2px solid rgba(239,68,68,0.55)", borderRadius:"28px", padding:"52px 40px", position:"relative", overflow:"hidden", textAlign:"center", boxShadow:"0 8px 48px rgba(239,68,68,0.18)" }}>
           <div style={{ position:"absolute", inset:0, background:"radial-gradient(ellipse 70% 60% at 50% 40%, rgba(239,68,68,0.14) 0%, transparent 70%)", pointerEvents:"none" }} />
-          <img src="/Lex-prof.png" alt="Lex" style={{ position:"absolute", bottom:"-10px", right:"20px", width:"130px", height:"130px", objectFit:"contain", opacity:0.75, animation:"lexWiggle 6s ease-in-out infinite", transformOrigin:"bottom center" }} />
           <div style={{ maxWidth:"580px", margin:"0 auto", position:"relative", zIndex:1 }}>
             <div style={{ display:"inline-flex", alignItems:"center", gap:"10px", background:"rgba(239,68,68,0.18)", border:"2px solid rgba(239,68,68,0.5)", borderRadius:"100px", padding:"8px 22px", marginBottom:"22px" }}>
               <span style={{ fontSize:"18px" }}>⚠️</span>
@@ -551,7 +565,7 @@ export default function Landing({ onEntra }) {
             <div className="gioca-header-text">
               <div style={{ display:"inline-flex", alignItems:"center", gap:"8px", background:"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.18)", borderRadius:"20px", padding:"6px 16px", marginBottom:"16px" }}>
                 <Gamepad2 size={18} color="#6366f1" strokeWidth={2.5} />
-                <span style={{ fontSize:"12px", fontWeight:800, color:"#6366f1", textTransform:"uppercase", letterSpacing:"1.5px" }}>Gioca Studiando</span>
+                <span style={{ fontSize:"12px", fontWeight:800, color:"#6366f1", textTransform:"uppercase", letterSpacing:"1.5px" }}>Imparare è un Gioco</span>
               </div>
               <h2 style={{ fontSize:"clamp(26px,4vw,40px)", fontWeight:900, letterSpacing:"-1px", lineHeight:1.15, marginBottom:"14px", color:"#0D0F2B" }}>
                 Il programma scolastico<br/>
