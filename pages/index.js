@@ -1009,7 +1009,7 @@ export default function Home() {
     }
   }, [tema, screen]);
 
-  const luce = tema === "light";
+  const luce = true;
   const S = {
     app: { height: "100dvh", maxHeight: "100dvh", background: luce ? "#f0f4ff" : "#0F1028", color: luce ? "#0a0a20" : "white", fontFamily: "'Nunito', sans-serif", overflow: "hidden" },
     center: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", padding: "24px" },
