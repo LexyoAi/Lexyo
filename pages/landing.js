@@ -95,6 +95,12 @@ export default function Landing({ onEntra }) {
       <Head>
         <title>Lexyo — Il professore AI per i tuoi figli</title>
         <meta name="description" content="La prima app AI educativa italiana. Programma MIUR, voce italiana, zero pubblicità." />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="theme-color" content="#ffffff" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
       </Head>
       <style>{`
@@ -205,6 +211,49 @@ export default function Landing({ onEntra }) {
           .feature-card p { font-size:14px !important; }
           .feature-card { padding:18px !important; }
         }
+
+        /* ── iOS / Safari / WebKit ── */
+        * { -webkit-tap-highlight-color: transparent; }
+        img { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+        button, a { -webkit-touch-callout: none; -webkit-user-select: none; }
+
+        /* backdrop-filter: webkit prefix mancante su iOS < 15.4 */
+        .nav-wrap { -webkit-backdrop-filter: blur(20px); }
+        .ios-blur-overlay { -webkit-backdrop-filter: blur(12px); }
+        .sticky-bar-el {
+          -webkit-backdrop-filter: blur(24px);
+          padding-bottom: max(16px, calc(12px + env(safe-area-inset-bottom)));
+        }
+        .cookie-el {
+          -webkit-backdrop-filter: blur(20px);
+          padding-bottom: max(14px, env(safe-area-inset-bottom));
+        }
+
+        /* Safe area: iPhone notch / Dynamic Island / home indicator */
+        @supports(padding: max(0px)) {
+          .nav-wrap {
+            padding-left: max(16px, env(safe-area-inset-left));
+            padding-right: max(16px, env(safe-area-inset-right));
+          }
+          .sticky-bar-el {
+            padding-left: max(20px, env(safe-area-inset-left));
+            padding-right: max(20px, env(safe-area-inset-right));
+          }
+        }
+
+        /* GPU hint + riduzione animazione pesante su mobile */
+        .lex-main-img { will-change: transform; -webkit-transform: translateZ(0); transform: translateZ(0); }
+        @media(max-width:768px) {
+          .lex-main-img { animation: lexProfIdle 5s ease-in-out infinite !important; filter: none !important; }
+        }
+
+        /* Gradient text: compatibilità WebKit esplicita */
+        .hero-gradient-text {
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          color: transparent;
+        }
       `}</style>
 
       {/* NAV */}
@@ -246,7 +295,7 @@ export default function Landing({ onEntra }) {
 
           <h1 style={{ fontSize:"clamp(32px, 5vw, 58px)", fontWeight:900, letterSpacing:"-2px", lineHeight:1.1, color:"#0D0F2B", marginBottom:"16px" }}>
             Il professore AI<br/>
-            <span style={{ background:"linear-gradient(135deg,#6366f1,#8b5cf6,#a78bfa)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>di tuo figlio.</span>
+            <span className="hero-gradient-text" style={{ background:"linear-gradient(135deg,#6366f1,#8b5cf6,#a78bfa)" }}>di tuo figlio.</span>
           </h1>
 
           <div style={{ marginBottom:"32px", display:"flex", flexDirection:"column", gap:"6px" }}>
@@ -259,8 +308,8 @@ export default function Landing({ onEntra }) {
           {/* Leone */}
           <div style={{ display:"flex", justifyContent:"center", alignItems:"center", marginBottom:"32px" }}>
             <div style={{ position:"relative" }}>
-              <div style={{ position:"absolute", inset:"-32px", borderRadius:"50%", background:"radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)", animation:"glow 4s ease-in-out infinite" }} />
-              <img src="/Lex-prof.png" alt="Lex Professore" style={{ width:"clamp(200px, 40vw, 340px)", objectFit:"contain", display:"block", animation:"lexProfIdle 5s ease-in-out infinite, lexGlow 5s ease-in-out infinite", transformOrigin:"bottom center", position:"relative", zIndex:1 }} />
+              <div style={{ position:"absolute", top:"-32px", right:"-32px", bottom:"-32px", left:"-32px", borderRadius:"50%", background:"radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)", animation:"glow 4s ease-in-out infinite" }} />
+              <img src="/Lex-prof.png" alt="Lex Professore" className="lex-main-img" style={{ width:"clamp(200px, 40vw, 340px)", objectFit:"contain", display:"block", animation:"lexProfIdle 5s ease-in-out infinite, lexGlow 5s ease-in-out infinite", transformOrigin:"bottom center", position:"relative", zIndex:1 }} />
             </div>
           </div>
 
@@ -301,7 +350,7 @@ export default function Landing({ onEntra }) {
       {/* ── IL PROBLEMA ── */}
       <section style={{ padding:"60px 24px 32px", maxWidth:"880px", margin:"0 auto" }}>
         <div id="problema" data-animate className={V("problema")} style={{ background:"linear-gradient(135deg,rgba(239,68,68,0.18),rgba(220,38,38,0.10))", border:"2px solid rgba(239,68,68,0.55)", borderRadius:"28px", padding:"52px 40px", position:"relative", overflow:"hidden", textAlign:"center", boxShadow:"0 8px 48px rgba(239,68,68,0.18)" }}>
-          <div style={{ position:"absolute", inset:0, background:"radial-gradient(ellipse 70% 60% at 50% 40%, rgba(239,68,68,0.14) 0%, transparent 70%)", pointerEvents:"none" }} />
+          <div style={{ position:"absolute", top:0, right:0, bottom:0, left:0, background:"radial-gradient(ellipse 70% 60% at 50% 40%, rgba(239,68,68,0.14) 0%, transparent 70%)", pointerEvents:"none" }} />
           <div style={{ maxWidth:"580px", margin:"0 auto", position:"relative", zIndex:1 }}>
             <div style={{ display:"inline-flex", alignItems:"center", gap:"10px", background:"rgba(239,68,68,0.18)", border:"2px solid rgba(239,68,68,0.5)", borderRadius:"100px", padding:"8px 22px", marginBottom:"22px" }}>
               <span style={{ fontSize:"18px" }}>⚠️</span>
@@ -325,7 +374,7 @@ export default function Landing({ onEntra }) {
       {/* ── ZERO PUBBLICITÀ ── */}
       <section style={{ padding:"32px 24px 60px", maxWidth:"880px", margin:"0 auto" }}>
         <div style={{ background:"linear-gradient(135deg,rgba(239,68,68,0.06),rgba(239,68,68,0.03))", border:"2px solid rgba(239,68,68,0.18)", borderRadius:"28px", padding:"48px 40px", textAlign:"center", position:"relative", overflow:"hidden" }}>
-          <div style={{ position:"absolute", inset:0, background:"radial-gradient(circle at 50% 50%, rgba(239,68,68,0.06) 0%, transparent 70%)", pointerEvents:"none" }} />
+          <div style={{ position:"absolute", top:0, right:0, bottom:0, left:0, background:"radial-gradient(circle at 50% 50%, rgba(239,68,68,0.06) 0%, transparent 70%)", pointerEvents:"none" }} />
           <div style={{ fontSize:"48px", fontWeight:900, marginBottom:"16px", color:"#ef4444", letterSpacing:"-2px" }}>∅</div>
           <h2 style={{ fontSize:"clamp(28px, 5vw, 48px)", fontWeight:900, letterSpacing:"-1.5px", marginBottom:"12px", color:"#0D0F2B" }}>
             Zero Pubblicità.
@@ -343,11 +392,11 @@ export default function Landing({ onEntra }) {
       {/* ── MERITA DI IMPARARE ── */}
       <section style={{ padding:"0 24px 60px", maxWidth:"880px", margin:"0 auto" }}>
         <div id="merita" data-animate className={V("merita")} style={{ background:"linear-gradient(135deg,#0D0F2B,#1a1040)", border:"1px solid rgba(99,102,241,0.35)", borderRadius:"28px", padding:"56px 40px", textAlign:"center", position:"relative", overflow:"hidden", boxShadow:"0 12px 56px rgba(13,15,43,0.22)" }}>
-          <div style={{ position:"absolute", inset:0, background:"radial-gradient(ellipse 80% 60% at 50% 50%, rgba(99,102,241,0.2) 0%, transparent 70%)", pointerEvents:"none" }} />
+          <div style={{ position:"absolute", top:0, right:0, bottom:0, left:0, background:"radial-gradient(ellipse 80% 60% at 50% 50%, rgba(99,102,241,0.2) 0%, transparent 70%)", pointerEvents:"none" }} />
           <img src="/Lex-prof.png" alt="Lex" style={{ width:"clamp(90px,14vw,130px)", objectFit:"contain", margin:"0 auto 20px", display:"block", animation:"lexProfIdle 5s ease-in-out infinite", transformOrigin:"bottom center", position:"relative", zIndex:1 }} />
           <h2 style={{ fontSize:"clamp(28px, 5vw, 52px)", fontWeight:900, letterSpacing:"-2px", lineHeight:1.12, color:"white", marginBottom:"16px", position:"relative", zIndex:1 }}>
             Tuo figlio merita di imparare,<br/>
-            <span style={{ background:"linear-gradient(135deg,#a78bfa,#6366f1)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>non di copiare.</span>
+            <span className="hero-gradient-text" style={{ background:"linear-gradient(135deg,#a78bfa,#6366f1)" }}>non di copiare.</span>
           </h2>
           <p style={{ fontSize:"clamp(15px, 2vw, 18px)", color:"rgba(255,255,255,0.6)", lineHeight:1.75, maxWidth:"520px", margin:"0 auto 28px", position:"relative", zIndex:1 }}>
             Le altre app gli danno la risposta. Lex gli insegna come trovarla.<br/>
@@ -394,7 +443,7 @@ export default function Landing({ onEntra }) {
       <section style={{ padding:"20px 24px 60px", maxWidth:"960px", margin:"0 auto" }}>
       <div id="come-funziona" data-animate className={V("come-funziona")} style={{ textAlign:"center" }}>
         <div style={{ position:"relative", display:"inline-block", marginBottom:"8px" }}>
-          <div style={{ position:"absolute", inset:"-20px", borderRadius:"50%", background:"radial-gradient(circle,rgba(99,102,241,0.1) 0%,transparent 70%)", pointerEvents:"none" }} />
+          <div style={{ position:"absolute", top:"-20px", right:"-20px", bottom:"-20px", left:"-20px", borderRadius:"50%", background:"radial-gradient(circle,rgba(99,102,241,0.1) 0%,transparent 70%)", pointerEvents:"none" }} />
           <img src="/Lex-prof.png" alt="Lex" style={{ width:"clamp(80px,12vw,110px)", objectFit:"contain", display:"block", margin:"0 auto", animation:"lexProfIdle 5s ease-in-out infinite", transformOrigin:"bottom center", position:"relative", zIndex:1 }} />
         </div>
         <p style={{ fontSize:"12px", fontWeight:800, color:"#6366f1", textTransform:"uppercase", letterSpacing:"2px", marginBottom:"12px" }}>Come funziona</p>
@@ -543,7 +592,7 @@ export default function Landing({ onEntra }) {
         <div id="spot-gioca" data-animate className={V("spot-gioca")}>
           <div className="gioca-header">
             <div style={{ position:"relative", flexShrink:0 }}>
-              <div style={{ position:"absolute", inset:"-16px", borderRadius:"50%", background:"radial-gradient(circle,rgba(99,102,241,0.12) 0%,transparent 70%)", pointerEvents:"none" }} />
+              <div style={{ position:"absolute", top:"-16px", right:"-16px", bottom:"-16px", left:"-16px", borderRadius:"50%", background:"radial-gradient(circle,rgba(99,102,241,0.12) 0%,transparent 70%)", pointerEvents:"none" }} />
               <img src="/Lex-prof.png" alt="Lex" style={{ width:"clamp(90px,13vw,120px)", objectFit:"contain", display:"block", animation:"lexProfIdle 5s ease-in-out infinite 0.5s", transformOrigin:"bottom center", position:"relative", zIndex:1 }} />
             </div>
             <div className="gioca-header-text">
@@ -754,7 +803,7 @@ export default function Landing({ onEntra }) {
 
       {/* Modale istruzioni iOS / Android */}
       {showIosModal && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", backdropFilter:"blur(12px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:2000, padding:"24px" }} onClick={() => setShowIosModal(false)}>
+        <div className="ios-blur-overlay" style={{ position:"fixed", top:0, right:0, bottom:0, left:0, background:"rgba(0,0,0,0.6)", backdropFilter:"blur(12px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:2000, padding:"24px" }} onClick={() => setShowIosModal(false)}>
           <div style={{ background:"white", border:"1px solid rgba(99,102,241,0.2)", borderRadius:"28px", padding:"40px 36px", maxWidth:"400px", width:"100%", position:"relative", boxShadow:"0 24px 80px rgba(0,0,0,0.15)" }} onClick={e => e.stopPropagation()}>
             <button onClick={() => setShowIosModal(false)} style={{ position:"absolute", top:"16px", right:"16px", background:"rgba(0,0,0,0.06)", border:"none", borderRadius:"50%", width:"32px", height:"32px", color:"rgba(0,0,0,0.5)", cursor:"pointer", fontSize:"16px", fontWeight:700 }}>✕</button>
             <div style={{ fontSize:"40px", textAlign:"center", marginBottom:"14px" }}>{showIosModal === "ios" ? "🍎" : "🤖"}</div>
@@ -790,9 +839,9 @@ export default function Landing({ onEntra }) {
 
       {/* STICKY BAR — resta dark per contrasto */}
       {scrollY > 500 && (
-        <div style={{ position:"fixed", bottom:0, left:0, right:0, background:"rgba(13,15,43,0.97)", backdropFilter:"blur(24px)", borderTop:"1px solid rgba(99,102,241,0.3)", padding:"12px 20px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", zIndex:300, gap:"12px", boxShadow:"0 -8px 40px rgba(0,0,0,0.2)" }}>
+        <div className="sticky-bar-el" style={{ position:"fixed", bottom:0, left:0, right:0, background:"rgba(13,15,43,0.97)", backdropFilter:"blur(24px)", borderTop:"1px solid rgba(99,102,241,0.3)", padding:"12px 20px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", zIndex:300, gap:"12px", boxShadow:"0 -8px 40px rgba(0,0,0,0.2)" }}>
           <div style={{ display:"flex", alignItems:"center", gap:"10px", minWidth:0 }}>
-            <img src="/icons/icon-192.png" alt="Lexyo" style={{ width:"36px", height:"36px", objectFit:"contain", flexShrink:0 }} />
+            <img src="/Lex-prof.png" alt="Lexyo" style={{ width:"36px", height:"36px", objectFit:"contain", flexShrink:0 }} />
             <div>
               <p style={{ fontWeight:900, fontSize:"14px", margin:0, color:"white" }}>📱 Installa Lexyo — è gratis</p>
               <p className="sticky-sub" style={{ fontSize:"11px", color:"rgba(255,255,255,0.4)", margin:0 }}>Nessun App Store · Funziona offline</p>
@@ -814,7 +863,7 @@ export default function Landing({ onEntra }) {
       {/* FOOTER */}
       <footer style={{ borderTop:"1px solid rgba(99,102,241,0.1)", padding:"28px 24px", maxWidth:"880px", margin:"0 auto", display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:"14px", background:"#F7F8FF" }}>
         <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-          <img src="/icons/icon-192.png" alt="Lex" style={{ width:"28px", height:"28px", objectFit:"contain" }} />
+          <img src="/Lex-prof.png" alt="Lex" style={{ width:"28px", height:"28px", objectFit:"contain" }} />
           <span style={{ fontWeight:800, fontSize:"16px", color:"#0D0F2B" }}>Lexyo</span>
           <span style={{ fontSize:"12px", color:"#8892AE" }}>© 2026 · Made with ❤️ in Italy 🇮🇹</span>
         </div>
@@ -828,7 +877,7 @@ export default function Landing({ onEntra }) {
 
       {/* COOKIE BANNER */}
       {!cookieAccepted && (
-        <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:600, background:"rgba(13,15,43,0.97)", backdropFilter:"blur(20px)", borderTop:"1px solid rgba(99,102,241,0.3)", padding:"14px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:"12px" }}>
+        <div className="cookie-el" style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:600, background:"rgba(13,15,43,0.97)", backdropFilter:"blur(20px)", borderTop:"1px solid rgba(99,102,241,0.3)", padding:"14px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:"12px" }}>
           <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.65)", flex:1, lineHeight:1.55, fontWeight:500, minWidth:"220px" }}>
             🍪 Usiamo solo cookie tecnici essenziali. Nessun cookie pubblicitario, nessun tracciamento.{" "}
             <a href="/cookie" style={{ color:"#a78bfa", fontWeight:700 }}>Cookie Policy</a>{" · "}
