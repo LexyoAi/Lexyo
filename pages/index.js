@@ -9,6 +9,7 @@ export default function Home() {
   const [screen, setScreen] = useState("landing");
   const [email, setEmail] = useState("");
   const [nomeFiglio, setNomeFiglio] = useState("");
+  const [sessoFiglio, setSessoFiglio] = useState("M");
   const [classeScelta, setClasseScelta] = useState(null);
   const [figli, setFigli] = useState([]);
   const [figlioAttivo, setFiglioAttivo] = useState(null);
@@ -25,11 +26,17 @@ export default function Home() {
   const [trialGiorni, setTrialGiorni] = useState(3);
   const TRIAL_FOTO_MAX = 5;
   const TRIAL_CHAT_MAX = 20;
-  const trialFotoUsate = typeof window !== "undefined" ? parseInt(localStorage.getItem("lexyo_trial_foto") || "0", 10) : 0;
-  const trialChatUsate = typeof window !== "undefined" ? parseInt(localStorage.getItem("lexyo_trial_chat") || "0", 10) : 0;
+  const TRIAL_DETTATO_MAX = 1;
+  const TRIAL_SBLOCCA_MAX = 3;
+  const [trialFotoUsate, setTrialFotoUsate] = useState(() => typeof window !== "undefined" ? parseInt(localStorage.getItem("lexyo_trial_foto") || "0", 10) : 0);
+  const [trialChatUsate, setTrialChatUsate] = useState(() => typeof window !== "undefined" ? parseInt(localStorage.getItem("lexyo_trial_chat") || "0", 10) : 0);
+  const [trialDettatoUsati, setTrialDettatoUsati] = useState(() => typeof window !== "undefined" ? parseInt(localStorage.getItem("lexyo_trial_dettato") || "0", 10) : 0);
+  const [trialSbloccaUsati, setTrialSbloccaUsati] = useState(() => typeof window !== "undefined" ? parseInt(localStorage.getItem("lexyo_trial_sblocca") || "0", 10) : 0);
   const isTrial = piano === "trial";
   const fotoBloccata = isTrial && trialFotoUsate >= TRIAL_FOTO_MAX;
   const chatBloccata = isTrial && trialChatUsate >= TRIAL_CHAT_MAX;
+  const dettatoBloccato = isTrial && trialDettatoUsati >= TRIAL_DETTATO_MAX;
+  const sbloccaBloccato = isTrial && trialSbloccaUsati >= TRIAL_SBLOCCA_MAX;
   const [fotoFase, setFotoFase] = useState("carica");
   const [fotoMsgs, setFotoMsgs] = useState([]);
   const [fotoInput, setFotoInput] = useState("");
@@ -97,13 +104,17 @@ export default function Home() {
   const prevLivelloRef = useRef(null);
   const [pwaPromptReady, setPwaPromptReady] = useState(false);
   const [installBannerDismissed, setInstallBannerDismissed] = useState(false);
+  const [cookieBannerVisible, setCookieBannerVisible] = useState(false);
+  const [accettaTermini, setAccettaTermini] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [showAppIosModal, setShowAppIosModal] = useState(false);
   const [showGestisciAbb, setShowGestisciAbb] = useState(false);
   const [disdettaConfermata, setDisdettaConfermata] = useState(false);
   const [trialCheckLoading, setTrialCheckLoading] = useState(false);
   const [trialBlockMsg, setTrialBlockMsg] = useState("");
   const [tema, setTema] = useState(() => {
-    if (typeof window !== "undefined") return localStorage.getItem("lexyo_tema") || "light";
+    if (typeof window !== "undefined") return "light";
     return "light";
   });
   const [estaSezione, setEstaSezione] = useState("compiti");
@@ -181,9 +192,6 @@ export default function Home() {
   const [esameInterrMateria, setEsameInterrMateria] = useState(null);
   const [esameInterrState, setEsameInterrState] = useState(null);
   const [esameInterrRisposta, setEsameInterrRisposta] = useState("");
-  const [cookieBannerVisible, setCookieBannerVisible] = useState(false);
-  const [accettaTermini, setAccettaTermini] = useState(false);
-  const [marketingConsent, setMarketingConsent] = useState(false);
   // ── Coriandoli & record ──
   const [mostraCoriandoli, setMostraCoriandoli] = useState(false);
   const [recordGiochi, setRecordGiochi] = useState(() => {
@@ -191,13 +199,14 @@ export default function Home() {
     return {};
   });
   const isAdmin = profiloUtente?.is_admin === true;
+  const trialScaduto = isTrial && !isAdmin && trialGiorni === 0;
 
   const getFingerprint = () => {
     if (typeof window === "undefined") return "ssr";
     const d = [
       navigator.userAgent,
-      `${screen.width}x${screen.height}`,
-      screen.colorDepth,
+      `${Math.min(window.screen.width, window.screen.height)}x${Math.max(window.screen.width, window.screen.height)}`,
+      window.screen.colorDepth,
       navigator.language,
       Intl.DateTimeFormat().resolvedOptions().timeZone,
       navigator.hardwareConcurrency || 0,
@@ -251,6 +260,15 @@ export default function Home() {
     return () => window.removeEventListener("pwaPromptReady", onReady);
   }, []);
 
+  const audioCtxRef = useRef(null);
+
+  const getAccessToken = async () => {
+    try {
+      const { data: { session: s } } = await supabase.auth.getSession();
+      return s?.access_token || "";
+    } catch { return ""; }
+  };
+
   const generateReferralCode = () => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let code = "LEX-";
@@ -275,7 +293,8 @@ export default function Home() {
     const p = params.get("pagamento");
     if (p === "successo") {
       setPagamentoFlash("successo");
-      setPiano("premium");
+      setShowWelcomeModal(true);
+      // Piano impostato dalla verifica server-side nel init — non dal parametro URL
       window.history.replaceState({}, "", window.location.pathname);
     } else if (p === "annullato") {
       setPagamentoFlash("annullato");
@@ -359,6 +378,7 @@ export default function Home() {
     compressPhoto(file, async (compressed) => {
       setFotoCompitoPhoto(compressed);
       try {
+        const token = await getAccessToken();
         const res = await fetch("/api/analizza-foto", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -366,7 +386,10 @@ export default function Home() {
             photo: compressed,
             materia: mat.label,
             classe: prog?.label,
+            sesso: figlioAttivo?.sesso || "M",
             fase: faseChiamata || "compito_estivo",
+            fingerprint: getFingerprint(),
+            accessToken: token,
           }),
         });
         const d = await res.json();
@@ -423,11 +446,6 @@ export default function Home() {
     { id: "pronto_settembre", emoji: "🎒", label: "Pronto per Settembre", desc: "Hai ripassato tutti gli argomenti dell'anno!" },
   ];
 
-  useEffect(() => {
-    const t = setTimeout(() => {}, 0);
-    return () => clearTimeout(t);
-  }, []);
-
   // Controlla sessione Supabase al caricamento
   useEffect(() => {
     const init = async () => {
@@ -442,30 +460,38 @@ export default function Home() {
             setFigli(ff);
             setFiglioAttivo(ff[0]);
           }
-          // Carica profilo Stripe/abbonamento/referral
-          const { data: profilo } = await supabase
-            .from("profili")
-            .select("abbonamento_attivo,abbonamento_scadenza,stripe_customer_id,trial_scade_presto,pagamento_fallito,is_admin,referral_code,referral_count,mesi_gratis_guadagnati")
-            .eq("email", session.user.email)
-            .maybeSingle();
+          // Calcola giorni trial rimasti dalla data di registrazione
+          const createdAt = new Date(session.user.created_at);
+          const giorniPassati = Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+          const giorniRimasti = Math.max(0, 3 - giorniPassati);
+          setTrialGiorni(giorniRimasti);
+
+          // Carica profilo via API server-side (usa service key, bypassa RLS)
+          let profilo = null;
+          try {
+            const pr = await fetch("/api/get-profilo", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}` },
+              body: JSON.stringify({ email: session.user.email }),
+            });
+            const pd = await pr.json();
+            if (pd.profilo) profilo = pd.profilo;
+            else console.warn("[init] profilo non trovato per", session.user.email);
+          } catch (pe) { console.error("[init] get-profilo error:", pe.message); }
+          const isPremium = profilo?.abbonamento_attivo === true || profilo?.is_admin === true;
           if (profilo) {
             setProfiloUtente(profilo);
-            if (profilo.abbonamento_attivo) setPiano("premium");
+            if (isPremium) setPiano("premium");
             setReferralCount(profilo.referral_count || 0);
             setMesiGratisGuadagnati(profilo.mesi_gratis_guadagnati || 0);
-            if (profilo.referral_code) {
-              setReferralCode(profilo.referral_code);
-            } else {
-              const code = generateReferralCode();
-              try { await supabase.from("profili").upsert({ email: session.user.email, referral_code: code }, { onConflict: "email" }); } catch {}
-              setReferralCode(code);
-            }
-          } else {
-            const code = generateReferralCode();
-            try { await supabase.from("profili").upsert({ email: session.user.email, referral_code: code }, { onConflict: "email" }); } catch {}
-            setReferralCode(code);
+            if (profilo.referral_code) setReferralCode(profilo.referral_code);
           }
-          setScreen("home");
+          // Trial scaduto e non premium → mostra piano
+          if (!isPremium && giorniRimasti === 0 && figliDB && figliDB.length > 0) {
+            setScreen("scegli_piano");
+          } else {
+            setScreen("home");
+          }
         } else {
           setScreen("landing");
         }
@@ -587,6 +613,23 @@ export default function Home() {
     return () => clearInterval(svIntervalRef.current);
   }, [svState?.fase]);
 
+  useEffect(() => {
+    if (!svState || svState.fase !== "risultato") return;
+    const recPrev = recordGiochi?.sfida_velocita?.[giocaArgomento] || 0;
+    const isRecord = svState.punteggio > recPrev;
+    if (isRecord) {
+      salvaSvRecord(svState.punteggio);
+      addStelle(svState.punteggio * 2);
+      suona("obiettivo");
+      setMostraCoriandoli(true);
+      setTimeout(() => setMostraCoriandoli(false), 4000);
+    } else {
+      addStelle(svState.punteggio);
+      suona("stelle");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [svState?.fase, svState?.punteggio]);
+
   const aggiornaStreak = () => {
     if (typeof window === "undefined" || !figlioAttivo) return;
     const oggi = new Date().toDateString();
@@ -631,34 +674,44 @@ export default function Home() {
           setUtente(data.user);
           // Carica figli dal database
           const { data: figliDB } = await supabase.from("figli").select("*").eq("genitore_id", data.user.id);
-          // Carica profilo abbonamento/referral
-          const { data: profilo } = await supabase
-            .from("profili")
-            .select("abbonamento_attivo,abbonamento_scadenza,stripe_customer_id,trial_scade_presto,pagamento_fallito,is_admin,referral_code,referral_count,mesi_gratis_guadagnati")
-            .eq("email", data.user.email)
-            .maybeSingle();
+          // Calcola giorni trial rimasti dalla data di registrazione
+          const createdAt2 = new Date(data.user.created_at);
+          const giorniPassati2 = Math.floor((Date.now() - createdAt2.getTime()) / (1000 * 60 * 60 * 24));
+          const giorniRimasti2 = Math.max(0, 3 - giorniPassati2);
+          setTrialGiorni(giorniRimasti2);
+
+          // Carica profilo via API server-side (usa service key, bypassa RLS)
+          let profilo2 = null;
+          try {
+            const pr2 = await fetch("/api/get-profilo", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${data.session?.access_token || ""}` },
+              body: JSON.stringify({ email: data.user.email }),
+            });
+            const pd2 = await pr2.json();
+            if (pd2.profilo) profilo2 = pd2.profilo;
+            else console.warn("[handleAuth] profilo non trovato per", data.user.email);
+          } catch (pe2) { console.error("[handleAuth] get-profilo error:", pe2.message); }
+          const profilo = profilo2;
+          const isPremium2 = profilo?.abbonamento_attivo === true || profilo?.is_admin === true;
           if (profilo) {
             setProfiloUtente(profilo);
-            if (profilo.abbonamento_attivo) setPiano("premium");
+            if (isPremium2) setPiano("premium");
             setReferralCount(profilo.referral_count || 0);
             setMesiGratisGuadagnati(profilo.mesi_gratis_guadagnati || 0);
-            if (profilo.referral_code) {
-              setReferralCode(profilo.referral_code);
-            } else {
-              const code = generateReferralCode();
-              try { await supabase.from("profili").upsert({ email: data.user.email, referral_code: code }, { onConflict: "email" }); } catch {}
-              setReferralCode(code);
-            }
-          } else {
-            const code = generateReferralCode();
-            try { await supabase.from("profili").upsert({ email: data.user.email, referral_code: code }, { onConflict: "email" }); } catch {}
-            setReferralCode(code);
+            if (profilo.referral_code) setReferralCode(profilo.referral_code);
           }
           if (figliDB && figliDB.length > 0) {
             const figliFormattati = figliDB.map(f => ({ ...f, badge: f.badge || [], preparazione: f.preparazione || {} }));
             setFigli(figliFormattati);
             setFiglioAttivo(figliFormattati[0]);
             setScreen("home");
+          } else if (isPremium2) {
+            // Premium/admin senza figli → home (può aggiungere figli da lì)
+            setScreen("home");
+          } else if (giorniRimasti2 === 0) {
+            // Trial scaduto senza figli → scegli piano
+            setScreen("scegli_piano");
           } else {
             setScreen("scegli_piano");
           }
@@ -720,7 +773,11 @@ export default function Home() {
   const suona = (tipo) => {
     if (typeof window === "undefined") return;
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
+        audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      const ctx = audioCtxRef.current;
+      if (ctx.state === "suspended") ctx.resume();
       const play = (freq, t, dur, vol = 0.28, type = "sine") => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -779,7 +836,6 @@ export default function Home() {
           break;
         default: break;
       }
-      setTimeout(() => { try { ctx.close(); } catch {} }, 2500);
     } catch {}
   };
 
@@ -801,11 +857,12 @@ export default function Home() {
     return figlioAttivo?.preparazione?.[`${materiaN}_${argomento}`] || "non_studiato";
   };
 
-  const compressPhoto = (file, callback) => {
+  const compressPhoto = (file, callback, onError) => {
     const canvas = document.createElement("canvas");
     const img = document.createElement("img");
     const r = new FileReader();
     r.onload = (ev) => {
+      img.onerror = () => { if (onError) onError(); };
       img.onload = () => {
         const MAX = 800;
         let w = img.width, h = img.height;
@@ -817,12 +874,19 @@ export default function Home() {
       };
       img.src = ev.target.result;
     };
+    r.onerror = () => { if (onError) onError(); };
     r.readAsDataURL(file);
   };
 
+  const SCREENS_LIBERE_TRIAL = ["home","famiglia","scegli_piano","badge","landing","login","scegli_figlio","abbonamento_confermato"];
   const goScreen = (s) => {
+    if (trialScaduto && !SCREENS_LIBERE_TRIAL.includes(s)) {
+      setScreen("scegli_piano");
+      return;
+    }
     if (s === "foto") { setPhoto(null); setSbloccato(false); setFotoFase("carica"); setFotoMsgs([]); setFotoInput(""); setPhotoOriginale(null); }
     if (s === "famiglia") setPinScreen("chiuso");
+    if (s === "aggiungi_figlio") { setNomeFiglio(""); setSessoFiglio("M"); setClasseScelta(null); }
     if (s === "dettato") { setDettatoFase("menu"); setDettatoTesto(""); setDettatoAudio(null); setDettatoCorrezione(null); setDettatoMeseChip(null); }
     if (s === "estate") { /* menu semplice, nessun reset necessario */ }
     if (s === "compiti_estivi") { setCompitoPianoSettimana(null); setEstaTab("ripasso"); setEstaSezione("miei_compiti"); setFotoCompitoFase("idle"); setFotoCompitoRisposta(null); caricaCompitiEstivi(figlioAttivo?.id); }
@@ -870,7 +934,7 @@ export default function Home() {
       const res = await fetch("/api/interroga-analizza", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ argomento, materia: MATERIE[materiaKey]?.label, classe: prog?.label }),
+        body: JSON.stringify({ argomento, materia: MATERIE[materiaKey]?.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M" }),
       });
       const d = await res.json();
       if (d.errore) { setRipassoEstateState(null); setScreen("estate"); alert(d.errore); return; }
@@ -908,6 +972,7 @@ export default function Home() {
           messages: [{ role: "user", content: `Fammi un quiz su "${argomento}" per la ${classe}` }],
           materia: MATERIE[materiaN]?.label,
           classe,
+          sesso: figlioAttivo?.sesso || "M",
           tipo: "quiz",
           argomento,
         }),
@@ -935,6 +1000,7 @@ export default function Home() {
           messages: nuoviMsgs.map(m => ({ role: m.role, content: m.text })),
           materia: MATERIE[quizState.materia]?.label,
           classe: prog?.label,
+          sesso: figlioAttivo?.sesso || "M",
           tipo: "quiz",
           argomento: quizState.argomento,
         }),
@@ -958,15 +1024,12 @@ export default function Home() {
 
   const sendChat = async () => {
     if (!chatInput.trim() || chatLoading) return;
-    if (isTrial && !isAdmin) {
-      const usate = parseInt(localStorage.getItem("lexyo_trial_chat") || "0", 10);
-      if (usate >= TRIAL_CHAT_MAX) return;
-      localStorage.setItem("lexyo_trial_chat", String(usate + 1));
-    }
+    if (isTrial && !isAdmin && trialChatUsate >= TRIAL_CHAT_MAX) return;
     const msg = chatInput.trim(); setChatInput("");
     const msgs = [...chatMsgs, { role: "user", text: msg }];
     setChatMsgs(msgs); setChatLoading(true);
     try {
+      const token = await getAccessToken();
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -974,40 +1037,63 @@ export default function Home() {
           messages: msgs.map((m) => ({ role: m.role, content: m.text })),
           materia: mat.label,
           classe: prog?.label,
+          sesso: figlioAttivo?.sesso || "M",
           contesto: chatContesto,
-          fingerprint: (isTrial && !isAdmin) ? getFingerprint() : undefined,
-          isTrial: isTrial && !isAdmin,
+          fingerprint: getFingerprint(),
+          accessToken: token,
         }),
       });
       const d = await res.json();
-      setChatMsgs((prev) => [...prev, { role: "assistant", text: d.risposta }]);
-      addStelle(1);
+      if (d.trial_esaurito) {
+        localStorage.setItem("lexyo_trial_chat", String(TRIAL_CHAT_MAX));
+        setTrialChatUsate(TRIAL_CHAT_MAX);
+        setChatMsgs((prev) => [...prev, { role: "assistant", text: "Hai esaurito i messaggi chat per oggi. Torna domani oppure abbonati per chat illimitata! 🔒" }]);
+      } else {
+        if (isTrial && !isAdmin) {
+          const nu = trialChatUsate + 1;
+          localStorage.setItem("lexyo_trial_chat", String(nu));
+          setTrialChatUsate(nu);
+        }
+        setChatMsgs((prev) => [...prev, { role: "assistant", text: d.risposta }]);
+        addStelle(1);
+      }
     } catch { setChatMsgs((prev) => [...prev, { role: "assistant", text: "Connessione persa! Riprova 🔄" }]); }
     setChatLoading(false);
   };
 
   const sbloccaSol = async () => {
     if (!photo) return;
+    if (isTrial && !isAdmin && sbloccaBloccato) {
+      alert("Hai già sbloccato 3 soluzioni oggi. Torna domani oppure abbonati per soluzioni illimitate!");
+      return;
+    }
     setSbloccato(true); setFotoLoading(true);
     try {
-      const res = await fetch("/api/sblocca-soluzione", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ photo, materia: mat.label, classe: prog?.label }) });
+      const token = await getAccessToken();
+      const res = await fetch("/api/sblocca-soluzione", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ photo, materia: mat.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M", fingerprint: getFingerprint(), accessToken: token }) });
       const d = await res.json();
-      setFotoMsgs((prev) => [...prev, { role: "assistant", content: "🔓 Soluzione completa:\n\n" + d.risposta }]);
-      addStelle(5); addBadge("perseverante");
+      if (d.trial_esaurito) {
+        localStorage.setItem("lexyo_trial_sblocca", String(TRIAL_SBLOCCA_MAX));
+        setTrialSbloccaUsati(TRIAL_SBLOCCA_MAX);
+        setFotoMsgs((prev) => [...prev, { role: "assistant", content: "🔒 " + (d.errore || "Hai esaurito le soluzioni per oggi. Torna domani!") }]);
+      } else {
+        if (isTrial && !isAdmin) {
+          const nu = trialSbloccaUsati + 1;
+          localStorage.setItem("lexyo_trial_sblocca", String(nu));
+          setTrialSbloccaUsati(nu);
+        }
+        setFotoMsgs((prev) => [...prev, { role: "assistant", content: "🔓 Soluzione completa:\n\n" + d.risposta }]);
+        addStelle(5); addBadge("perseverante");
+      }
     } catch { setFotoMsgs((prev) => [...prev, { role: "assistant", content: "Errore! Riprova 🔄" }]); }
     setFotoLoading(false);
   };
 
   useEffect(() => {
-    if (typeof window !== "undefined") localStorage.setItem("lexyo_tema", tema);
     if (typeof document !== "undefined") {
-      if (screen !== "landing" && tema === "light") {
-        document.documentElement.setAttribute("data-tema", "light");
-      } else {
-        document.documentElement.removeAttribute("data-tema");
-      }
+      document.documentElement.setAttribute("data-tema", "light");
     }
-  }, [tema, screen]);
+  }, [screen]);
 
   const luce = true;
   const S = {
@@ -1254,7 +1340,7 @@ export default function Home() {
     <div style={{ ...S.app, padding:"24px", display:"flex", flexDirection:"column", alignItems:"center", overflowY:"auto" }}>
       <Head><title>Lexyo — Piano</title></Head>
       {figlioAttivo && (
-        <button onClick={() => setScreen("home")} style={{ alignSelf:"flex-end", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:"10px", padding:"8px 14px", color:"rgba(255,255,255,0.5)", fontFamily:"'Nunito'", fontWeight:700, fontSize:"13px", cursor:"pointer", marginTop:"16px" }}>
+        <button onClick={() => setScreen("home")} style={{ alignSelf:"flex-end", ...S.btnS, borderRadius:"10px", padding:"8px 14px", fontFamily:"'Nunito'", fontWeight:700, fontSize:"13px", cursor:"pointer", marginTop:"16px", width:"auto" }}>
           ← Torna alla home
         </button>
       )}
@@ -1264,57 +1350,57 @@ export default function Home() {
       <div style={{ width:"100%", maxWidth:"420px", display:"flex", flexDirection:"column", gap:"16px" }}>
 
         {/* TRIAL */}
-        <div style={{ ...S.card, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", position:"relative" }}>
+        <div style={{ ...S.card, position:"relative" }}>
           <div style={{ position:"absolute", top:"-13px", left:"50%", transform:"translateX(-50%)", background:"rgba(16,185,129,0.9)", borderRadius:"100px", padding:"5px 18px", fontSize:"11px", fontWeight:900, whiteSpace:"nowrap", color:"white" }}>
             🎁 PROVA GRATUITA
           </div>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"12px", marginTop:"8px" }}>
             <div>
-              <p style={{ fontWeight:900, fontSize:"22px" }}>0€ <span style={{ fontSize:"14px", color:"rgba(255,255,255,0.4)", fontWeight:600 }}>per 3 giorni</span></p>
-              <p style={{ color:"#34d399", fontSize:"13px", fontWeight:700 }}>Accesso completo — nessuna carta</p>
+              <p style={{ fontWeight:900, fontSize:"22px", color: luce ? "#0a0a20" : "white" }}>0€ <span style={{ fontSize:"14px", color: luce ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.4)", fontWeight:600 }}>per 3 giorni</span></p>
+              <p style={{ color:"#059669", fontSize:"13px", fontWeight:700 }}>Accesso completo — nessuna carta</p>
             </div>
             <span style={{ fontSize:"28px" }}>🎁</span>
           </div>
           {["📸 Foto compiti + spiegazione","💬 Chat con Lex AI 24/7","🗓️ Calendario con quiz interattivi","🚦 Semaforo preparazione","📊 Dashboard genitore","🚫 Zero pubblicità"].map((f) => (
-            <div key={f} style={{ display:"flex", gap:"8px", marginBottom:"6px", fontSize:"13px", fontWeight:600 }}><span style={{ color:"#34d399" }}>✓</span>{f}</div>
+            <div key={f} style={{ display:"flex", gap:"8px", marginBottom:"6px", fontSize:"13px", fontWeight:600, color: luce ? "#0a0a20" : "white" }}><span style={{ color:"#059669" }}>✓</span>{f}</div>
           ))}
           {trialBlockMsg && (
             <div style={{ background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.3)", borderRadius:"12px", padding:"12px 16px", marginTop:"12px" }}>
-              <p style={{ color:"#f87171", fontSize:"13px", fontWeight:700, textAlign:"center", lineHeight:1.5 }}>{trialBlockMsg}</p>
+              <p style={{ color:"#ef4444", fontSize:"13px", fontWeight:700, textAlign:"center", lineHeight:1.5 }}>{trialBlockMsg}</p>
             </div>
           )}
-          <button onClick={avviaTrialConVerifica} disabled={trialCheckLoading} style={{ ...S.btn, background:"rgba(16,185,129,0.15)", border:"1px solid rgba(16,185,129,0.4)", color:"#34d399", marginTop:"14px", opacity: trialCheckLoading ? 0.6 : 1 }}>
+          <button onClick={avviaTrialConVerifica} disabled={trialCheckLoading} style={{ ...S.btn, background: luce ? "rgba(16,185,129,0.15)" : "rgba(16,185,129,0.12)", border:"1px solid rgba(16,185,129,0.4)", color:"#059669", marginTop:"14px", opacity: trialCheckLoading ? 0.6 : 1 }}>
             {trialCheckLoading ? "Verifica in corso…" : "Prova adesso — è gratis →"}
           </button>
-          <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.25)", textAlign:"center", marginTop:"10px" }}>Disdici quando vuoi. Nessun vincolo.</p>
+          <p style={{ fontSize:"11px", color: luce ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.25)", textAlign:"center", marginTop:"10px" }}>Disdici quando vuoi. Nessun vincolo.</p>
         </div>
 
         {/* PREMIUM */}
-        <div style={{ ...S.card, background:"linear-gradient(135deg,rgba(99,102,241,0.18),rgba(139,92,246,0.12))", border:"2px solid rgba(99,102,241,0.5)", position:"relative" }}>
-          <div style={{ position:"absolute", top:"-13px", left:"50%", transform:"translateX(-50%)", background:"linear-gradient(135deg,#f59e0b,#ef4444)", borderRadius:"100px", padding:"5px 18px", fontSize:"11px", fontWeight:900, whiteSpace:"nowrap" }}>
+        <div style={{ ...S.card, background: luce ? "linear-gradient(135deg,rgba(99,102,241,0.08),rgba(139,92,246,0.06))" : "linear-gradient(135deg,rgba(99,102,241,0.18),rgba(139,92,246,0.12))", border:"2px solid rgba(99,102,241,0.5)", position:"relative" }}>
+          <div style={{ position:"absolute", top:"-13px", left:"50%", transform:"translateX(-50%)", background:"linear-gradient(135deg,#f59e0b,#ef4444)", borderRadius:"100px", padding:"5px 18px", fontSize:"11px", fontWeight:900, whiteSpace:"nowrap", color:"white" }}>
             🚀 PREZZO DI LANCIO
           </div>
           <div style={{ textAlign:"center", marginBottom:"16px", marginTop:"8px" }}>
-            <p style={{ fontSize:"38px", fontWeight:900, letterSpacing:"-1px", lineHeight:1 }}>12,90€<span style={{ fontSize:"16px", color:"rgba(255,255,255,0.4)", fontWeight:600 }}>/mese</span></p>
+            <p style={{ fontSize:"38px", fontWeight:900, letterSpacing:"-1px", lineHeight:1, color: luce ? "#0a0a20" : "white" }}>12,90€<span style={{ fontSize:"16px", color: luce ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.4)", fontWeight:600 }}>/mese</span></p>
           </div>
           <div style={{ display:"flex", flexDirection:"column", gap:"6px", marginBottom:"16px" }}>
-            <p style={{ fontSize:"15px", fontWeight:800, textAlign:"center" }}>Sempre pronto.</p>
-            <p style={{ fontSize:"15px", fontWeight:800, textAlign:"center" }}>Sempre coinvolgente.</p>
-            <p style={{ fontSize:"13px", color:"#a78bfa", fontWeight:700, textAlign:"center", fontStyle:"italic" }}>Costa meno di una singola ripetizione privata al mese.</p>
+            <p style={{ fontSize:"15px", fontWeight:800, textAlign:"center", color: luce ? "#0a0a20" : "white" }}>Sempre pronto.</p>
+            <p style={{ fontSize:"15px", fontWeight:800, textAlign:"center", color: luce ? "#0a0a20" : "white" }}>Sempre coinvolgente.</p>
+            <p style={{ fontSize:"13px", color:"#7c3aed", fontWeight:700, textAlign:"center", fontStyle:"italic" }}>Costa meno di una singola ripetizione privata al mese.</p>
           </div>
           <button onClick={avviaStripeCheckout} disabled={stripeLoading} style={{ ...S.btn, ...S.btnP, marginTop:"4px", opacity: stripeLoading ? 0.7 : 1 }}>
             {stripeLoading ? "Apertura pagamento…" : "Abbonati — Offerta Lancio →"}
           </button>
-          <div style={{ marginTop:"14px", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:"12px", padding:"14px 16px" }}>
-            <p style={{ fontSize:"13px", fontWeight:800, color:"white", textAlign:"center", marginBottom:"5px" }}>
+          <div style={{ marginTop:"14px", background: luce ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)", border: `1px solid ${luce ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)"}`, borderRadius:"12px", padding:"14px 16px" }}>
+            <p style={{ fontSize:"13px", fontWeight:800, color: luce ? "#0a0a20" : "white", textAlign:"center", marginBottom:"5px" }}>
               🔒 Prezzo bloccato per sempre a 12,90€/mese
             </p>
-            <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.4)", textAlign:"center", marginBottom:"8px", lineHeight:1.5 }}>
+            <p style={{ fontSize:"12px", color: luce ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.4)", textAlign:"center", marginBottom:"8px", lineHeight:1.5 }}>
               Solo per chi si iscrive durante il lancio.<br/>
-              <strong style={{ color:"#f87171" }}>Dopo il lancio: 17,99€/mese.</strong><br/>
-              <span style={{ color:"#fbbf24", fontWeight:700 }}>⏳ Disponibile solo per un periodo limitato.</span>
+              <strong style={{ color:"#ef4444" }}>Dopo il lancio: 17,99€/mese.</strong><br/>
+              <span style={{ color:"#d97706", fontWeight:700 }}>⏳ Disponibile solo per un periodo limitato.</span>
             </p>
-            <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.3)", textAlign:"center" }}>✅ Disdici quando vuoi — nessun vincolo</p>
+            <p style={{ fontSize:"12px", color: luce ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.3)", textAlign:"center" }}>✅ Disdici quando vuoi — nessun vincolo</p>
           </div>
         </div>
       </div>
@@ -1322,7 +1408,7 @@ export default function Home() {
   );
 
   if (screen === "abbonamento_confermato") return (
-    <div style={{ ...S.app, padding:"24px 20px", display:"flex", flexDirection:"column", alignItems:"center", overflowY:"auto", background:"#06060f" }}>
+    <div style={{ ...S.app, padding:"24px 20px", display:"flex", flexDirection:"column", alignItems:"center", overflowY:"auto", background: luce ? "#f0f4ff" : "#06060f", color:"white" }}>
       <Head><title>Lexyo Premium — Attivo!</title></Head>
       <style>{`@keyframes confettiFall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(80px) rotate(360deg);opacity:0}} @keyframes premiumPop{0%{transform:scale(0.5);opacity:0}70%{transform:scale(1.08);opacity:1}100%{transform:scale(1);opacity:1}}`}</style>
 
@@ -1444,6 +1530,14 @@ export default function Home() {
       <p style={{ ...S.gray, marginBottom: "24px" }}>Solo il nome — zero dati sensibili 🔒</p>
       <div style={{ width: "100%", maxWidth: "400px" }}>
         <input value={nomeFiglio} onChange={(e) => setNomeFiglio(e.target.value)} placeholder="Nome del bambino/a" style={{ ...S.inp, marginBottom: "18px" }} />
+        <p style={{ fontSize: "12px", fontWeight: 800, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "10px" }}>È un bambino o una bambina?</p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "20px" }}>
+          {[["M","👦","Bambino"],["F","👧","Bambina"]].map(([val, emoji, label]) => (
+            <button key={val} onClick={() => setSessoFiglio(val)} style={{ padding: "14px 8px", borderRadius: "14px", background: sessoFiglio === val ? "rgba(99,102,241,0.25)" : "rgba(255,255,255,0.05)", border: `2px solid ${sessoFiglio === val ? "#6366f1" : "rgba(255,255,255,0.08)"}`, color: "white", fontFamily: "'Nunito', sans-serif", fontWeight: 800, fontSize: "14px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+              <span style={{ fontSize: "28px" }}>{emoji}</span>{label}
+            </button>
+          ))}
+        </div>
         <p style={{ fontSize: "12px", fontWeight: 800, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "12px" }}>Seleziona la classe</p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px", marginBottom: "24px" }}>
           {Object.entries(CLASSI).map(([key, val]) => (
@@ -1454,7 +1548,7 @@ export default function Home() {
         </div>
         <button onClick={async () => {
           if (!nomeFiglio.trim() || !classeScelta) return;
-          const nuovoFiglio = { nome: nomeFiglio.trim(), classe: classeScelta, stelle: 0, livello: 1, badge: [], sessioni: 0, preparazione: {}, genitore_id: utente?.id };
+          const nuovoFiglio = { nome: nomeFiglio.trim(), classe: classeScelta, sesso: sessoFiglio, stelle: 0, livello: 1, badge: [], sessioni: 0, preparazione: {}, genitore_id: utente?.id };
           if (utente) {
             const { data: figlioDB, error } = await supabase.from("figli").insert([nuovoFiglio]).select().single();
             if (!error && figlioDB) {
@@ -1465,7 +1559,7 @@ export default function Home() {
             const f = { id: Date.now(), ...nuovoFiglio, ultimaAttivita: null, dataIscrizione: new Date().toLocaleDateString("it-IT") };
             setFigli((prev) => [...prev, f]); setFiglioAttivo(f);
           }
-          setNomeFiglio(""); setClasseScelta(null); setScreen("home");
+          setNomeFiglio(""); setClasseScelta(null); setSessoFiglio("M"); setScreen("home");
         }} style={{ ...S.btn, ...S.btnP, opacity: nomeFiglio.trim() && classeScelta ? 1 : 0.4 }}>
           Inizia l&apos;Avventura! 🚀
         </button>
@@ -1552,8 +1646,96 @@ export default function Home() {
         </div>
       )}
 
+      {/* ── Overlay benvenuto Premium ── */}
+      {showWelcomeModal && (() => {
+        const testoCondivisione = `Ho scoperto Lexyo, il professore AI per i bambini italiani! 🦁 Usa il mio codice ${referralCode} e inizia gratis per 3 giorni. Provalo su https://app.lexyo.it?ref=${referralCode}`;
+        const linkReferral = `https://app.lexyo.it?ref=${referralCode}`;
+        const copiaNegliAppunti = (testo, tipo) => {
+          navigator.clipboard.writeText(testo).catch(() => {
+            const ta = document.createElement("textarea"); ta.value = testo; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
+          });
+          setReferralCopiato(tipo);
+          setTimeout(() => setReferralCopiato(""), 2000);
+        };
+        const mostraToast = (msg) => { setToastReferral(msg); setTimeout(() => setToastReferral(""), 3500); };
+        const socialButtons = [
+          { label:"WhatsApp", bg:"#25D366", icon:"https://cdn.simpleicons.org/whatsapp/ffffff", onClick:() => window.open("https://wa.me/?text=" + encodeURIComponent(testoCondivisione)) },
+          { label:"Facebook", bg:"#1877F2", icon:"https://cdn.simpleicons.org/facebook/ffffff", onClick:() => window.open("https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(linkReferral) + "&quote=" + encodeURIComponent(testoCondivisione)) },
+          { label:"Instagram", bg:"linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)", icon:"https://cdn.simpleicons.org/instagram/ffffff", onClick:() => { copiaNegliAppunti(testoCondivisione, ""); mostraToast("Testo copiato! Apri Instagram e incollalo nelle stories 📱"); } },
+          { label:"TikTok", bg:"#010101", border:"1px solid rgba(255,255,255,0.3)", icon:"https://cdn.simpleicons.org/tiktok/ffffff", onClick:() => { copiaNegliAppunti(testoCondivisione, ""); mostraToast("Testo copiato! Incollalo nella bio TikTok 🎵"); } },
+          { label:"YouTube", bg:"#FF0000", icon:"https://cdn.simpleicons.org/youtube/ffffff", onClick:() => { copiaNegliAppunti(testoCondivisione, ""); mostraToast("Testo copiato! Incollalo in un post Community YouTube ▶"); } },
+        ];
+        return (
+          <div style={{ position:"fixed", inset:0, zIndex:10000, background:"rgba(0,0,0,0.92)", backdropFilter:"blur(16px)", display:"flex", alignItems:"flex-end", justifyContent:"center", padding:"0 0 0" }}>
+            <div style={{ width:"100%", maxWidth:"480px", maxHeight:"92vh", overflowY:"auto", background:"linear-gradient(180deg,#0e0e22 0%,#12112b 100%)", borderRadius:"28px 28px 0 0", padding:"28px 20px 36px", boxShadow:"0 -8px 48px rgba(108,71,255,0.35)" }}>
+
+              {/* Intestazione benvenuto */}
+              <div style={{ textAlign:"center", marginBottom:"24px" }}>
+                <div style={{ fontSize:"52px", marginBottom:"10px" }}>🎉</div>
+                <p style={{ fontWeight:900, fontSize:"22px", color:"white", marginBottom:"6px", lineHeight:1.2 }}>Benvenuto in Lexyo Premium!</p>
+                <p style={{ fontSize:"14px", color:"rgba(255,255,255,0.6)", fontWeight:600 }}>Accesso completo attivato — tutto sbloccato 🚀</p>
+              </div>
+
+              {/* Sezione referral */}
+              {referralCode && (
+                <div style={{ borderRadius:"20px", background:"linear-gradient(135deg,#6C47FF,#FF4B8B)", padding:"20px", boxShadow:"0 8px 24px rgba(108,71,255,0.4)", marginBottom:"20px" }}>
+                  <p style={{ fontWeight:900, fontSize:"16px", color:"white", marginBottom:"4px" }}>🎁 Invita un amico, guadagna un mese gratis!</p>
+                  <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.75)", fontWeight:600, marginBottom:"14px" }}>Ogni 5 amici abbonati = 1 mese gratis per te</p>
+
+                  <div style={{ marginBottom:"14px" }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"5px" }}>
+                      <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.8)", fontWeight:700 }}>{referralCount}/5 amici invitati</p>
+                      {mesiGratisGuadagnati > 0 && <p style={{ fontSize:"12px", color:"#fbbf24", fontWeight:800 }}>🎉 {mesiGratisGuadagnati} {mesiGratisGuadagnati === 1 ? "mese" : "mesi"} guadagnati</p>}
+                    </div>
+                    <div style={{ height:"6px", background:"rgba(0,0,0,0.25)", borderRadius:"6px", overflow:"hidden" }}>
+                      <div style={{ height:"100%", width:`${Math.min((referralCount % 5) / 5 * 100, 100)}%`, background:"linear-gradient(90deg,#a78bfa,#c084fc)", borderRadius:"6px", transition:"width 0.5s ease" }} />
+                    </div>
+                  </div>
+
+                  <div style={{ background:"rgba(0,0,0,0.3)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:"14px", padding:"12px 16px", marginBottom:"10px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"10px" }}>
+                    <p style={{ fontSize:"22px", fontWeight:900, color:"white", letterSpacing:"2px", fontFamily:"monospace" }}>{referralCode}</p>
+                    <button onClick={() => copiaNegliAppunti(referralCode, "code")} style={{ background:"rgba(255,255,255,0.15)", border:"1px solid rgba(255,255,255,0.3)", borderRadius:"10px", padding:"7px 12px", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"12px", cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
+                      {referralCopiato === "code" ? "Copiato! ✓" : "📋 Copia codice"}
+                    </button>
+                  </div>
+
+                  <div style={{ display:"flex", gap:"8px", marginBottom:"14px" }}>
+                    <div style={{ flex:1, background:"rgba(0,0,0,0.2)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:"10px", padding:"8px 12px", overflow:"hidden" }}>
+                      <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.55)", fontWeight:600, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{linkReferral}</p>
+                    </div>
+                    <button onClick={() => copiaNegliAppunti(linkReferral, "link")} style={{ background:"rgba(255,255,255,0.15)", border:"1px solid rgba(255,255,255,0.3)", borderRadius:"10px", padding:"8px 14px", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"12px", cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
+                      {referralCopiato === "link" ? "Copiato! ✓" : "🔗 Copia link"}
+                    </button>
+                  </div>
+
+                  <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.6)", fontWeight:700, marginBottom:"8px" }}>Condividi su:</p>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:"8px" }}>
+                    {socialButtons.map(b => (
+                      <button key={b.label} onClick={b.onClick} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"4px", padding:"10px 14px", borderRadius:"14px", background:b.bg, border:b.border||"none", cursor:"pointer", minWidth:"58px" }}>
+                        <img src={b.icon} width="22" height="22" alt={b.label} style={{ display:"block" }} />
+                        <span style={{ fontSize:"10px", fontWeight:700, color:"white" }}>{b.label}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {toastReferral && (
+                    <div style={{ marginTop:"12px", background:"rgba(0,0,0,0.4)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:"10px", padding:"10px 14px" }}>
+                      <p style={{ fontSize:"12px", color:"white", fontWeight:700 }}>{toastReferral}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <button onClick={() => { setShowWelcomeModal(false); setPagamentoFlash(null); }} style={{ width:"100%", padding:"16px", background:"linear-gradient(135deg,#6C47FF,#9B3FD4)", border:"none", borderRadius:"16px", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"16px", cursor:"pointer", boxShadow:"0 6px 20px rgba(108,71,255,0.4)" }}>
+                Inizia subito con Lexyo Premium →
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* toast ritorno da Stripe */}
-      {pagamentoFlash && (
+      {pagamentoFlash && !showWelcomeModal && (
         <div onClick={() => setPagamentoFlash(null)} style={{ position:"fixed", top:"14px", left:"50%", transform:"translateX(-50%)", zIndex:9998, cursor:"pointer", maxWidth:"340px", width:"calc(100% - 32px)" }}>
           <div style={{ borderRadius:"18px", padding:"14px 20px", display:"flex", alignItems:"center", gap:"14px", boxShadow:"0 8px 32px rgba(0,0,0,0.5)", background: pagamentoFlash === "successo" ? "linear-gradient(135deg,#059669,#10b981)" : "linear-gradient(135deg,#374151,#1f2937)", border: pagamentoFlash === "successo" ? "1px solid rgba(52,211,153,0.4)" : "1px solid rgba(255,255,255,0.1)" }}>
             <span style={{ fontSize:"28px", flexShrink:0 }}>{pagamentoFlash === "successo" ? "🎉" : "👋"}</span>
@@ -1569,6 +1751,8 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* ── Overlay trial scaduto (solo quando prova ad usare una funzione) ── */}
 
       {/* overlay stelle doppie estate */}
       {bonusEstate && <div style={{ position:"fixed", top:"72px", left:"50%", transform:"translateX(-50%)", background:"linear-gradient(135deg,#f59e0b,#fbbf24)", borderRadius:"20px", padding:"10px 22px", zIndex:9998, display:"flex", alignItems:"center", gap:"10px", boxShadow:"0 6px 24px rgba(245,158,11,0.5)", whiteSpace:"nowrap" }}><span style={{ fontSize:"22px" }}>🌞</span><p style={{ fontWeight:900, fontSize:"13px", color:"#0a0a20" }}>Stelle raddoppiate! È estate!</p></div>}
@@ -1593,7 +1777,19 @@ export default function Home() {
         </div>
       </div>
 
-      {piano === "trial" && !isAdmin && <div style={{ padding:"7px 20px", background:"rgba(245,158,11,0.12)", borderBottom:"1px solid rgba(245,158,11,0.2)", display:"flex", justifyContent:"space-between", alignItems:"center" }}><p style={{ fontSize:"12px", color:"#fbbf24", fontWeight:700 }}>🎁 Trial — {trialGiorni} giorni rimasti</p><button onClick={() => setScreen("scegli_piano")} style={{ background:"rgba(245,158,11,0.2)", border:"1px solid rgba(245,158,11,0.4)", borderRadius:"20px", padding:"4px 12px", color:"#fbbf24", fontSize:"11px", fontWeight:800, cursor:"pointer" }}>Abbonati</button></div>}
+      {piano === "trial" && !isAdmin && (
+        trialScaduto ? (
+          <div style={{ padding:"10px 20px", background: luce ? "rgba(239,68,68,0.12)" : "rgba(239,68,68,0.18)", borderBottom: luce ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(239,68,68,0.35)", display:"flex", justifyContent:"space-between", alignItems:"center", gap:"10px" }}>
+            <p style={{ fontSize:"12px", color: luce ? "#b91c1c" : "#fca5a5", fontWeight:800, lineHeight:1.4 }}>⏰ Trial scaduto — le funzioni sono bloccate</p>
+            <button onClick={() => setScreen("scegli_piano")} style={{ flexShrink:0, background:"linear-gradient(135deg,#6C47FF,#9B3FD4)", border:"none", borderRadius:"20px", padding:"6px 14px", color:"white", fontSize:"11px", fontWeight:900, cursor:"pointer", whiteSpace:"nowrap" }}>Abbonati →</button>
+          </div>
+        ) : (
+          <div style={{ padding:"7px 20px", background: luce ? "rgba(245,158,11,0.18)" : "rgba(245,158,11,0.12)", borderBottom: luce ? "1px solid rgba(245,158,11,0.35)" : "1px solid rgba(245,158,11,0.2)", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <p style={{ fontSize:"12px", color: luce ? "#92400e" : "#fbbf24", fontWeight:800 }}>🎁 Trial — {trialGiorni} {trialGiorni === 1 ? "giorno rimasto" : "giorni rimasti"}</p>
+            <button onClick={() => setScreen("scegli_piano")} style={{ background: luce ? "rgba(245,158,11,0.25)" : "rgba(245,158,11,0.2)", border: luce ? "1px solid rgba(245,158,11,0.5)" : "1px solid rgba(245,158,11,0.4)", borderRadius:"20px", padding:"4px 12px", color: luce ? "#92400e" : "#fbbf24", fontSize:"11px", fontWeight:800, cursor:"pointer" }}>Abbonati</button>
+          </div>
+        )
+      )}
 
       {pwaPromptReady && !installBannerDismissed && (
         <div style={{ padding:"10px 20px", background:"linear-gradient(135deg,rgba(168,85,247,0.15),rgba(99,102,241,0.1))", borderBottom:"1px solid rgba(168,85,247,0.25)", display:"flex", justifyContent:"space-between", alignItems:"center", gap:"12px" }}>
@@ -1657,19 +1853,21 @@ export default function Home() {
           ))}
         </div>
 
-        {/* ── PREPARAZIONE ESAME ── */}
-        <button onClick={() => goScreen("esame5")} className="hcard" style={{ width:"100%", marginBottom:"12px", padding:"0", borderRadius:"22px", background:"linear-gradient(145deg,#AA33FF,#8800EE,#6600BB)", boxShadow:"0 6px 18px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", cursor:"pointer", "--card-border":"linear-gradient(135deg,#4400AA,#CC55FF)" }}>
-          <div className="card-shine" />
-          <div className="card-content" style={{ padding:"18px 20px", display:"flex", alignItems:"center", gap:"14px" }}>
-            <div style={{ fontSize:"36px", lineHeight:1, flexShrink:0 }}>🎓</div>
-            <div style={{ flex:1 }}>
-              <p style={{ fontSize:"15px", fontWeight:900, color:"white", marginBottom:"3px" }}>Preparazione Esame</p>
-              <p style={{ fontSize:"11px", fontWeight:800, color:"rgba(255,255,255,0.75)" }}>Allenati con Lex per l'esame</p>
+        {/* ── PREPARAZIONE ESAME — solo 3ª Media ── */}
+        {prog?.key === "3M" && (
+          <button onClick={() => { setEsameSubTipo("media"); goScreen("esame5"); }} className="hcard" style={{ width:"100%", marginBottom:"12px", padding:"0", borderRadius:"22px", background:"linear-gradient(145deg,#AA33FF,#8800EE,#6600BB)", boxShadow:"0 6px 18px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", cursor:"pointer", "--card-border":"linear-gradient(135deg,#4400AA,#CC55FF)" }}>
+            <div className="card-shine" />
+            <div className="card-content" style={{ padding:"18px 20px", display:"flex", alignItems:"center", gap:"14px" }}>
+              <div style={{ fontSize:"36px", lineHeight:1, flexShrink:0 }}>🎓</div>
+              <div style={{ flex:1 }}>
+                <p style={{ fontSize:"15px", fontWeight:900, color:"white", marginBottom:"3px" }}>Preparazione Esame di 3ª Media</p>
+                <p style={{ fontSize:"11px", fontWeight:800, color:"rgba(255,255,255,0.75)" }}>Allenati con Lex per l'esame di Stato</p>
+              </div>
+              <span style={{ fontSize:"22px", color:"rgba(255,255,255,0.8)", flexShrink:0 }}>→</span>
             </div>
-            <span style={{ fontSize:"22px", color:"rgba(255,255,255,0.8)", flexShrink:0 }}>→</span>
-          </div>
-          <div className="card-depth" />
-        </button>
+            <div className="card-depth" />
+          </button>
+        )}
 
         {/* ── SFIDA LEGGENDA LEX ── */}
         <button onClick={() => {}} className="hcard" style={{ width:"100%", marginBottom:"12px", padding:"0", borderRadius:"22px", background:"linear-gradient(145deg,#00F090,#00CC70,#00A855)", boxShadow:"0 6px 18px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", cursor:"pointer", textAlign:"left", fontFamily:"'Nunito'", "--card-border":"linear-gradient(135deg,#00BFA5,#007A3D)" }}>
@@ -1901,10 +2099,10 @@ export default function Home() {
       </div>
       <div style={{ flex:1, overflowY:"auto", padding:"18px" }}>
         {fotoBloccata && !isAdmin && (
-          <div style={{ ...S.card, background:"rgba(245,158,11,0.1)", border:"1px solid rgba(245,158,11,0.35)", textAlign:"center", padding:"28px 20px", marginBottom:"14px" }}>
+          <div style={{ ...S.card, background: luce?"rgba(245,158,11,0.12)":"rgba(245,158,11,0.1)", border: luce?"1px solid rgba(245,158,11,0.45)":"1px solid rgba(245,158,11,0.35)", textAlign:"center", padding:"28px 20px", marginBottom:"14px" }}>
             <p style={{ fontSize:"36px", marginBottom:"10px" }}>🔒</p>
-            <p style={{ fontWeight:900, fontSize:"16px", marginBottom:"6px", color:"#fbbf24" }}>Limite foto raggiunto</p>
-            <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.55)", fontWeight:600, lineHeight:1.7, marginBottom:"16px" }}>Nel periodo di prova puoi analizzare {TRIAL_FOTO_MAX} foto.<br/>Abbonati per foto illimitate!</p>
+            <p style={{ fontWeight:900, fontSize:"16px", marginBottom:"6px", color: luce?"#92400e":"#fbbf24" }}>Limite foto raggiunto</p>
+            <p style={{ fontSize:"13px", color: luce?"rgba(0,0,0,0.55)":"rgba(255,255,255,0.55)", fontWeight:600, lineHeight:1.7, marginBottom:"16px" }}>Nel periodo di prova puoi analizzare {TRIAL_FOTO_MAX} foto.<br/>Abbonati per foto illimitate!</p>
             <button onClick={() => setScreen("scegli_piano")} style={{ ...S.btn, ...S.btnP }}>Abbonati ora →</button>
           </div>
         )}
@@ -1918,16 +2116,21 @@ export default function Home() {
               <div style={{ display:"flex", gap:"10px" }}>
                 <button onClick={() => setPhoto(null)} style={{ ...S.btn, ...S.btnS, flex:1 }}>🔄 Cambia</button>
                 <button onClick={async () => {
-                  if (isTrial && !isAdmin) {
-                    const usate = parseInt(localStorage.getItem("lexyo_trial_foto") || "0", 10);
-                    if (usate >= TRIAL_FOTO_MAX) return;
-                    localStorage.setItem("lexyo_trial_foto", String(usate + 1));
-                  }
+                  if (isTrial && !isAdmin && trialFotoUsate >= TRIAL_FOTO_MAX) return;
                   setFotoFase("analisi_loading");
                   try {
-                    const res = await fetch("/api/analizza-foto", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ photo, materia:mat.label, classe:prog?.label, fase:"analisi", fingerprint:(isTrial&&!isAdmin)?getFingerprint():undefined, isTrial:isTrial&&!isAdmin }) });
+                    const token = await getAccessToken();
+                    const res = await fetch("/api/analizza-foto", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ photo, materia:mat.label, classe:prog?.label, sesso: figlioAttivo?.sesso || "M", fase:"analisi", fingerprint: getFingerprint(), accessToken: token }) });
                     const d = await res.json();
-                    if (d.bloccata) { setPhoto(null); setFotoFase("carica"); setFotoMsgs([{ role:"assistant", content:d.risposta }]); return; }
+                    if (d.bloccata) {
+                      if (d.trial_esaurito && isTrial && !isAdmin) { localStorage.setItem("lexyo_trial_foto", String(TRIAL_FOTO_MAX)); setTrialFotoUsate(TRIAL_FOTO_MAX); }
+                      setPhoto(null); setFotoFase("carica"); setFotoMsgs([{ role:"assistant", content:d.risposta }]); return;
+                    }
+                    if (isTrial && !isAdmin) {
+                      const nu = trialFotoUsate + 1;
+                      localStorage.setItem("lexyo_trial_foto", String(nu));
+                      setTrialFotoUsate(nu);
+                    }
                     setFotoMsgs([{ role:"assistant", content:d.risposta }]); setFotoFase("domande");
                     addStelle(2); addBadge("curioso");
                   } catch { setFotoFase("carica"); }
@@ -1953,8 +2156,8 @@ export default function Home() {
             </div>
             {fotoFase === "domande" && (
               <div style={{ display:"flex", gap:"10px", marginBottom:"14px" }}>
-                <input value={fotoInput} onChange={(e)=>setFotoInput(e.target.value)} onKeyDown={async(e)=>{ if(e.key!=="Enter"||!fotoInput.trim()||fotoLoading) return; const msg=fotoInput.trim(); setFotoInput(""); const nuovi=[...fotoMsgs,{role:"user",content:msg}]; setFotoMsgs(nuovi); setFotoLoading(true); try { const res=await fetch("/api/analizza-foto",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({photo,materia:mat.label,classe:prog?.label,fase:"domande",messaggi:nuovi})}); const d=await res.json(); setFotoMsgs(prev=>[...prev,{role:"assistant",content:d.risposta}]); if(d.fase==="attendi_correzione") setFotoFase("attendi_correzione"); } catch {} setFotoLoading(false); }} placeholder="Scrivi la tua risposta..." style={S.inp} />
-                <button onClick={async()=>{ if(!fotoInput.trim()||fotoLoading) return; const msg=fotoInput.trim(); setFotoInput(""); const nuovi=[...fotoMsgs,{role:"user",content:msg}]; setFotoMsgs(nuovi); setFotoLoading(true); try { const res=await fetch("/api/analizza-foto",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({photo,materia:mat.label,classe:prog?.label,fase:"domande",messaggi:nuovi})}); const d=await res.json(); setFotoMsgs(prev=>[...prev,{role:"assistant",content:d.risposta}]); if(d.fase==="attendi_correzione") setFotoFase("attendi_correzione"); } catch {} setFotoLoading(false); }} style={{ width:"46px", height:"46px", borderRadius:"13px", border:"none", background:fotoInput.trim()?t.gradiente:"rgba(255,255,255,0.07)", boxShadow:fotoInput.trim()?`0 4px 12px ${t.glow}`:"none", color:"white", fontSize:"18px", flexShrink:0, cursor:"pointer" }}>→</button>
+                <input value={fotoInput} onChange={(e)=>setFotoInput(e.target.value)} onKeyDown={async(e)=>{ if(e.key!=="Enter"||!fotoInput.trim()||fotoLoading) return; const msg=fotoInput.trim(); setFotoInput(""); const nuovi=[...fotoMsgs,{role:"user",content:msg}]; setFotoMsgs(nuovi); setFotoLoading(true); try { const res=await fetch("/api/analizza-foto",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({photo,materia:mat.label,classe:prog?.label,sesso:figlioAttivo?.sesso||"M",fase:"domande",messaggi:nuovi})}); const d=await res.json(); setFotoMsgs(prev=>[...prev,{role:"assistant",content:d.risposta}]); if(d.fase==="attendi_correzione") setFotoFase("attendi_correzione"); } catch {} setFotoLoading(false); }} placeholder="Scrivi la tua risposta..." style={S.inp} />
+                <button onClick={async()=>{ if(!fotoInput.trim()||fotoLoading) return; const msg=fotoInput.trim(); setFotoInput(""); const nuovi=[...fotoMsgs,{role:"user",content:msg}]; setFotoMsgs(nuovi); setFotoLoading(true); try { const res=await fetch("/api/analizza-foto",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({photo,materia:mat.label,classe:prog?.label,sesso:figlioAttivo?.sesso||"M",fase:"domande",messaggi:nuovi})}); const d=await res.json(); setFotoMsgs(prev=>[...prev,{role:"assistant",content:d.risposta}]); if(d.fase==="attendi_correzione") setFotoFase("attendi_correzione"); } catch {} setFotoLoading(false); }} style={{ width:"46px", height:"46px", borderRadius:"13px", border:"none", background:fotoInput.trim()?t.gradiente:"rgba(255,255,255,0.07)", boxShadow:fotoInput.trim()?`0 4px 12px ${t.glow}`:"none", color:"white", fontSize:"18px", flexShrink:0, cursor:"pointer" }}>→</button>
               </div>
             )}
             {fotoFase === "attendi_correzione" && (
@@ -1965,7 +2168,7 @@ export default function Home() {
                 </div>
                 <label style={{ display:"flex", border:"2px dashed rgba(16,185,129,0.4)", borderRadius:"18px", padding:"20px", textAlign:"center", cursor:"pointer", alignItems:"center", justifyContent:"center", minHeight:"120px" }}>
                   <div><div style={{ fontSize:"36px", marginBottom:"8px" }}>📷</div><p style={{ fontWeight:800, fontSize:"14px", color:"#10b981" }}>Carica foto del quaderno</p></div>
-                  <input type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={(e)=>{ const f=e.target.files[0]; if(!f) return; compressPhoto(f,async(fq)=>{ setFotoFase("correzione_loading"); try { const res=await fetch("/api/analizza-foto",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({photo:fq,materia:mat.label,classe:prog?.label,fase:"correzione",photoOriginale})}); const d=await res.json(); if(d.bloccata){setFotoFase("attendi_correzione");return;} setFotoMsgs(prev=>[...prev,{role:"assistant",content:d.risposta}]); setFotoFase("corretto"); addStelle(5); addBadge("perseverante"); } catch{setFotoFase("attendi_correzione");} }); }} />
+                  <input type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={(e)=>{ const f=e.target.files[0]; if(!f) return; compressPhoto(f,async(fq)=>{ setFotoFase("correzione_loading"); try { const res=await fetch("/api/analizza-foto",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({photo:fq,materia:mat.label,classe:prog?.label,sesso:figlioAttivo?.sesso||"M",fase:"correzione",photoOriginale})}); const d=await res.json(); if(d.bloccata){setFotoFase("attendi_correzione");return;} setFotoMsgs(prev=>[...prev,{role:"assistant",content:d.risposta}]); setFotoFase("corretto"); addStelle(5); addBadge("perseverante"); } catch{setFotoFase("attendi_correzione");} }); }} />
                 </label>
               </div>
             )}
@@ -2040,11 +2243,11 @@ export default function Home() {
       </div>
       {chatBloccata && !isAdmin ? (
         <div style={{ padding:"16px 18px 26px", borderTop:`1px solid ${t.secondario}44`, background: luce ? "#f5f7ff" : "#181530", flexShrink:0 }}>
-          <div style={{ background:"rgba(245,158,11,0.1)", border:"1px solid rgba(245,158,11,0.3)", borderRadius:"14px", padding:"14px 16px", display:"flex", alignItems:"center", gap:"12px" }}>
+          <div style={{ background: luce?"rgba(245,158,11,0.15)":"rgba(245,158,11,0.1)", border: luce?"1px solid rgba(245,158,11,0.45)":"1px solid rgba(245,158,11,0.3)", borderRadius:"14px", padding:"14px 16px", display:"flex", alignItems:"center", gap:"12px" }}>
             <span style={{ fontSize:"22px" }}>🔒</span>
             <div style={{ flex:1 }}>
-              <p style={{ fontWeight:800, fontSize:"13px", color:"#fbbf24", marginBottom:"2px" }}>Limite messaggi raggiunto</p>
-              <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.5)", fontWeight:600 }}>Abbonati per chat illimitata!</p>
+              <p style={{ fontWeight:800, fontSize:"13px", color: luce?"#92400e":"#fbbf24", marginBottom:"2px" }}>Limite messaggi raggiunto</p>
+              <p style={{ fontSize:"11px", color: luce?"rgba(0,0,0,0.5)":"rgba(255,255,255,0.5)", fontWeight:600 }}>Abbonati per chat illimitata!</p>
             </div>
             <button onClick={() => setScreen("scegli_piano")} style={{ background:"linear-gradient(135deg,#6C47FF,#9B3FD4)", border:"none", borderRadius:"10px", padding:"8px 14px", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"12px", cursor:"pointer", whiteSpace:"nowrap" }}>Abbonati →</button>
           </div>
@@ -2056,7 +2259,7 @@ export default function Home() {
         </div>
       )}
       {isTrial && !isAdmin && !chatBloccata && (
-        <p style={{ fontSize:"10px", color: luce ? "rgba(0,0,30,0.3)" : "rgba(255,255,255,0.25)", fontWeight:700, textAlign:"center", padding:"0 0 8px", background: luce ? "#f5f7ff" : "#181530" }}>💬 {TRIAL_CHAT_MAX - trialChatUsate} messaggi rimasti nella prova</p>
+        <p style={{ fontSize:"10px", color: luce ? "#92400e" : "rgba(255,255,255,0.4)", fontWeight:700, textAlign:"center", padding:"0 0 8px", background: luce ? "#f5f7ff" : "#181530" }}>💬 {TRIAL_CHAT_MAX - trialChatUsate} messaggi rimasti nella prova</p>
       )}
     </div>
   );
@@ -2089,14 +2292,31 @@ export default function Home() {
     };
 
     const generaTesto = async (tipo, argomento) => {
+      if (isTrial && !isAdmin && dettatoBloccato) {
+        alert("Hai già generato il tuo dettato oggi. Torna domani oppure abbonati per dettati illimitati!");
+        return;
+      }
       setDettatoLoading(true); setDettatoTesto(""); setDettatoAudio(null);
       try {
+        const token = await getAccessToken();
         const res = await fetch("/api/dettato-genera", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ classe: prog?.label, materia: mat.label, argomento, tipo }),
+          body: JSON.stringify({ classe: prog?.label, materia: mat.label, sesso: figlioAttivo?.sesso || "M", argomento, tipo, fingerprint: getFingerprint(), accessToken: token }),
         });
         const d = await res.json();
-        if (d.testo) { setDettatoTesto(d.testo); setDettatoFase("testo_pronto"); }
+        if (d.trial_esaurito) {
+          if (isTrial && !isAdmin) { localStorage.setItem("lexyo_trial_dettato", String(TRIAL_DETTATO_MAX)); setTrialDettatoUsati(TRIAL_DETTATO_MAX); }
+          alert(d.errore || "Hai già generato il tuo dettato oggi. Torna domani oppure abbonati per dettati illimitati!");
+          return;
+        }
+        if (d.testo) {
+          if (isTrial && !isAdmin) {
+            const nu = trialDettatoUsati + 1;
+            localStorage.setItem("lexyo_trial_dettato", String(nu));
+            setTrialDettatoUsati(nu);
+          }
+          setDettatoTesto(d.testo); setDettatoFase("testo_pronto");
+        }
       } catch { alert("Errore generazione testo"); }
       setDettatoLoading(false);
     };
@@ -2156,17 +2376,18 @@ export default function Home() {
 
     const correggiDettato = async (file) => {
       setDettatoLoading(true); setDettatoCorrezione(null);
+      const token = await getAccessToken();
       compressPhoto(file, async (compressed) => {
         try {
           const res = await fetch("/api/dettato-correggi", {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ photo: compressed, testoOriginale: dettatoTesto, classe: prog?.label, materia: mat.label }),
+            body: JSON.stringify({ photo: compressed, testoOriginale: dettatoTesto, classe: prog?.label, materia: mat.label, sesso: figlioAttivo?.sesso || "M", fingerprint: getFingerprint(), accessToken: token }),
           });
           const d = await res.json();
           if (d.correzione) { setDettatoCorrezione(d.correzione); setDettatoFase("corretto"); addStelle(3); }
         } catch { alert("Errore correzione"); }
         setDettatoLoading(false);
-      });
+      }, () => { alert("Errore lettura foto"); setDettatoLoading(false); });
     };
 
     return (
@@ -2196,6 +2417,16 @@ export default function Home() {
                 <p style={{ fontWeight:900, fontSize:"16px", marginBottom:"6px" }}>Come vuoi fare il dettato?</p>
                 <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.5)", fontWeight:600 }}>Lex legge il testo ad alta voce — tu scrivi sul quaderno</p>
               </div>
+              {isTrial && !isAdmin && dettatoTipo !== "foto" && (
+                <div style={{ marginBottom:"12px", padding:"10px 14px", borderRadius:"12px", background: dettatoBloccato ? (luce?"rgba(239,68,68,0.12)":"rgba(239,68,68,0.12)") : (luce?"rgba(245,158,11,0.15)":"rgba(245,158,11,0.1)"), border:`1px solid ${dettatoBloccato?(luce?"rgba(239,68,68,0.5)":"rgba(239,68,68,0.4)"):(luce?"rgba(245,158,11,0.4)":"rgba(245,158,11,0.3)")}`, display:"flex", alignItems:"center", gap:"8px" }}>
+                  <span style={{ fontSize:"18px" }}>{dettatoBloccato ? "🔒" : "✍️"}</span>
+                  <p style={{ fontSize:"12px", fontWeight:700, color: dettatoBloccato ? (luce?"#991b1b":"#f87171") : (luce?"#92400e":"#fbbf24"), margin:0 }}>
+                    {dettatoBloccato
+                      ? "Dettato AI esaurito per oggi. Torna domani o abbonati!"
+                      : `${TRIAL_DETTATO_MAX - trialDettatoUsati} dettato AI rimasto oggi (versione prova)`}
+                  </p>
+                </div>
+              )}
               <div style={{ display:"flex", flexDirection:"column", gap:"10px", marginBottom:"18px" }}>
                 {[
                   { tipo:"genera", emoji:"🤖", titolo:"Dettato generato da AI", desc:"Lex crea un testo sugli argomenti del mese", colore:"#ec4899" },
@@ -2939,7 +3170,7 @@ export default function Home() {
         const r = await fetch("/api/quiz-multipla", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ materia: matInfo.label, classe: prog?.label, argomento: rs.argomento }),
+          body: JSON.stringify({ materia: matInfo.label, classe: prog?.label, argomento: rs.argomento, sesso: figlioAttivo?.sesso || "M" }),
         });
         const d = await r.json();
         setRipassoEstateState(prev => ({ ...prev, fase: "quiz", quizDomande: (d.domande || []).slice(0,3), quizRisposte: [] }));
@@ -3176,7 +3407,7 @@ export default function Home() {
             {piano==="trial"&&!isAdmin && <button onClick={() => setScreen("scegli_piano")} style={{ ...S.btn, ...S.btnP }}>Abbonati ora</button>}
           </div>
 
-          <button onClick={() => { setEditFiglioData({ id: f.id, nome: f.nome, classe: f.classe, avatar: f.avatar || "" }); setEditFiglioMsg(""); setScreen("modifica_figlio"); }} style={{ ...S.btn, ...S.btnS, marginTop:"6px" }}>
+          <button onClick={() => { setEditFiglioData({ id: f.id, nome: f.nome, classe: f.classe, avatar: f.avatar || "", sesso: f.sesso || "M" }); setEditFiglioMsg(""); setScreen("modifica_figlio"); }} style={{ ...S.btn, ...S.btnS, marginTop:"6px" }}>
             ✏️ Modifica profilo figlio
           </button>
         </div>
@@ -3190,9 +3421,9 @@ export default function Home() {
     const salvaModifiche = async () => {
       if (!editFiglioData.nome.trim()) return;
       try {
-        await supabase.from("figli").update({ nome: editFiglioData.nome.trim(), classe: editFiglioData.classe, avatar: editFiglioData.avatar }).eq("id", editFiglioData.id);
-        setFigli(prev => prev.map(f => f.id === editFiglioData.id ? { ...f, nome: editFiglioData.nome.trim(), classe: editFiglioData.classe, avatar: editFiglioData.avatar } : f));
-        if (figlioAttivo?.id === editFiglioData.id) setFiglioAttivo(prev => ({ ...prev, nome: editFiglioData.nome.trim(), classe: editFiglioData.classe, avatar: editFiglioData.avatar }));
+        await supabase.from("figli").update({ nome: editFiglioData.nome.trim(), classe: editFiglioData.classe, avatar: editFiglioData.avatar, sesso: editFiglioData.sesso || "M" }).eq("id", editFiglioData.id);
+        setFigli(prev => prev.map(f => f.id === editFiglioData.id ? { ...f, nome: editFiglioData.nome.trim(), classe: editFiglioData.classe, avatar: editFiglioData.avatar, sesso: editFiglioData.sesso || "M" } : f));
+        if (figlioAttivo?.id === editFiglioData.id) setFiglioAttivo(prev => ({ ...prev, nome: editFiglioData.nome.trim(), classe: editFiglioData.classe, avatar: editFiglioData.avatar, sesso: editFiglioData.sesso || "M" }));
         setEditFiglioMsg("saved");
         setTimeout(() => setScreen("famiglia"), 1500);
       } catch { setEditFiglioMsg("error"); }
@@ -3220,6 +3451,17 @@ export default function Home() {
           <div style={{ ...S.card, marginBottom:"16px" }}>
             <p style={{ fontSize:"12px", fontWeight:800, color:"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px" }}>Nome</p>
             <input value={editFiglioData.nome} onChange={e => setEditFiglioData(prev => ({ ...prev, nome: e.target.value }))} style={{ ...S.inp }} placeholder="Nome del figlio" />
+          </div>
+          {/* Sesso */}
+          <div style={{ ...S.card, marginBottom:"16px" }}>
+            <p style={{ fontSize:"12px", fontWeight:800, color:"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px" }}>Bambino o Bambina?</p>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px" }}>
+              {[["M","👦","Bambino"],["F","👧","Bambina"]].map(([val, emoji, label]) => (
+                <button key={val} onClick={() => setEditFiglioData(prev => ({ ...prev, sesso: val }))} style={{ padding:"12px 8px", borderRadius:"12px", background:editFiglioData.sesso===val?"rgba(99,102,241,0.25)":"rgba(255,255,255,0.04)", border:`2px solid ${editFiglioData.sesso===val?"#6366f1":"rgba(255,255,255,0.08)"}`, color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:"4px" }}>
+                  <span style={{ fontSize:"24px" }}>{emoji}</span>{label}
+                </button>
+              ))}
+            </div>
           </div>
           {/* Classe */}
           <div style={{ ...S.card, marginBottom:"20px" }}>
@@ -3337,7 +3579,7 @@ export default function Home() {
         const res = await fetch("/api/interroga-analizza", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ argomento: interrogTopicScelto, materia: mat.label, classe: prog?.label }),
+          body: JSON.stringify({ argomento: interrogTopicScelto, materia: mat.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M" }),
         });
         const d = await res.json();
         if (d.errore) { alert(d.errore); setInterrogFase("carica"); return; }
@@ -3355,7 +3597,7 @@ export default function Home() {
           const res = await fetch("/api/interroga-analizza", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ photo: compressed, materia: mat.label, classe: prog?.label }),
+            body: JSON.stringify({ photo: compressed, materia: mat.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M" }),
           });
           const d = await res.json();
           if (d.errore) { alert(d.errore); setInterrogFase("carica"); return; }
@@ -3412,7 +3654,7 @@ export default function Home() {
         const res = await fetch("/api/interroga-valuta", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ conversazione: nuovaConv, argomenti: interrogArgomenti, materia: mat.label, classe: prog?.label }),
+          body: JSON.stringify({ conversazione: nuovaConv, argomenti: interrogArgomenti, materia: mat.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M" }),
         });
         const d = await res.json();
         if (d.errore) { alert(d.errore); setInterrogFase("domanda"); return; }
@@ -3721,7 +3963,14 @@ export default function Home() {
               <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.5)", fontWeight:600 }}>{email}</p>
               <p style={{ fontSize:"12px", color:piano==="trial"&&!isAdmin?"#f59e0b":isAdmin?"#10b981":"#a78bfa", fontWeight:700, marginTop:"2px" }}>{piano==="trial"&&!isAdmin?`🎁 Trial — ${trialGiorni} giorni`:isAdmin?"👑 Admin — Accesso completo":"💎 Premium"}</p>
           </div>
-          <button onClick={async () => { await supabase.auth.signOut(); setUtente(null); setFigli([]); setFiglioAttivo(null); setScreen("landing"); }} style={{ background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.2)", borderRadius:"10px", padding:"8px 14px", color:"#ef4444", fontFamily:"'Nunito'", fontWeight:700, fontSize:"12px", cursor:"pointer" }}>
+          <button onClick={async () => {
+            await supabase.auth.signOut();
+            setUtente(null); setEmail(""); setFigli([]); setFiglioAttivo(null);
+            setPiano("trial"); setProfiloUtente(null); setTrialGiorni(3);
+            setReferralCode(null); setReferralCount(0); setMesiGratisGuadagnati(0);
+            setStreak(0); setPagamentoFlash(null); setShowWelcomeModal(false);
+            setScreen("landing");
+          }} style={{ background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.2)", borderRadius:"10px", padding:"8px 14px", color:"#ef4444", fontFamily:"'Nunito'", fontWeight:700, fontSize:"12px", cursor:"pointer" }}>
             Esci
           </button>
           <div style={{ display:"none" }}>
@@ -3864,7 +4113,7 @@ export default function Home() {
         })()}
 
 
-        {/* ── Link Legali ── */}
+        {/* ── Note Legali ── */}
         <div style={{ marginTop:"14px", padding:"14px 16px", background: luce ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)", border: luce ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.07)", borderRadius:"14px" }}>
           <p style={{ fontSize:"11px", fontWeight:800, color: luce ? "rgba(0,0,30,0.4)" : "rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"10px" }}>Note Legali</p>
           <div style={{ display:"flex", flexWrap:"wrap", gap:"8px" }}>
@@ -3919,12 +4168,19 @@ export default function Home() {
                     <p key={i} style={{ fontSize:"12px", color:"rgba(239,68,68,0.7)", fontWeight:600, marginBottom: i < 4 ? "4px" : 0 }}>✗ {t}</p>
                   ))}
                 </div>
-                <button onClick={() => {
-                  setPiano("trial");
-                  setTrialGiorni(0);
-                  setShowGestisciAbb(false);
-                  setDisdettaConfermata(false);
-                  alert("Abbonamento disdetto. Hai accesso fino alla fine del periodo pagato.");
+                <button onClick={async () => {
+                  try {
+                    const tok = await getAccessToken();
+                    const r = await fetch("/api/cancel-subscription", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${tok}` },
+                    });
+                    const d = await r.json();
+                    if (d.errore) { alert("Errore: " + d.errore); return; }
+                    setShowGestisciAbb(false);
+                    setDisdettaConfermata(false);
+                    alert("Abbonamento disdetto. Hai accesso fino alla fine del periodo già pagato.");
+                  } catch { alert("Errore di rete. Riprova."); }
                 }} style={{ width:"100%", padding:"13px", background:"rgba(239,68,68,0.15)", border:"1px solid rgba(239,68,68,0.4)", borderRadius:"14px", color:"#f87171", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer", marginBottom:"10px" }}>
                   Sì, disdico l'abbonamento
                 </button>
@@ -4065,7 +4321,7 @@ export default function Home() {
       try {
         const r = await fetch("/api/sfida-velocita", {
           method:"POST", headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({ materia: matInfo.label, classe: prog2?.label, argomento: giocaArgomento, forceNew }),
+          body: JSON.stringify({ materia: matInfo.label, classe: prog2?.label, argomento: giocaArgomento, forceNew, sesso: figlioAttivo?.sesso || "M" }),
         });
         const d = await r.json();
         if (d.errore || !d.domande?.length) { setSvState(null); alert("Errore: " + (d.errore || "nessuna domanda")); return; }
@@ -4218,8 +4474,6 @@ export default function Home() {
     if (svState.fase === "risultato") {
       const recPrev = recordGiochi?.sfida_velocita?.[giocaArgomento] || 0;
       const isRecord = svState.punteggio > recPrev;
-      if (isRecord) { salvaSvRecord(svState.punteggio); addStelle(svState.punteggio * 2); suona("obiettivo"); setMostraCoriandoli(true); setTimeout(() => setMostraCoriandoli(false), 4000); }
-      else { addStelle(svState.punteggio); suona("stelle"); }
 
       const CORIANDOLI_D2 = Array.from({length:50},(_,i)=>({ left:((i*37+7)%100), dur:1.5+((i*13)%15)/10, delay:((i*23)%80)/100, size:8+(i%9), round:i%3!==0, color:['#FFE500','#FF70C8','#00F090','#29C9FF','#6C47FF','#FF8533'][i%6] }));
 
@@ -4256,7 +4510,7 @@ export default function Home() {
       try {
         const r = await fetch("/api/chi-sono", {
           method:"POST", headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({ materia: matInfo.label, classe: prog2?.label, argomento: giocaArgomento }),
+          body: JSON.stringify({ materia: matInfo.label, classe: prog2?.label, argomento: giocaArgomento, sesso: figlioAttivo?.sesso || "M" }),
         });
         const d = await r.json();
         if (d.errore || !d.soggetto) { setCsState(null); alert(d.errore || "Errore. Riprova."); return; }
@@ -4429,7 +4683,7 @@ export default function Home() {
         const r = await fetch("/api/quiz-multipla", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ materia: MATERIE[materia]?.label, classe: prog?.label, argomento: giocaArgomento, forceNew }),
+          body: JSON.stringify({ materia: MATERIE[materia]?.label, classe: prog?.label, argomento: giocaArgomento, forceNew, sesso: figlioAttivo?.sesso || "M" }),
         });
         const d = await r.json();
         if (d.errore) { setMcQuiz([]); setMcLoading(false); return; }
@@ -4617,7 +4871,7 @@ export default function Home() {
       try {
         const r = await fetch("/api/parole-crociate", {
           method:"POST", headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({materia:MATERIE[materia]?.label,classe:prog?.label,argomento:giocaArgomento}),
+          body:JSON.stringify({materia:MATERIE[materia]?.label,classe:prog?.label,argomento:giocaArgomento,sesso:figlioAttivo?.sesso||"M"}),
         });
         const d = await r.json();
         if(d.parole&&d.parole.length>0){ setWordGame(buildCrossword(d.parole)); setWordInputs({}); setWordVerificato(false); }
@@ -5195,7 +5449,7 @@ export default function Home() {
         const r = await fetch("/api/ripasso-genera", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ materia: info.label, classe: prog?.label, argomento: argomentoCorrente }),
+          body: JSON.stringify({ materia: info.label, classe: prog?.label, argomento: argomentoCorrente, sesso: figlioAttivo?.sesso || "M" }),
         });
         const d = await r.json();
         setRipassoQuiz(d.domande || []);
@@ -5450,58 +5704,39 @@ export default function Home() {
 
   // ── PREPARAZIONE ESAME — HUB ─────────────────────────────────
   if (screen === "esame5") {
-    const classeAttiva = esameSubTipo === "media" ? "3ª media" : "5ª elementare";
     const HUB_CARDS = [
       { id:"italiano", emoji:"📝", titolo:"Tema di Italiano", sub:"Traccia + svolgimento + correzione", bg:"linear-gradient(145deg,#FF70C8,#E0008A)", border:"linear-gradient(135deg,#C026D3,#7C3AED)", screen:"esame5_italiano" },
       { id:"matematica", emoji:"🔢", titolo:"Matematica e Scienze", sub:"Problemi scritti con correzione", bg:"linear-gradient(145deg,#FFE500,#FFB300)", border:"linear-gradient(135deg,#F59E0B,#D97706)", screen:"esame5_matematica" },
       { id:"storia", emoji:"📜", titolo:"Storia", sub:"Interrogazione simulata con Lex", bg:"linear-gradient(145deg,#FF9500,#E06000)", border:"linear-gradient(135deg,#C04000,#FF9500)", materia:"storia" },
       { id:"geografia", emoji:"🌍", titolo:"Geografia", sub:"Interrogazione simulata con Lex", bg:"linear-gradient(145deg,#00CC66,#008844)", border:"linear-gradient(135deg,#006633,#00CC66)", materia:"geografia" },
-      ...(esameSubTipo === "media" ? [{ id:"inglese", emoji:"🇬🇧", titolo:"Inglese", sub:"Comprensione e conversazione", bg:"linear-gradient(145deg,#6C47FF,#4A00CC)", border:"linear-gradient(135deg,#3300AA,#6C47FF)", materia:"inglese" }] : []),
+      { id:"inglese", emoji:"🇬🇧", titolo:"Inglese", sub:"Comprensione e conversazione", bg:"linear-gradient(145deg,#6C47FF,#4A00CC)", border:"linear-gradient(135deg,#3300AA,#6C47FF)", materia:"inglese" },
       { id:"orale", emoji:"🎤", titolo:"Colloquio Orale", sub:"Simulazione multidisciplinare", bg:"linear-gradient(145deg,#29C9FF,#007ACC)", border:"linear-gradient(135deg,#0369A1,#075985)", screen:"esame5_orale" },
       { id:"storico", emoji:"📊", titolo:"Le mie Simulazioni", sub:"Storico e progressi", bg:"linear-gradient(145deg,#AA33FF,#6600BB)", border:"linear-gradient(135deg,#4400AA,#AA33FF)", screen:"esame5_storico" },
     ];
     return (
       <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
-        <Head><title>Lexyo — Preparazione Esame</title></Head>
+        <Head><title>Lexyo — Preparazione Esame di 3ª Media</title></Head>
         <div style={{ ...S.hdr, borderBottomColor:"rgba(255,179,0,0.3)" }}>
-          <button onClick={() => esameSubTipo ? setEsameSubTipo(null) : goScreen("home")} style={S.back}>←</button>
+          <button onClick={() => goScreen("home")} style={S.back}>←</button>
           <div style={{ width:"44px", height:"44px", borderRadius:"14px", background:"linear-gradient(145deg,#FFB300,#FF6000)", boxShadow:"0 4px 16px rgba(255,179,0,0.4)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"24px", flexShrink:0 }}>🎓</div>
           <div>
             <p style={{ fontWeight:900, fontSize:"15px" }}>Preparazione Esame</p>
-            <p style={{ fontSize:"11px", color:"#FFB300", fontWeight:700 }}>{esameSubTipo ? `Allenati con Lex — ${classeAttiva}` : "Scegli il tuo esame"}</p>
+            <p style={{ fontSize:"11px", color:"#FFB300", fontWeight:700 }}>Allenati con Lex — 3ª Media</p>
           </div>
         </div>
         <div style={{ flex:1, overflowY:"auto", padding:"20px 16px 100px" }}>
-          {!esameSubTipo ? (
-            <div style={{ display:"flex", flexDirection:"column", gap:"14px" }}>
-              <p style={{ fontSize:"13px", fontWeight:700, color: luce?"rgba(0,0,30,0.5)":"rgba(255,255,255,0.5)", textAlign:"center", marginBottom:"4px" }}>Quale esame vuoi preparare?</p>
-              <button className="hcard" onClick={() => setEsameSubTipo("media")} style={{ width:"100%", padding:"0", borderRadius:"22px", background:"linear-gradient(145deg,#29C9FF,#0088FF,#0044DD)", boxShadow:"0 6px 18px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", cursor:"pointer", "--card-border":"linear-gradient(135deg,#0022CC,#29C9FF)" }}>
-                <div className="card-shine" />
-                <div className="card-content" style={{ padding:"22px 20px", display:"flex", alignItems:"center", gap:"16px" }}>
-                  <div style={{ fontSize:"44px", lineHeight:1, flexShrink:0 }}>🎓</div>
-                  <div style={{ flex:1, textAlign:"left" }}>
-                    <p style={{ fontSize:"17px", fontWeight:900, color:"white", marginBottom:"4px" }}>Esame 3° Media</p>
-                    <p style={{ fontSize:"12px", fontWeight:700, color:"rgba(255,255,255,0.75)" }}>Italiano · Matematica · Colloquio multidisciplinare</p>
-                  </div>
-                  <span style={{ fontSize:"24px", color:"rgba(255,255,255,0.8)", flexShrink:0 }}>→</span>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"13px" }}>
+            {HUB_CARDS.map(c => (
+              <button key={c.id} className="hcard" onClick={() => { if(c.materia){ setEsameInterrMateria(c.materia); setEsameInterrState(null); goScreen("esame5_interrogazione"); } else { goScreen(c.screen); } }} style={{ padding:"22px 14px", borderRadius:"22px", background:c.bg, boxShadow:"0 6px 18px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", textAlign:"left", cursor:"pointer", "--card-border":c.border }}>
+                <div className="card-shine" /><div className="card-depth" />
+                <div className="card-content">
+                  <div style={{ fontSize:"30px", marginBottom:"10px" }}>{c.emoji}</div>
+                  <p style={{ fontSize:"13px", fontWeight:900, color:"white", lineHeight:1.2, marginBottom:"4px" }}>{c.titolo}</p>
+                  <p style={{ fontSize:"10px", color:"rgba(255,255,255,0.65)", fontWeight:700 }}>{c.sub}</p>
                 </div>
-                <div className="card-depth" />
               </button>
-            </div>
-          ) : (
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"13px" }}>
-              {HUB_CARDS.map(c => (
-                <button key={c.id} className="hcard" onClick={() => { if(c.materia){ setEsameInterrMateria(c.materia); setEsameInterrState(null); goScreen("esame5_interrogazione"); } else { goScreen(c.screen); } }} style={{ padding:"22px 14px", borderRadius:"22px", background:c.bg, boxShadow:"0 6px 18px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", textAlign:"left", cursor:"pointer", "--card-border":c.border }}>
-                  <div className="card-shine" /><div className="card-depth" />
-                  <div className="card-content">
-                    <div style={{ fontSize:"30px", marginBottom:"10px" }}>{c.emoji}</div>
-                    <p style={{ fontSize:"13px", fontWeight:900, color:"white", lineHeight:1.2, marginBottom:"4px" }}>{c.titolo}</p>
-                    <p style={{ fontSize:"10px", color:"rgba(255,255,255,0.65)", fontWeight:700 }}>{c.sub}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
+            ))}
+          </div>
         </div>
         <Nav />
       </div>
@@ -5510,7 +5745,7 @@ export default function Home() {
 
   // ── TEMA DI ITALIANO ─────────────────────────────────────────
   if (screen === "esame5_italiano") {
-    const classe = esameSubTipo === "media" ? "3ª media" : "5ª elementare";
+    const classe = "3ª media";
     const it = esameItaliano || {};
 
     const generaTracce = async () => {
@@ -5717,7 +5952,7 @@ export default function Home() {
 
   // ── MATEMATICA E SCIENZE ──────────────────────────────────────
   if (screen === "esame5_matematica") {
-    const classe = esameSubTipo === "media" ? "3ª media" : "5ª elementare";
+    const classe = "3ª media";
     const mat = esameMatematica || {};
 
     const generaProva = async (tipo) => {
@@ -5870,7 +6105,7 @@ export default function Home() {
 
   // ── COLLOQUIO ORALE ───────────────────────────────────────────
   if (screen === "esame5_orale") {
-    const classe = esameSubTipo === "media" ? "3ª media" : "5ª elementare";
+    const classe = "3ª media";
     const or = esameOrale || {};
     const TOTALE_DOMANDE = 8;
 
@@ -6118,7 +6353,7 @@ export default function Home() {
 
   // ── INTERROGAZIONE (Storia / Geografia / Inglese) ────────────────────────
   if (screen === "esame5_interrogazione") {
-    const classe = esameSubTipo === "media" ? "3ª media" : "5ª elementare";
+    const classe = "3ª media";
     const matNome = { storia:"Storia", geografia:"Geografia", inglese:"Inglese" }[esameInterrMateria] || "";
     const matEmoji = { storia:"📜", geografia:"🌍", inglese:"🇬🇧" }[esameInterrMateria] || "📚";
     const matBg = { storia:"linear-gradient(145deg,#FF9500,#E06000)", geografia:"linear-gradient(145deg,#00CC66,#008844)", inglese:"linear-gradient(145deg,#6C47FF,#4A00CC)" }[esameInterrMateria] || "linear-gradient(145deg,#666,#333)";

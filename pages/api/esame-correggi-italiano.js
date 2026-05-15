@@ -14,7 +14,7 @@ export default async function handler(req, res) {
 
   const userContent = foto
     ? [
-        { type: "image", source: { type: "base64", media_type: "image/jpeg", data: foto.replace(/^data:image\/\w+;base64,/, "") } },
+        { type: "image", source: { type: "base64", media_type: (foto.split(";")[0].split(":")[1] || "image/jpeg"), data: foto.split(",")[1] } },
         { type: "text", text: `Analizza attentamente l'immagine della scrittura a mano del bambino. Leggi il testo anche se la scrittura non è perfettamente chiara. Classe: ${classe}. Traccia: ${traccia}\nLivello studente: ${adattivita}` },
       ]
     : [{ type: "text", text: `Classe: ${classe}. Traccia: "${traccia}". Tema scritto: "${testo}"\nLivello studente: ${adattivita}` }];

@@ -1,20 +1,41 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { checkTrialUsage, incrementTrialUsage } from "../../lib/trial-server";
+import { verifyPremium } from "../../lib/verify-premium";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+export const config = { api: { bodyParser: { sizeLimit: "10mb" } } };
+
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { photo, materia, classe } = req.body;
+  const { photo, materia, classe, sesso, fingerprint, accessToken } = req.body;
+  const bambino = sesso === "F" ? "bambina" : "bambino";
+
+  const isPremium = await verifyPremium(accessToken);
+
+  if (!isPremium) {
+    const check = await checkTrialUsage(fingerprint, "sblocca");
+    if (!check.consentito) {
+      return res.status(429).json({
+        errore: "Hai già sbloccato 3 soluzioni oggi. Torna domani oppure abbonati per soluzioni illimitate!",
+        trial_esaurito: true,
+      });
+    }
+  }
+
+  if (!photo || !photo.startsWith("data:image/")) {
+    return res.status(400).json({ risposta: "Immagine non valida. Riprova con una foto diversa." });
+  }
 
   try {
     const base64 = photo.split(",")[1];
     const mediaType = photo.split(";")[0].split(":")[1];
     const response = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
+      model: "claude-sonnet-4-6",
       max_tokens: 500,
       system: [{
         type: "text",
-        text: `Sei Lexyo, insegnante di ${materia} per la ${classe} italiana. Mostra la soluzione completa spiegata passo per passo. Lo studente ha già provato — ora merita la spiegazione completa. Spiega PERCHÉ ogni passaggio è giusto. Linguaggio semplice per bambini. In italiano.`,
+        text: `Sei Lexyo, insegnante di ${materia} per la ${classe} italiana. Mostra la soluzione completa spiegata passo per passo. Il/La ${bambino} ha già provato — ora merita la spiegazione completa. Spiega PERCHÉ ogni passaggio è giusto. Linguaggio semplice per ${bambino}. In italiano.`,
         cache_control: { type: "ephemeral" }
       }],
       messages: [{
@@ -25,9 +46,11 @@ export default async function handler(req, res) {
         ]
       }],
     });
+
+    if (!isPremium) await incrementTrialUsage(fingerprint, "sblocca");
     res.json({ risposta: response.content[0].text });
   } catch (e) {
     console.error("ERRORE SOLUZIONE:", e.message);
-    res.status(500).json({ risposta: `Errore: ${e.message}` });
+    res.status(500).json({ risposta: "Errore temporaneo. Riprova!" });
   }
 }

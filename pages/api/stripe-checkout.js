@@ -12,7 +12,7 @@ export default async function handler(req, res) {
       payment_method_types: ["card"],
       mode: "subscription",
       customer_email: email || undefined,
-      line_items: [{ price: "price_1TWIK7RURq2adIJauxgxMGIV", quantity: 1 }],
+      line_items: [{ price: process.env.STRIPE_PRICE_ID || "price_1TWIK7RURq2adIJauxgxMGIV", quantity: 1 }],
       subscription_data: { trial_period_days: 3 },
       success_url: "https://app.lexyo.it?pagamento=successo",
       cancel_url: "https://app.lexyo.it?pagamento=annullato",

@@ -10,6 +10,8 @@ export default async function handler(req, res) {
 
   const adattivita = getAdattivita(classe);
 
+  if (!storico?.length) return res.status(400).json({ errore: "Nessun colloquio da valutare." });
+
   const storicoTesto = storico.map((s, i) =>
     `D${i+1} [${s.materia}]: ${s.domanda}\nR: ${s.risposta}`
   ).join("\n\n");

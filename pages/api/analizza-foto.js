@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getAdattivita } from "../../lib/adattivita";
 import { checkTrialUsage, incrementTrialUsage } from "../../lib/trial-server";
+import { verifyPremium } from "../../lib/verify-premium";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -8,11 +9,15 @@ export const config = { api: { bodyParser: { sizeLimit: "10mb" } } };
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { photo, materia, classe, fase, messaggi, photoOriginale, fingerprint, isTrial } = req.body;
+  const { photo, materia, classe, fase, messaggi, photoOriginale, fingerprint, accessToken, sesso } = req.body;
   const adattivita = getAdattivita(classe);
+  const bambino = sesso === "F" ? "bambina" : "bambino";
+  const ilBambino = sesso === "F" ? "la bambina" : "il bambino";
+  const delBambino = sesso === "F" ? "della bambina" : "del bambino";
+  const alBambino = sesso === "F" ? "alla bambina" : "al bambino";
 
-  // ── VERIFICA TRIAL SERVER-SIDE ────────────────────────────────────────────
-  if (isTrial && fase === "analisi") {
+  const isPremium = await verifyPremium(accessToken);
+  if (!isPremium && fase === "analisi") {
     const check = await checkTrialUsage(fingerprint, "foto");
     if (!check.consentito) {
       return res.status(429).json({
@@ -21,6 +26,10 @@ export default async function handler(req, res) {
         trial_esaurito: true,
       });
     }
+  }
+
+  if (!photo || !photo.startsWith("data:image/")) {
+    return res.status(400).json({ risposta: "Immagine non valida. Riprova con una foto diversa.", bloccata: true });
   }
 
   try {
@@ -36,7 +45,7 @@ export default async function handler(req, res) {
           type: "text",
           text: `Sei un sistema di sicurezza per un'app scolastica. Analizza la foto e rispondi con UNA SOLA PAROLA:
 - "SCOLASTICO" se la foto mostra: pagine di libri, quaderni, esercizi scritti, testi scolastici, illustrazioni didattiche, ritratti storici stampati su libri, mappe, grafici, formule
-- "PERSONALE" se la foto mostra: selfie, bambini reali fotografati, persone in ambienti privati, foto di famiglia, foto non scolastiche
+- "PERSONALE" se la foto mostra: selfie, bambini/bambine reali fotografati, persone in ambienti privati, foto di famiglia, foto non scolastiche
 Rispondi SOLO con: SCOLASTICO oppure PERSONALE`,
           cache_control: { type: "ephemeral" }
         }],
@@ -49,7 +58,7 @@ Rispondi SOLO con: SCOLASTICO oppure PERSONALE`,
       const risultato = check.content[0].text.trim().toUpperCase();
       if (risultato.includes("PERSONALE")) {
         return res.json({
-          risposta: "⚠️ Foto non valida\n\nPuoi caricare solo foto di:\n📚 Pagine di libri\n📝 Quaderni con esercizi\n📖 Testi scolastici\n\nNon caricare foto di persone o bambini.",
+          risposta: "⚠️ Foto non valida\n\nPuoi caricare solo foto di:\n📚 Pagine di libri\n📝 Quaderni con esercizi\n📖 Testi scolastici\n\nNon caricare foto di persone o bambini/bambine.",
           fase: "bloccata",
           bloccata: true
         });
@@ -66,7 +75,7 @@ Guardi la foto di un esercizio. Devi:
 1. Spiegare in modo CHIARO e SEMPLICE il tipo di esercizio e come si risolve
 2. NON dare la risposta finale
 3. Fare UNA sola domanda sul primo passo
-Linguaggio caldo, semplice, per bambini. Emoji moderate. In italiano.
+Linguaggio caldo, semplice, per ${bambino}. Emoji moderate. In italiano.
 Livello studente: ${adattivita}
 Formato risposta:
 🎯 [Tipo di esercizio]
@@ -77,7 +86,7 @@ Formato risposta:
           { type: "text", text: "Analizza questo esercizio e spiegami come si fa." }
         ]}],
       });
-      if (isTrial) await incrementTrialUsage(fingerprint, "foto");
+      if (!isPremium) await incrementTrialUsage(fingerprint, "foto");
       return res.json({ risposta: response.content[0].text, fase: "domande" });
     }
 
@@ -88,7 +97,7 @@ Formato risposta:
         model: "claude-haiku-4-5-20251001",
         max_tokens: 300,
         system: [{ type: "text", text: `Sei Lexyo, insegnante di ${materia} per la ${classe} italiana.
-Stai facendo domande al bambino per verificare se ha capito.
+Stai facendo domande ${alBambino} per verificare se ha capito.
 REGOLE:
 - Conta internamente le risposte corrette
 - Se sbaglia: spiega gentilmente e rifai la domanda in modo diverso
@@ -113,12 +122,12 @@ Livello studente: ${adattivita}`, cache_control: { type: "ephemeral" } }],
       const response = await client.messages.create({
         model: "claude-sonnet-4-6",
         max_tokens: 550,
-        system: [{ type: "text", text: `Sei Lex, un professore AI simpatico e incoraggiante per bambini italiani di ${classe}.
+        system: [{ type: "text", text: `Sei Lex, un professore AI simpatico e incoraggiante per ${bambino} italiano/a di ${classe}.
 Analizza questa foto di un compito estivo assegnato dalla scuola.
 Prima dimmi in 1-2 frasi semplici di cosa si tratta il compito.
 Poi svolgi il compito passo per passo in modo chiaro e dettagliato.
 ${extra}
-Sii sempre positivo e incoraggiante — mai scoraggiare il bambino.
+Sii sempre positivo e incoraggiante — mai scoraggiare ${ilBambino}.
 Alla fine scrivi esattamente: "Hai capito? Dimmi se vuoi che ti spiego qualcosa in modo diverso! 😊"
 Livello studente: ${adattivita}`, cache_control: { type: "ephemeral" } }],
         messages: [{ role: "user", content: [
@@ -131,13 +140,16 @@ Livello studente: ${adattivita}`, cache_control: { type: "ephemeral" } }],
 
     // ── CORREZIONE QUADERNO (Sonnet: confronto due immagini scritte a mano) ─
     if (fase === "correzione") {
+      if (!photoOriginale || !photoOriginale.startsWith("data:image/")) {
+        return res.status(400).json({ errore: "Immagine originale non valida." });
+      }
       const b64orig = photoOriginale.split(",")[1];
       const mtOrig = photoOriginale.split(";")[0].split(":")[1];
       const response = await client.messages.create({
         model: "claude-sonnet-4-6",
         max_tokens: 400,
         system: [{ type: "text", text: `Sei Lexyo, insegnante di ${materia} per la ${classe} italiana.
-Il bambino ha fatto l'esercizio sul quaderno. Correggi il suo lavoro:
+${ilBambino.charAt(0).toUpperCase()+ilBambino.slice(1)} ha fatto l'esercizio sul quaderno. Correggi il suo lavoro:
 1. Se ci sono errori: spiegali in modo CHIARO e GENTILE
 2. Se è tutto giusto: complimentati calorosamente
 3. Alla fine scrivi sempre: "Ora puoi vedere la soluzione completa! 🔓"
@@ -151,7 +163,7 @@ Livello studente: ${adattivita}`, cache_control: { type: "ephemeral" } }],
           { role: "assistant", content: "Ho visto l'esercizio originale." },
           { role: "user", content: [
             { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
-            { type: "text", text: "Ho fatto l'esercizio sul quaderno. Puoi correggerlo?" }
+            { type: "text", text: `Ho fatto l'esercizio sul quaderno. Puoi correggerlo?` }
           ]}
         ],
       });

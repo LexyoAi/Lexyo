@@ -1,47 +1,62 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getAdattivita } from "../../lib/adattivita";
-import { cacheGetOrFetch, cacheGet, cacheAddVariant, ck, randomPick } from "../../lib/cache";
+import { cacheGetOrFetch, cacheAddVariant, ck } from "../../lib/cache";
+import { checkTrialUsage, incrementTrialUsage } from "../../lib/trial-server";
+import { verifyPremium } from "../../lib/verify-premium";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const MAX_VARIANTS = 5;
-const TTL = 48 * 60 * 60 * 1000; // 48h — variety builds up over days
+const TTL = 48 * 60 * 60 * 1000;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { classe, materia, argomento, difficolta = "media", tipo = "dettato", forceNew } = req.body;
+  const { classe, materia, argomento, difficolta = "media", tipo = "dettato", forceNew, fingerprint, accessToken, sesso } = req.body;
   const adattivita = getAdattivita(classe);
 
-  const key = ck("dettato", classe, materia, argomento, difficolta, tipo);
-
-  // forceNew bypasses cache to get a fresh variant
-  if (forceNew) {
-    try {
-      const dati = await genera(client, classe, materia, argomento, difficolta, tipo, adattivita);
-      cacheAddVariant(key, dati, MAX_VARIANTS, TTL);
-      res.setHeader("X-Cache", "FORCE");
-      return res.json({ ...dati, tipo });
-    } catch (e) {
-      console.error("ERRORE GENERA (forceNew):", e.message);
-      return res.status(500).json({ errore: e.message });
+  const isPremium = await verifyPremium(accessToken);
+  if (!isPremium) {
+    const check = await checkTrialUsage(fingerprint, "dettato");
+    if (!check.consentito) {
+      return res.status(429).json({
+        errore: "Hai già generato il tuo dettato oggi. Torna domani oppure abbonati per dettati illimitati!",
+        trial_esaurito: true,
+      });
     }
   }
 
-  try {
-    const { data: dati, hit } = await cacheGetOrFetch(key, () =>
-      genera(client, classe, materia, argomento, difficolta, tipo, adattivita),
-      MAX_VARIANTS, TTL
-    );
+  const key = ck("dettato", classe, materia, argomento, difficolta, tipo);
 
-    res.setHeader("X-Cache", hit ? "HIT" : "MISS");
-    res.json({ ...dati, tipo });
+  try {
+    let risposta;
+
+    if (forceNew) {
+      const dati = await genera(client, classe, materia, argomento, difficolta, tipo, adattivita, sesso);
+      cacheAddVariant(key, dati, MAX_VARIANTS, TTL);
+      res.setHeader("X-Cache", "FORCE");
+      risposta = { ...dati, tipo };
+    } else {
+      const { data: dati, hit } = await cacheGetOrFetch(key, () =>
+        genera(client, classe, materia, argomento, difficolta, tipo, adattivita, sesso),
+        MAX_VARIANTS, TTL
+      );
+      res.setHeader("X-Cache", hit ? "HIT" : "MISS");
+      risposta = { ...dati, tipo };
+    }
+
+    if (!isPremium) await incrementTrialUsage(fingerprint, "dettato");
+    return res.json(risposta);
   } catch (e) {
     console.error("ERRORE GENERA:", e.message);
     res.status(500).json({ errore: e.message });
   }
 }
 
-async function genera(client, classe, materia, argomento, difficolta, tipo, adattivita) {
+async function genera(client, classe, materia, argomento, difficolta, tipo, adattivita, sesso) {
+  const bambino = sesso === "F" ? "bambina" : "bambino";
+  const ilBambino = sesso === "F" ? "la bambina" : "il bambino";
+  const delBambino = sesso === "F" ? "della bambina" : "del bambino";
+  const alBambino = sesso === "F" ? "alla bambina" : "al bambino";
   let prompt = "";
 
   if (tipo === "dettato") {
@@ -51,13 +66,13 @@ Il testo deve:
 - Contenere naturalmente concetti legati all'argomento "${argomento}"
 - Avere vocabolario appropriato per la ${classe}
 - Includere varie difficoltà ortografiche tipiche del programma (apostrofi, accenti, doppie, maiuscole)
-- Essere interessante e non noioso per un bambino/ragazzo
+- Essere interessante e non noioso per ${ilBambino}
 Scrivi SOLO il testo del dettato, senza titolo, senza introduzione, senza spiegazioni. Solo il testo.`;
   } else if (tipo === "storia") {
     prompt = `Crea una storia originale e coinvolgente per la ${classe} italiana che includa naturalmente i concetti di "${argomento}" della materia ${materia}.
 La storia deve:
 - Essere adatta all'età della ${classe}
-- Avere personaggi simpatici con cui i bambini/ragazzi si identificano
+- Avere personaggi simpatici con cui ${ilBambino} si identifica
 - Incorporare i concetti di "${argomento}" in modo naturale nella trama, non come spiegazione
 - Essere di lunghezza media: 10-15 righe
 - Avere un finale positivo e una piccola morale

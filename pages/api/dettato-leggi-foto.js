@@ -38,6 +38,9 @@ Se la foto non contiene testo leggibile, scrivi solo: "NESSUN_TESTO"`,
     if (testoEstratto === "NESSUN_TESTO" || testoEstratto.length < 5) {
       return res.json({ errore: "Non riesco a leggere il testo nella foto. Riprova con una foto più nitida." });
     }
+    if (testoEstratto.length > 5000) {
+      return res.json({ errore: "Il testo nella foto è troppo lungo per il dettato. Usa una sezione più corta." });
+    }
 
     // Step 2 — TTS con cache: stesso testo estratto → stesso audio (no doppia chiamata ElevenLabs)
     const audio = await tts(testoEstratto, VOICE_DETTATO);

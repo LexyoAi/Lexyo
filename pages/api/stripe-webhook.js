@@ -30,10 +30,26 @@ async function getEmailFromCustomer(customerId) {
 }
 
 async function upsertProfilo(email, fields) {
-  const { error } = await supabase
+  // First find canonical row to preserve is_admin and other columns
+  const { data: existing } = await supabase
     .from("profili")
-    .upsert({ email, ...fields }, { onConflict: "email" });
-  if (error) console.error("Supabase upsert error:", error.message);
+    .select("email")
+    .ilike("email", email)
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await supabase
+      .from("profili")
+      .update(fields)
+      .eq("email", existing.email);
+    if (error) console.error("Supabase update error:", error.message);
+  } else {
+    // Profile doesn't exist (subscriber opened Stripe before the app)
+    const { error } = await supabase
+      .from("profili")
+      .insert({ email: email.trim().toLowerCase(), ...fields });
+    if (error) console.error("Supabase insert error:", error.message);
+  }
 }
 
 export default async function handler(req, res) {
@@ -95,7 +111,39 @@ export default async function handler(req, res) {
         break;
       }
 
+      case "invoice.payment_succeeded": {
+        // Rinnovo pagato — riattiva abbonamento
+        const email = await getEmailFromCustomer(obj.customer);
+        if (email && obj.subscription) {
+          try {
+            const sub = await stripe.subscriptions.retrieve(obj.subscription);
+            await upsertProfilo(email, {
+              abbonamento_attivo: true,
+              abbonamento_scadenza: new Date(sub.current_period_end * 1000).toISOString(),
+              pagamento_fallito: false,
+            });
+          } catch (err) {
+            console.error("Errore recupero subscription:", err.message);
+          }
+        }
+        break;
+      }
+
+      case "customer.subscription.updated": {
+        const email = await getEmailFromCustomer(obj.customer);
+        if (email) {
+          const attivo = obj.status === "active" || obj.status === "trialing";
+          await upsertProfilo(email, {
+            abbonamento_attivo: attivo,
+            abbonamento_scadenza: new Date(obj.current_period_end * 1000).toISOString(),
+          });
+        }
+        break;
+      }
+
       case "invoice.payment_failed": {
+        // Setta solo il flag di avviso — Stripe ha retry automatici per 7-14 giorni
+        // abbonamento_attivo rimane true durante i retry
         const email = await getEmailFromCustomer(obj.customer);
         if (email) {
           await upsertProfilo(email, {

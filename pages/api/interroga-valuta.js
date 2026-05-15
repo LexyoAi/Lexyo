@@ -7,8 +7,13 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { conversazione, argomenti, materia, classe } = req.body;
+  const { conversazione, argomenti, materia, classe, sesso } = req.body;
+  const bambino = sesso === "F" ? "bambina" : "bambino";
+  const ilBambino = sesso === "F" ? "la bambina" : "il bambino";
+  const delBambino = sesso === "F" ? "della bambina" : "del bambino";
+  const alBambino = sesso === "F" ? "alla bambina" : "al bambino";
 
+  if (!Array.isArray(conversazione)) return res.status(400).json({ errore: "conversazione non valida" });
   const adattivita = getAdattivita(classe);
   const domandeFatte = conversazione.length;
   const maxDomande = (classe || "").toLowerCase().includes("media") ? 5 : 4;
@@ -19,7 +24,7 @@ export default async function handler(req, res) {
       .map((c, i) => `D${i + 1}: ${c.domanda}\nR${i + 1}: ${c.risposta}`)
       .join("\n\n");
 
-    const systemPrompt = `Sei Lex, insegnante AI simpatico e incoraggiante per bambini italiani di ${classe}.
+    const systemPrompt = `Sei Lex, insegnante AI simpatico e incoraggiante per ${bambino} italiano/a di ${classe}.
 Valuti le risposte durante interrogazioni orali di ${materia}.
 Argomenti interrogazione: ${(argomenti || []).join(", ")}.
 Rispondi SOLO con JSON valido. Niente testo fuori dal JSON. Niente markdown. Niente backtick.
