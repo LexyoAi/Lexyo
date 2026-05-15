@@ -212,7 +212,7 @@ export default function Landing({ onEntra }) {
       {/* NAV */}
       <nav className="nav-wrap" style={{ position:"fixed", top:0, left:0, right:0, zIndex:100, padding:"0 28px", height:"64px", display:"flex", justifyContent:"space-between", alignItems:"center", background: scrollY>40 ? "rgba(255,255,255,0.96)" : "rgba(255,255,255,0.85)", backdropFilter:"blur(20px)", borderBottom: scrollY>40 ? "1px solid rgba(99,102,241,0.1)" : "1px solid transparent", boxShadow: scrollY>40 ? "0 2px 20px rgba(0,0,0,0.06)" : "none", transition:"all 0.3s ease" }}>
         <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-          <img src="/lex.png" alt="Lex" style={{ width:"36px", height:"36px", objectFit:"contain" }} />
+          <img src="/icons/icon-192.png" alt="Lex" style={{ width:"36px", height:"36px", objectFit:"contain" }} />
           <span style={{ fontWeight:900, fontSize:"22px", letterSpacing:"-0.5px", color:"#0D0F2B" }}>Lexyo</span>
           <span className="nav-logo-badge" style={{ background:"rgba(99,102,241,0.1)", border:"1px solid rgba(99,102,241,0.2)", borderRadius:"20px", padding:"2px 10px", fontSize:"11px", fontWeight:700, color:"#6366f1" }}>🇮🇹 Made in Italy</span>
         </div>
@@ -244,7 +244,7 @@ export default function Landing({ onEntra }) {
           <div className="hero-lex" style={{ display:"flex", justifyContent:"center", alignItems:"center", animation:"fadeUp 0.8s ease 0.1s both" }}>
             <div style={{ position:"relative" }}>
               <div style={{ position:"absolute", inset:"-32px", borderRadius:"50%", background:"radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)", animation:"glow 4s ease-in-out infinite" }} />
-              <img src="/lex-prof.png" alt="Lex Professore" style={{ width:"clamp(220px, 32vw, 380px)", height:"clamp(220px, 32vw, 380px)", objectFit:"contain", display:"block", animation:"lexProfIdle 5s ease-in-out infinite, lexGlow 5s ease-in-out infinite", transformOrigin:"bottom center", position:"relative", zIndex:1 }} />
+              <img src="/Lex-prof.png" alt="Lex Professore" style={{ width:"clamp(220px, 32vw, 380px)", height:"clamp(220px, 32vw, 380px)", objectFit:"contain", display:"block", animation:"lexProfIdle 5s ease-in-out infinite, lexGlow 5s ease-in-out infinite", transformOrigin:"bottom center", position:"relative", zIndex:1 }} />
             </div>
           </div>
 
@@ -303,7 +303,7 @@ export default function Landing({ onEntra }) {
       <section style={{ padding:"60px 24px 32px", maxWidth:"880px", margin:"0 auto" }}>
         <div id="problema" data-animate className={V("problema")} style={{ background:"linear-gradient(135deg,rgba(239,68,68,0.18),rgba(220,38,38,0.10))", border:"2px solid rgba(239,68,68,0.55)", borderRadius:"28px", padding:"52px 40px", position:"relative", overflow:"hidden", textAlign:"center", boxShadow:"0 8px 48px rgba(239,68,68,0.18)" }}>
           <div style={{ position:"absolute", inset:0, background:"radial-gradient(ellipse 70% 60% at 50% 40%, rgba(239,68,68,0.14) 0%, transparent 70%)", pointerEvents:"none" }} />
-          <img src="/lex-prof.png" alt="Lex" style={{ position:"absolute", bottom:"-10px", right:"20px", width:"130px", height:"130px", objectFit:"contain", opacity:0.75, animation:"lexWiggle 6s ease-in-out infinite", transformOrigin:"bottom center" }} />
+          <img src="/Lex-prof.png" alt="Lex" style={{ position:"absolute", bottom:"-10px", right:"20px", width:"130px", height:"130px", objectFit:"contain", opacity:0.75, animation:"lexWiggle 6s ease-in-out infinite", transformOrigin:"bottom center" }} />
           <div style={{ maxWidth:"580px", margin:"0 auto", position:"relative", zIndex:1 }}>
             <div style={{ display:"inline-flex", alignItems:"center", gap:"10px", background:"rgba(239,68,68,0.18)", border:"2px solid rgba(239,68,68,0.5)", borderRadius:"100px", padding:"8px 22px", marginBottom:"22px" }}>
               <span style={{ fontSize:"18px" }}>⚠️</span>
@@ -346,7 +346,7 @@ export default function Landing({ onEntra }) {
       <section style={{ padding:"0 24px 60px", maxWidth:"880px", margin:"0 auto" }}>
         <div id="merita" data-animate className={V("merita")} style={{ background:"linear-gradient(135deg,#0D0F2B,#1a1040)", border:"1px solid rgba(99,102,241,0.35)", borderRadius:"28px", padding:"56px 40px", textAlign:"center", position:"relative", overflow:"hidden", boxShadow:"0 12px 56px rgba(13,15,43,0.22)" }}>
           <div style={{ position:"absolute", inset:0, background:"radial-gradient(ellipse 80% 60% at 50% 50%, rgba(99,102,241,0.2) 0%, transparent 70%)", pointerEvents:"none" }} />
-          <img src="/lex-prof.png" alt="Lex" style={{ width:"clamp(90px,14vw,130px)", objectFit:"contain", margin:"0 auto 20px", display:"block", animation:"lexProfIdle 5s ease-in-out infinite", transformOrigin:"bottom center", position:"relative", zIndex:1 }} />
+          <img src="/Lex-prof.png" alt="Lex" style={{ width:"clamp(90px,14vw,130px)", objectFit:"contain", margin:"0 auto 20px", display:"block", animation:"lexProfIdle 5s ease-in-out infinite", transformOrigin:"bottom center", position:"relative", zIndex:1 }} />
           <h2 style={{ fontSize:"clamp(28px, 5vw, 52px)", fontWeight:900, letterSpacing:"-2px", lineHeight:1.12, color:"white", marginBottom:"16px", position:"relative", zIndex:1 }}>
             Tuo figlio merita di imparare,<br/>
             <span style={{ background:"linear-gradient(135deg,#a78bfa,#6366f1)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>non di copiare.</span>
@@ -381,7 +381,7 @@ export default function Landing({ onEntra }) {
                 <div style={{ width:"56px", height:"56px", borderRadius:"16px", background:`linear-gradient(135deg,${f.colore}30,${f.colore}1a)`, display:"flex", alignItems:"center", justifyContent:"center", border:`1.5px solid ${f.colore}50`, boxShadow:`0 4px 16px ${f.colore}28` }}>
                   <f.Icon size={26} color={f.colore} strokeWidth={2.2} />
                 </div>
-                <span style={{ background:`${f.colore}18`, border:`1.5px solid ${f.colore}40`, borderRadius:"20px", padding:"4px 12px", fontSize:"11px", fontWeight:800, color:f.colore, letterSpacing:"0.3px" }}>{f.tag}</span>
+                <span style={{ background:f.colore, borderRadius:"20px", padding:"4px 12px", fontSize:"11px", fontWeight:800, color:"white", letterSpacing:"0.3px" }}>{f.tag}</span>
               </div>
               <h3 style={{ fontWeight:900, fontSize:"17px", marginBottom:"10px", letterSpacing:"-0.4px", color:"#0D0F2B" }}>{f.titolo}</h3>
               <p style={{ fontSize:"14px", color:"#44476A", lineHeight:1.7 }}>{f.desc}</p>
@@ -397,7 +397,7 @@ export default function Landing({ onEntra }) {
       <div id="come-funziona" data-animate className={V("come-funziona")} style={{ textAlign:"center" }}>
         <div style={{ position:"relative", display:"inline-block", marginBottom:"8px" }}>
           <div style={{ position:"absolute", inset:"-20px", borderRadius:"50%", background:"radial-gradient(circle,rgba(99,102,241,0.1) 0%,transparent 70%)", pointerEvents:"none" }} />
-          <img src="/lex-prof.png" alt="Lex" style={{ width:"clamp(80px,12vw,110px)", objectFit:"contain", display:"block", margin:"0 auto", animation:"lexProfIdle 5s ease-in-out infinite", transformOrigin:"bottom center", position:"relative", zIndex:1 }} />
+          <img src="/Lex-prof.png" alt="Lex" style={{ width:"clamp(80px,12vw,110px)", objectFit:"contain", display:"block", margin:"0 auto", animation:"lexProfIdle 5s ease-in-out infinite", transformOrigin:"bottom center", position:"relative", zIndex:1 }} />
         </div>
         <p style={{ fontSize:"12px", fontWeight:800, color:"#6366f1", textTransform:"uppercase", letterSpacing:"2px", marginBottom:"12px" }}>Come funziona</p>
         <h2 style={{ fontSize:"clamp(24px,4vw,40px)", fontWeight:900, letterSpacing:"-1.2px", lineHeight:1.1, color:"#0D0F2B" }}>
@@ -546,7 +546,7 @@ export default function Landing({ onEntra }) {
           <div className="gioca-header">
             <div style={{ position:"relative", flexShrink:0 }}>
               <div style={{ position:"absolute", inset:"-16px", borderRadius:"50%", background:"radial-gradient(circle,rgba(99,102,241,0.12) 0%,transparent 70%)", pointerEvents:"none" }} />
-              <img src="/lex-prof.png" alt="Lex" style={{ width:"clamp(90px,13vw,120px)", objectFit:"contain", display:"block", animation:"lexProfIdle 5s ease-in-out infinite 0.5s", transformOrigin:"bottom center", position:"relative", zIndex:1 }} />
+              <img src="/Lex-prof.png" alt="Lex" style={{ width:"clamp(90px,13vw,120px)", objectFit:"contain", display:"block", animation:"lexProfIdle 5s ease-in-out infinite 0.5s", transformOrigin:"bottom center", position:"relative", zIndex:1 }} />
             </div>
             <div className="gioca-header-text">
               <div style={{ display:"inline-flex", alignItems:"center", gap:"8px", background:"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.18)", borderRadius:"20px", padding:"6px 16px", marginBottom:"16px" }}>
@@ -794,7 +794,7 @@ export default function Landing({ onEntra }) {
       {scrollY > 500 && (
         <div style={{ position:"fixed", bottom:0, left:0, right:0, background:"rgba(13,15,43,0.97)", backdropFilter:"blur(24px)", borderTop:"1px solid rgba(99,102,241,0.3)", padding:"12px 20px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", zIndex:300, gap:"12px", boxShadow:"0 -8px 40px rgba(0,0,0,0.2)" }}>
           <div style={{ display:"flex", alignItems:"center", gap:"10px", minWidth:0 }}>
-            <img src="/lex.png" alt="Lexyo" style={{ width:"36px", height:"36px", objectFit:"contain", flexShrink:0 }} />
+            <img src="/icons/icon-192.png" alt="Lexyo" style={{ width:"36px", height:"36px", objectFit:"contain", flexShrink:0 }} />
             <div>
               <p style={{ fontWeight:900, fontSize:"14px", margin:0, color:"white" }}>📱 Installa Lexyo — è gratis</p>
               <p className="sticky-sub" style={{ fontSize:"11px", color:"rgba(255,255,255,0.4)", margin:0 }}>Nessun App Store · Funziona offline</p>
@@ -816,7 +816,7 @@ export default function Landing({ onEntra }) {
       {/* FOOTER */}
       <footer style={{ borderTop:"1px solid rgba(99,102,241,0.1)", padding:"28px 24px", maxWidth:"880px", margin:"0 auto", display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:"14px", background:"#F7F8FF" }}>
         <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-          <img src="/lex.png" alt="Lex" style={{ width:"28px", height:"28px", objectFit:"contain" }} />
+          <img src="/icons/icon-192.png" alt="Lex" style={{ width:"28px", height:"28px", objectFit:"contain" }} />
           <span style={{ fontWeight:800, fontSize:"16px", color:"#0D0F2B" }}>Lexyo</span>
           <span style={{ fontSize:"12px", color:"#8892AE" }}>© 2026 · Made with ❤️ in Italy 🇮🇹</span>
         </div>
