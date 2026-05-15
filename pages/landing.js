@@ -196,7 +196,7 @@ export default function Landing({ onEntra }) {
         @media(max-width:480px){
           .nav-wrap { padding:0 12px !important; }
           .nav-logo-badge { display:none !important; }
-          .hero-section { padding:76px 14px 40px !important; min-height:auto !important; }
+          .hero-section { padding:76px 16px 48px !important; min-height:auto !important; display:block !important; }
           .confronto-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
           .sticky-sub { display:none; }
           .sec, .sec-sm { padding:0 14px; }
@@ -231,7 +231,7 @@ export default function Landing({ onEntra }) {
       )}
 
       {/* ── HERO ── */}
-      <section className="hero-section" style={{ minHeight:"100vh", display:"flex", alignItems:"center", padding:"100px 24px 60px", background:"#ffffff", position:"relative", overflow:"hidden" }}>
+      <section className="hero-section" style={{ minHeight:"100vh", display:"flex", alignItems:"flex-start", justifyContent:"center", padding:"100px 24px 60px", background:"#ffffff", position:"relative", overflow:"hidden" }}>
         {/* sfondo decorativo */}
         <div style={{ position:"absolute", top:0, right:0, width:"50%", height:"100%", background:"radial-gradient(ellipse 80% 70% at 85% 40%, rgba(99,102,241,0.07) 0%, transparent 70%)", pointerEvents:"none" }} />
         <div style={{ position:"absolute", bottom:0, left:0, width:"40%", height:"60%", background:"radial-gradient(ellipse 60% 60% at 20% 80%, rgba(139,92,246,0.05) 0%, transparent 70%)", pointerEvents:"none" }} />
