@@ -457,12 +457,12 @@ export default function Home() {
               setReferralCode(profilo.referral_code);
             } else {
               const code = generateReferralCode();
-              await supabase.from("profili").upsert({ email: session.user.email, referral_code: code }, { onConflict: "email" });
+              try { await supabase.from("profili").upsert({ email: session.user.email, referral_code: code }, { onConflict: "email" }); } catch {}
               setReferralCode(code);
             }
           } else {
             const code = generateReferralCode();
-            await supabase.from("profili").upsert({ email: session.user.email, referral_code: code }, { onConflict: "email" });
+            try { await supabase.from("profili").upsert({ email: session.user.email, referral_code: code }, { onConflict: "email" }); } catch {}
             setReferralCode(code);
           }
           setScreen("home");
@@ -646,12 +646,12 @@ export default function Home() {
               setReferralCode(profilo.referral_code);
             } else {
               const code = generateReferralCode();
-              await supabase.from("profili").upsert({ email: data.user.email, referral_code: code }, { onConflict: "email" });
+              try { await supabase.from("profili").upsert({ email: data.user.email, referral_code: code }, { onConflict: "email" }); } catch {}
               setReferralCode(code);
             }
           } else {
             const code = generateReferralCode();
-            await supabase.from("profili").upsert({ email: data.user.email, referral_code: code }, { onConflict: "email" });
+            try { await supabase.from("profili").upsert({ email: data.user.email, referral_code: code }, { onConflict: "email" }); } catch {}
             setReferralCode(code);
           }
           if (figliDB && figliDB.length > 0) {
