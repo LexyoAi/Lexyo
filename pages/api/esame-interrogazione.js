@@ -8,8 +8,6 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
   const { classe, materia } = req.body;
 
-  if (!classe || !materia) return res.status(400).json({ errore: "Richiesta non valida" });
-
   const adattivita = getAdattivita(classe);
   const materiaNome = materia.charAt(0).toUpperCase() + materia.slice(1);
 

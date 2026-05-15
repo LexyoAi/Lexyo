@@ -9,8 +9,6 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
   const { conversazione, argomenti, materia, classe } = req.body;
 
-  if (!Array.isArray(conversazione)) return res.status(400).json({ errore: "Richiesta non valida" });
-
   const adattivita = getAdattivita(classe);
   const domandeFatte = conversazione.length;
   const maxDomande = (classe || "").toLowerCase().includes("media") ? 5 : 4;

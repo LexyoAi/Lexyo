@@ -5,13 +5,8 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { photo, testoOriginale, classe, materia, sesso } = req.body;
+  const { photo, testoOriginale, classe, materia } = req.body;
   const adattivita = getAdattivita(classe);
-  const ilBambino = sesso === "F" ? "la bambina" : "il bambino";
-
-  if (!photo || !photo.startsWith("data:image/")) {
-    return res.status(400).json({ errore: "Foto non valida" });
-  }
 
   try {
     const base64 = photo.split(",")[1];
@@ -23,7 +18,7 @@ export default async function handler(req, res) {
       system: [{
         type: "text",
         text: `Sei Lexyo, insegnante esperto di italiano per la ${classe} italiana.
-Correggi il dettato scritto da ${ilBambino} confrontandolo con il testo originale.
+Correggi il dettato scritto dal bambino confrontandolo con il testo originale.
 
 REGOLE DI CORREZIONE:
 1. Identifica OGNI errore ortografico, di punteggiatura, di maiuscole/minuscole

@@ -8,10 +8,6 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
   const { classe, materia, domande } = req.body;
 
-  if (!classe || !materia || !Array.isArray(domande) || domande.length === 0) {
-    return res.status(400).json({ errore: "Richiesta non valida" });
-  }
-
   const adattivita = getAdattivita(classe);
   const materiaNome = materia.charAt(0).toUpperCase() + materia.slice(1);
   const testo = domande.map((d, i) => `D${i+1}: ${d.domanda}\nRisposta: ${d.risposta || "(non risposto)"}`).join("\n\n");
