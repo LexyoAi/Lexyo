@@ -2,14 +2,17 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getAdattivita } from "../../lib/adattivita";
 import { cacheGetOrFetch, ck } from "../../lib/cache";
 import { parseJSON } from "../../lib/parse-json";
+import { verifyAuth } from "../../lib/verify-auth";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MAX_VARIANTS = 5;
-const TTL = 24 * 60 * 60 * 1000;
+const TTL = 14 * 24 * 60 * 60 * 1000;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { materia, classe, argomento, fase, soggetto, risposta } = req.body;
+  const { accessToken, materia, classe, argomento, fase, soggetto, risposta } = req.body;
+  const user = await verifyAuth(accessToken);
+  if (!user) return res.status(401).json({ errore: "Accesso richiesto. Effettua il login." });
   const adattivita = getAdattivita(classe);
 
   if (fase === "verifica") {
@@ -20,7 +23,10 @@ export default async function handler(req, res) {
         messages: [{ role: "user", content: `Soggetto corretto: "${soggetto}". Risposta bambino: "${risposta}". Corretta?` }],
       });
       return res.json(parseJSON(check.content[0].text.trim()));
-    } catch (e) { return res.status(500).json({ errore: e.message }); }
+    } catch (e) {
+      console.error("ERRORE [chi-sono verifica]:", e.message);
+      return res.status(500).json({ errore: "Errore temporaneo. Riprova." });
+    }
   }
 
   const key = ck("chisono", classe, materia, argomento);
@@ -37,6 +43,6 @@ export default async function handler(req, res) {
     res.json(data);
   } catch (e) {
     console.error("ERRORE chi-sono:", e.message);
-    res.status(500).json({ errore: e.message });
+    res.status(500).json({ errore: "Errore temporaneo. Riprova." });
   }
 }

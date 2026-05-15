@@ -17,7 +17,15 @@ export default async function handler(req, res) {
   const alBambino = sesso === "F" ? "alla bambina" : "al bambino";
 
   const isPremium = await verifyPremium(accessToken);
-  if (!isPremium && fase === "analisi") {
+
+  if (!isPremium && (fase === "compito_estivo" || fase === "compito_estivo_semplice")) {
+    return res.status(403).json({
+      risposta: "⭐ I compiti estivi sono disponibili con l'abbonamento premium.\nAbbonati per accedere!",
+      bloccata: true,
+    });
+  }
+
+  if (!isPremium && (fase === "analisi" || fase === "correzione")) {
     const check = await checkTrialUsage(fingerprint, "foto");
     if (!check.consentito) {
       return res.status(429).json({
@@ -35,6 +43,10 @@ export default async function handler(req, res) {
   try {
     const base64 = photo.split(",")[1];
     const mediaType = photo.split(";")[0].split(":")[1];
+    const MEDIA_TYPES_VALIDI = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    if (!MEDIA_TYPES_VALIDI.includes(mediaType)) {
+      return res.status(400).json({ risposta: "Formato immagine non supportato. Usa JPG, PNG o WebP." });
+    }
 
     // ── CONTROLLO SICUREZZA (Haiku: classificazione binaria rapida) ──────────
     if (fase === "analisi" || fase === "correzione" || fase === "compito_estivo" || fase === "compito_estivo_semplice") {
@@ -167,11 +179,12 @@ Livello studente: ${adattivita}`, cache_control: { type: "ephemeral" } }],
           ]}
         ],
       });
+      if (!isPremium) await incrementTrialUsage(fingerprint, "foto");
       return res.json({ risposta: response.content[0].text, fase: "corretto" });
     }
 
   } catch (e) {
     console.error("ERRORE analizza-foto:", e.message);
-    return res.status(500).json({ risposta: `Errore: ${e.message}` });
+    return res.status(500).json({ risposta: "Errore temporaneo. Riprova." });
   }
 }

@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   try {
     const { data: profilo, error } = await sb
       .from("profili")
-      .select("*")
+      .select("email,abbonamento_attivo,abbonamento_disdetto,abbonamento_scadenza,is_admin,pagamento_fallito,referral_code,referral_count,mesi_gratis_guadagnati")
       .ilike("email", emailNorm)
       .maybeSingle();
 

@@ -2,15 +2,18 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getAdattivita } from "../../lib/adattivita";
 import { cacheGetOrFetch, ck } from "../../lib/cache";
 import { parseJSON } from "../../lib/parse-json";
+import { verifyAuth } from "../../lib/verify-auth";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const MAX_VARIANTS = 3;
-const TTL = 24 * 60 * 60 * 1000; // 24h
+const TTL = 14 * 24 * 60 * 60 * 1000;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { materia, classe, argomento } = req.body;
+  const { accessToken, materia, classe, argomento } = req.body;
+  const user = await verifyAuth(accessToken);
+  if (!user) return res.status(401).json({ errore: "Accesso richiesto. Effettua il login." });
   const adattivita = getAdattivita(classe);
 
   const key = ck("parole", classe, materia, argomento);
@@ -36,6 +39,6 @@ Livello studente: ${adattivita}`, cache_control: { type: "ephemeral" } }],
     res.json(dati);
   } catch (e) {
     console.error("ERRORE parole-crociate:", e.message);
-    res.status(500).json({ errore: e.message });
+    res.status(500).json({ errore: "Errore temporaneo. Riprova." });
   }
 }

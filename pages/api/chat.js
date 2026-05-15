@@ -39,7 +39,7 @@ export default async function handler(req, res) {
   try {
     const response = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 350,
+      max_tokens: 450,
       system: [{
         type: "text",
         text: `Sei Lexyo, insegnante di ${materia} per la ${classe} italiana. Metodo socratico: NON dare mai la risposta diretta. Guida ${ilBambino} con domande brevi. In italiano. Max 3 righe + 1 domanda finale.${contestoTxt}\nLivello: ${adattivita}`,

@@ -2,14 +2,17 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getAdattivita } from "../../lib/adattivita";
 import { parseJSON } from "../../lib/parse-json";
 import { cacheGetOrFetch, ck } from "../../lib/cache";
+import { verifyAuth } from "../../lib/verify-auth";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MAX_VARIANTS = 3;
-const TTL = 6 * 60 * 60 * 1000; // 6h
+const TTL = 14 * 24 * 60 * 60 * 1000;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { classe, materia } = req.body;
+  const { accessToken, classe, materia } = req.body;
+  const user = await verifyAuth(accessToken);
+  if (!user) return res.status(401).json({ errore: "Accesso richiesto. Effettua il login." });
   if (!classe || !materia) return res.status(400).json({ errore: "classe e materia richiesti" });
   const adattivita = getAdattivita(classe);
   const materiaNome = materia.charAt(0).toUpperCase() + materia.slice(1);
@@ -26,5 +29,8 @@ export default async function handler(req, res) {
     }, MAX_VARIANTS, TTL);
     res.setHeader("X-Cache", hit ? "HIT" : "MISS");
     return res.json(data);
-  } catch (e) { return res.status(500).json({ errore: e.message }); }
+  } catch (e) {
+    console.error("ERRORE esame-interrogazione:", e.message);
+    return res.status(500).json({ errore: "Errore temporaneo. Riprova." });
+  }
 }

@@ -3,15 +3,18 @@ import { getAdattivita } from "../../lib/adattivita";
 import { cacheGetOrFetch, ck } from "../../lib/cache";
 import { tts, VOICE_INTERROGA } from "../../lib/tts";
 import { parseJSON } from "../../lib/parse-json";
+import { verifyAuth } from "../../lib/verify-auth";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const TEXT_VARIANTS = 5;
-const TEXT_TTL = 2 * 60 * 60 * 1000; // 2h — fresh questions each school session
+const TEXT_TTL = 14 * 24 * 60 * 60 * 1000;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { photo, argomento, materia, classe, sesso } = req.body;
+  const { accessToken, photo, argomento, materia, classe, sesso } = req.body;
+  const user = await verifyAuth(accessToken);
+  if (!user) return res.status(401).json({ errore: "Accesso richiesto. Effettua il login." });
   const adattivita = getAdattivita(classe);
   const bambino = sesso === "F" ? "bambina" : "bambino";
   const ilBambino = sesso === "F" ? "la bambina" : "il bambino";
@@ -28,7 +31,7 @@ export default async function handler(req, res) {
       const { data } = await cacheGetOrFetch(key, async () => {
         const analisi = await client.messages.create({
           model: "claude-haiku-4-5-20251001",
-          max_tokens: 200,
+          max_tokens: 350,
           system: [{ type: "text", text: `Sei Lex, insegnante AI di ${materia} per la ${classe} italiana.
 Prepari un'interrogazione orale per ${ilBambino} su un argomento specifico.
 Rispondi SOLO con JSON valido (niente testo fuori, niente markdown, niente backtick):
@@ -98,6 +101,6 @@ Livello studente: ${adattivita}`, cache_control: { type: "ephemeral" } }],
     });
   } catch (e) {
     console.error("ERRORE interroga-analizza:", e.message);
-    res.status(500).json({ errore: e.message });
+    res.status(500).json({ errore: "Errore temporaneo. Riprova." });
   }
 }

@@ -1,13 +1,17 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getAdattivita } from "../../lib/adattivita";
 import { parseJSON } from "../../lib/parse-json";
+import { verifyAuth } from "../../lib/verify-auth";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 export const config = { api: { bodyParser: { sizeLimit: "10mb" } } };
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { classe, problema, risposta_corretta, risposta, foto } = req.body;
+  const { classe, problema, risposta_corretta, risposta, foto, accessToken } = req.body;
+
+  const user = await verifyAuth(accessToken);
+  if (!user) return res.status(401).json({ errore: "Accesso richiesto. Effettua il login." });
 
   const adattivita = getAdattivita(classe);
 
@@ -28,6 +32,6 @@ export default async function handler(req, res) {
     return res.json(parseJSON(r.content[0].text));
   } catch (e) {
     console.error("ERRORE esame-correggi-matematica:", e.message);
-    return res.status(500).json({ errore: e.message });
+    return res.status(500).json({ errore: "Errore temporaneo. Riprova." });
   }
 }

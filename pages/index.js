@@ -262,6 +262,15 @@ export default function Home() {
 
   const audioCtxRef = useRef(null);
 
+  useEffect(() => {
+    return () => {
+      if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
+        audioCtxRef.current.close();
+      }
+      if (svIntervalRef.current) clearInterval(svIntervalRef.current);
+    };
+  }, []);
+
   const getAccessToken = async () => {
     try {
       const { data: { session: s } } = await supabase.auth.getSession();
@@ -293,9 +302,37 @@ export default function Home() {
     const p = params.get("pagamento");
     if (p === "successo") {
       setPagamentoFlash("successo");
-      setShowWelcomeModal(true);
-      // Piano impostato dalla verifica server-side nel init — non dal parametro URL
       window.history.replaceState({}, "", window.location.pathname);
+      // Polling: aspetta che il webhook Stripe aggiorni abbonamento_attivo su Supabase
+      let attempts = 0;
+      const poll = async () => {
+        attempts++;
+        try {
+          const { data: { session: s } } = await supabase.auth.getSession();
+          if (!s) { if (attempts < 10) setTimeout(poll, 2000); return; }
+          const pr = await fetch("/api/get-profilo", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${s.access_token}` },
+            body: JSON.stringify({ email: s.user.email }),
+          });
+          const pd = await pr.json();
+          if (pd.profilo) {
+            const isPremiumNow = pd.profilo.abbonamento_attivo === true || pd.profilo.is_admin === true;
+            if (isPremiumNow) {
+              setProfiloUtente(pd.profilo);
+              setPiano("premium");
+              setReferralCount(pd.profilo.referral_count || 0);
+              setMesiGratisGuadagnati(pd.profilo.mesi_gratis_guadagnati || 0);
+              if (pd.profilo.referral_code) setReferralCode(pd.profilo.referral_code);
+              setShowWelcomeModal(true);
+              return;
+            }
+          }
+        } catch {}
+        if (attempts < 10) setTimeout(poll, 2000);
+        else setPagamentoFlash("attivazione_in_corso");
+      };
+      setTimeout(poll, 1500);
     } else if (p === "annullato") {
       setPagamentoFlash("annullato");
       window.history.replaceState({}, "", window.location.pathname);
@@ -305,10 +342,14 @@ export default function Home() {
   const avviaStripeCheckout = async () => {
     setStripeLoading(true);
     try {
+      const token = await getAccessToken();
       const res = await fetch("/api/stripe-checkout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: utente?.email || email }),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({}),
       });
       const d = await res.json();
       if (d.url) {
@@ -630,6 +671,10 @@ export default function Home() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [svState?.fase, svState?.punteggio]);
 
+  useEffect(() => {
+    if (screen === "home" && !figlioAttivo) setScreen("aggiungi_figlio");
+  }, [screen, figlioAttivo]);
+
   const aggiornaStreak = () => {
     if (typeof window === "undefined" || !figlioAttivo) return;
     const oggi = new Date().toDateString();
@@ -709,9 +754,6 @@ export default function Home() {
           } else if (isPremium2) {
             // Premium/admin senza figli → home (può aggiungere figli da lì)
             setScreen("home");
-          } else if (giorniRimasti2 === 0) {
-            // Trial scaduto senza figli → scegli piano
-            setScreen("scegli_piano");
           } else {
             setScreen("scegli_piano");
           }
@@ -931,10 +973,11 @@ export default function Home() {
     setRipassoEstateState({ fase: "loading", argomento, materiaKey, meseIdx, conv: [], domanda: "", audio: null, valutazione: "", quizDomande: null, quizRisposte: [], voto: null });
     setScreen("ripasso_estate");
     try {
+      const token = await getAccessToken();
       const res = await fetch("/api/interroga-analizza", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ argomento, materia: MATERIE[materiaKey]?.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M" }),
+        body: JSON.stringify({ argomento, materia: MATERIE[materiaKey]?.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M", accessToken: token }),
       });
       const d = await res.json();
       if (d.errore) { setRipassoEstateState(null); setScreen("estate"); alert(d.errore); return; }
@@ -965,6 +1008,7 @@ export default function Home() {
     setScreen("quiz");
     setQuizLoading(true);
     try {
+      const token = await getAccessToken();
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -975,6 +1019,7 @@ export default function Home() {
           sesso: figlioAttivo?.sesso || "M",
           tipo: "quiz",
           argomento,
+          accessToken: token,
         }),
       });
       const d = await res.json();
@@ -993,6 +1038,7 @@ export default function Home() {
     setQuizState(prev => ({ ...prev, msgs: nuoviMsgs }));
     setQuizLoading(true);
     try {
+      const token = await getAccessToken();
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1003,6 +1049,7 @@ export default function Home() {
           sesso: figlioAttivo?.sesso || "M",
           tipo: "quiz",
           argomento: quizState.argomento,
+          accessToken: token,
         }),
       });
       const d = await res.json();
@@ -1596,7 +1643,7 @@ export default function Home() {
 
 
 
-  if (screen === "home" && !figlioAttivo) { setScreen("aggiungi_figlio"); return null; }
+  if (screen === "home" && !figlioAttivo) return null;
 
   if (screen === "home") return (
     <div style={{ ...S.app, display: "flex", flexDirection: "column" }}>
@@ -1752,6 +1799,19 @@ export default function Home() {
         </div>
       )}
 
+      {pagamentoFlash === "attivazione_in_corso" && (
+        <div onClick={() => setPagamentoFlash(null)} style={{ position:"fixed", top:"14px", left:"50%", transform:"translateX(-50%)", zIndex:9998, cursor:"pointer", maxWidth:"340px", width:"calc(100% - 32px)" }}>
+          <div style={{ borderRadius:"18px", padding:"14px 20px", display:"flex", alignItems:"center", gap:"14px", boxShadow:"0 8px 32px rgba(0,0,0,0.5)", background:"linear-gradient(135deg,#1e3a5f,#1a2744)", border:"1px solid rgba(99,102,241,0.4)" }}>
+            <span style={{ fontSize:"28px", flexShrink:0 }}>⏳</span>
+            <div>
+              <p style={{ fontWeight:900, fontSize:"15px", color:"white", margin:0 }}>Pagamento ricevuto</p>
+              <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.7)", margin:"3px 0 0", fontWeight:600 }}>Attivazione in corso, ricarica tra qualche secondo</p>
+            </div>
+            <span style={{ marginLeft:"auto", color:"rgba(255,255,255,0.4)", fontSize:"18px", flexShrink:0 }}>✕</span>
+          </div>
+        </div>
+      )}
+
       {/* ── Overlay trial scaduto (solo quando prova ad usare una funzione) ── */}
 
       {/* overlay stelle doppie estate */}
@@ -1789,6 +1849,13 @@ export default function Home() {
             <button onClick={() => setScreen("scegli_piano")} style={{ background: luce ? "rgba(245,158,11,0.25)" : "rgba(245,158,11,0.2)", border: luce ? "1px solid rgba(245,158,11,0.5)" : "1px solid rgba(245,158,11,0.4)", borderRadius:"20px", padding:"4px 12px", color: luce ? "#92400e" : "#fbbf24", fontSize:"11px", fontWeight:800, cursor:"pointer" }}>Abbonati</button>
           </div>
         )
+      )}
+
+      {profiloUtente?.pagamento_fallito && piano === "premium" && (
+        <div style={{ padding:"10px 20px", background: luce ? "rgba(239,68,68,0.1)" : "rgba(239,68,68,0.18)", borderBottom: luce ? "1px solid rgba(239,68,68,0.25)" : "1px solid rgba(239,68,68,0.35)", display:"flex", justifyContent:"space-between", alignItems:"center", gap:"10px" }}>
+          <p style={{ fontSize:"12px", color: luce ? "#b91c1c" : "#fca5a5", fontWeight:800, lineHeight:1.4 }}>⚠️ Pagamento fallito — aggiorna il metodo di pagamento su Stripe per mantenere l'accesso</p>
+          <button onClick={avviaStripeCheckout} style={{ flexShrink:0, background:"linear-gradient(135deg,#ef4444,#dc2626)", border:"none", borderRadius:"20px", padding:"6px 14px", color:"white", fontSize:"11px", fontWeight:900, cursor:"pointer", whiteSpace:"nowrap" }}>Aggiorna →</button>
+        </div>
       )}
 
       {pwaPromptReady && !installBannerDismissed && (
@@ -1854,7 +1921,7 @@ export default function Home() {
         </div>
 
         {/* ── PREPARAZIONE ESAME — solo 3ª Media ── */}
-        {prog?.key === "3M" && (
+        {figlioAttivo?.classe === "3M" && (
           <button onClick={() => { setEsameSubTipo("media"); goScreen("esame5"); }} className="hcard" style={{ width:"100%", marginBottom:"12px", padding:"0", borderRadius:"22px", background:"linear-gradient(145deg,#AA33FF,#8800EE,#6600BB)", boxShadow:"0 6px 18px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", cursor:"pointer", "--card-border":"linear-gradient(135deg,#4400AA,#CC55FF)" }}>
             <div className="card-shine" />
             <div className="card-content" style={{ padding:"18px 20px", display:"flex", alignItems:"center", gap:"14px" }}>
@@ -2156,8 +2223,8 @@ export default function Home() {
             </div>
             {fotoFase === "domande" && (
               <div style={{ display:"flex", gap:"10px", marginBottom:"14px" }}>
-                <input value={fotoInput} onChange={(e)=>setFotoInput(e.target.value)} onKeyDown={async(e)=>{ if(e.key!=="Enter"||!fotoInput.trim()||fotoLoading) return; const msg=fotoInput.trim(); setFotoInput(""); const nuovi=[...fotoMsgs,{role:"user",content:msg}]; setFotoMsgs(nuovi); setFotoLoading(true); try { const res=await fetch("/api/analizza-foto",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({photo,materia:mat.label,classe:prog?.label,sesso:figlioAttivo?.sesso||"M",fase:"domande",messaggi:nuovi})}); const d=await res.json(); setFotoMsgs(prev=>[...prev,{role:"assistant",content:d.risposta}]); if(d.fase==="attendi_correzione") setFotoFase("attendi_correzione"); } catch {} setFotoLoading(false); }} placeholder="Scrivi la tua risposta..." style={S.inp} />
-                <button onClick={async()=>{ if(!fotoInput.trim()||fotoLoading) return; const msg=fotoInput.trim(); setFotoInput(""); const nuovi=[...fotoMsgs,{role:"user",content:msg}]; setFotoMsgs(nuovi); setFotoLoading(true); try { const res=await fetch("/api/analizza-foto",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({photo,materia:mat.label,classe:prog?.label,sesso:figlioAttivo?.sesso||"M",fase:"domande",messaggi:nuovi})}); const d=await res.json(); setFotoMsgs(prev=>[...prev,{role:"assistant",content:d.risposta}]); if(d.fase==="attendi_correzione") setFotoFase("attendi_correzione"); } catch {} setFotoLoading(false); }} style={{ width:"46px", height:"46px", borderRadius:"13px", border:"none", background:fotoInput.trim()?t.gradiente:"rgba(255,255,255,0.07)", boxShadow:fotoInput.trim()?`0 4px 12px ${t.glow}`:"none", color:"white", fontSize:"18px", flexShrink:0, cursor:"pointer" }}>→</button>
+                <input value={fotoInput} onChange={(e)=>setFotoInput(e.target.value)} onKeyDown={async(e)=>{ if(e.key!=="Enter"||!fotoInput.trim()||fotoLoading) return; const msg=fotoInput.trim(); setFotoInput(""); const nuovi=[...fotoMsgs,{role:"user",content:msg}]; setFotoMsgs(nuovi); setFotoLoading(true); try { const res=await fetch("/api/analizza-foto",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({photo,materia:mat.label,classe:prog?.label,sesso:figlioAttivo?.sesso||"M",fase:"domande",messaggi:nuovi,accessToken:await getAccessToken()})}); const d=await res.json(); setFotoMsgs(prev=>[...prev,{role:"assistant",content:d.risposta}]); if(d.fase==="attendi_correzione") setFotoFase("attendi_correzione"); } catch {} setFotoLoading(false); }} placeholder="Scrivi la tua risposta..." style={S.inp} />
+                <button onClick={async()=>{ if(!fotoInput.trim()||fotoLoading) return; const msg=fotoInput.trim(); setFotoInput(""); const nuovi=[...fotoMsgs,{role:"user",content:msg}]; setFotoMsgs(nuovi); setFotoLoading(true); try { const res=await fetch("/api/analizza-foto",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({photo,materia:mat.label,classe:prog?.label,sesso:figlioAttivo?.sesso||"M",fase:"domande",messaggi:nuovi,accessToken:await getAccessToken()})}); const d=await res.json(); setFotoMsgs(prev=>[...prev,{role:"assistant",content:d.risposta}]); if(d.fase==="attendi_correzione") setFotoFase("attendi_correzione"); } catch {} setFotoLoading(false); }} style={{ width:"46px", height:"46px", borderRadius:"13px", border:"none", background:fotoInput.trim()?t.gradiente:"rgba(255,255,255,0.07)", boxShadow:fotoInput.trim()?`0 4px 12px ${t.glow}`:"none", color:"white", fontSize:"18px", flexShrink:0, cursor:"pointer" }}>→</button>
               </div>
             )}
             {fotoFase === "attendi_correzione" && (
@@ -2168,7 +2235,7 @@ export default function Home() {
                 </div>
                 <label style={{ display:"flex", border:"2px dashed rgba(16,185,129,0.4)", borderRadius:"18px", padding:"20px", textAlign:"center", cursor:"pointer", alignItems:"center", justifyContent:"center", minHeight:"120px" }}>
                   <div><div style={{ fontSize:"36px", marginBottom:"8px" }}>📷</div><p style={{ fontWeight:800, fontSize:"14px", color:"#10b981" }}>Carica foto del quaderno</p></div>
-                  <input type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={(e)=>{ const f=e.target.files[0]; if(!f) return; compressPhoto(f,async(fq)=>{ setFotoFase("correzione_loading"); try { const res=await fetch("/api/analizza-foto",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({photo:fq,materia:mat.label,classe:prog?.label,sesso:figlioAttivo?.sesso||"M",fase:"correzione",photoOriginale})}); const d=await res.json(); if(d.bloccata){setFotoFase("attendi_correzione");return;} setFotoMsgs(prev=>[...prev,{role:"assistant",content:d.risposta}]); setFotoFase("corretto"); addStelle(5); addBadge("perseverante"); } catch{setFotoFase("attendi_correzione");} }); }} />
+                  <input type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={(e)=>{ const f=e.target.files[0]; if(!f) return; compressPhoto(f,async(fq)=>{ setFotoFase("correzione_loading"); try { const res=await fetch("/api/analizza-foto",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({photo:fq,materia:mat.label,classe:prog?.label,sesso:figlioAttivo?.sesso||"M",fase:"correzione",photoOriginale,accessToken:await getAccessToken()})}); const d=await res.json(); if(d.bloccata){setFotoFase("attendi_correzione");return;} setFotoMsgs(prev=>[...prev,{role:"assistant",content:d.risposta}]); setFotoFase("corretto"); addStelle(5); addBadge("perseverante"); } catch{setFotoFase("attendi_correzione");} }); }} />
                 </label>
               </div>
             )}
@@ -2325,9 +2392,10 @@ export default function Home() {
       if (!dettatoTesto) return;
       setDettatoLoading(true);
       try {
+        const token = await getAccessToken();
         const res = await fetch("/api/dettato-leggi", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ testo: dettatoTesto, velocita: dettatoVelocita }),
+          body: JSON.stringify({ testo: dettatoTesto, velocita: dettatoVelocita, accessToken: token }),
         });
         const d = await res.json();
         if (d.audio) {
@@ -2351,7 +2419,7 @@ export default function Home() {
             try {
               const res = await fetch("/api/dettato-leggi-foto", {
                 method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ photo: compressed }),
+                body: JSON.stringify({ photo: compressed, accessToken: await getAccessToken() }),
               });
               const d = await res.json();
               if (d.audio) {
@@ -3167,10 +3235,11 @@ export default function Home() {
     const avviaQuizEstate = async () => {
       setRipassoEstateState(prev => ({ ...prev, fase: "loading_quiz" }));
       try {
+        const token = await getAccessToken();
         const r = await fetch("/api/quiz-multipla", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ materia: matInfo.label, classe: prog?.label, argomento: rs.argomento, sesso: figlioAttivo?.sesso || "M" }),
+          body: JSON.stringify({ materia: matInfo.label, classe: prog?.label, argomento: rs.argomento, sesso: figlioAttivo?.sesso || "M", accessToken: token }),
         });
         const d = await r.json();
         setRipassoEstateState(prev => ({ ...prev, fase: "quiz", quizDomande: (d.domande || []).slice(0,3), quizRisposte: [] }));
@@ -3182,10 +3251,11 @@ export default function Home() {
       const nuovaConv = [...rs.conv, { domanda: rs.domanda, risposta: rs.risposta }];
       setRipassoEstateState(prev => ({ ...prev, conv: nuovaConv, risposta: "", valutazione: "", fase: "valuta" }));
       try {
+        const token = await getAccessToken();
         const r = await fetch("/api/interroga-valuta", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ conversazione: nuovaConv, argomenti: [rs.argomento], materia: matInfo.label, classe: prog?.label }),
+          body: JSON.stringify({ conversazione: nuovaConv, argomenti: [rs.argomento], materia: matInfo.label, classe: prog?.label, accessToken: token }),
         });
         const d = await r.json();
         if (nuovaConv.length >= 3) {
@@ -3330,7 +3400,7 @@ export default function Home() {
       <div style={{ flex:1, overflowY:"auto", padding:"18px", display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px" }}>
         {BADGE.map(b => {
           const ok = figlioAttivo.badge?.includes(b.id);
-          return <div key={b.id} style={{ ...S.card, background:ok?"rgba(251,191,36,0.1)":"rgba(255,255,255,0.04)", border:`1px solid ${ok?"rgba(251,191,36,0.3)":"rgba(255,255,255,0.08)"}`, textAlign:"center", opacity:ok?1:0.35 }}><div style={{ fontSize:"36px", marginBottom:"7px", filter:ok?"none":"grayscale(1)" }}>{b.emoji}</div><p style={{ fontWeight:900, fontSize:"13px", marginBottom:"3px" }}>{b.label}</p><p style={{ fontSize:"11px", color:"rgba(255,255,255,0.5)", fontWeight:600, lineHeight:1.4 }}>{b.desc}</p>{ok&&<p style={{ fontSize:"11px", color:"#fbbf24", fontWeight:800, marginTop:"7px" }}>✓ Sbloccato!</p>}</div>;
+          return <div key={b.id} style={{ ...S.card, background:ok?"rgba(251,191,36,0.1)":"rgba(255,255,255,0.04)", border:`1px solid ${ok?"rgba(251,191,36,0.3)":"rgba(255,255,255,0.08)"}`, textAlign:"center", opacity:ok?1:0.35 }}><div style={{ fontSize:"36px", marginBottom:"7px", filter:ok?"none":"grayscale(1)" }}>{b.emoji}</div><p style={{ fontWeight:900, fontSize:"13px", marginBottom:"3px" }}>{b.id === "pronto_settembre" ? `Pront${figlioAttivo?.sesso === "F" ? "a" : "o"} per Settembre` : b.label}</p><p style={{ fontSize:"11px", color:"rgba(255,255,255,0.5)", fontWeight:600, lineHeight:1.4 }}>{b.desc}</p>{ok&&<p style={{ fontSize:"11px", color:"#fbbf24", fontWeight:800, marginTop:"7px" }}>✓ Sbloccato!</p>}</div>;
         })}
       </div>
       <Nav />
@@ -3576,10 +3646,11 @@ export default function Home() {
       if (!interrogTopicScelto) return;
       setInterrogFase("analisi");
       try {
+        const token = await getAccessToken();
         const res = await fetch("/api/interroga-analizza", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ argomento: interrogTopicScelto, materia: mat.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M" }),
+          body: JSON.stringify({ argomento: interrogTopicScelto, materia: mat.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M", accessToken: token }),
         });
         const d = await res.json();
         if (d.errore) { alert(d.errore); setInterrogFase("carica"); return; }
@@ -3594,10 +3665,11 @@ export default function Home() {
       setInterrogFase("analisi");
       compressPhoto(file, async (compressed) => {
         try {
+          const token = await getAccessToken();
           const res = await fetch("/api/interroga-analizza", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ photo: compressed, materia: mat.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M" }),
+            body: JSON.stringify({ photo: compressed, materia: mat.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M", accessToken: token }),
           });
           const d = await res.json();
           if (d.errore) { alert(d.errore); setInterrogFase("carica"); return; }
@@ -3651,10 +3723,11 @@ export default function Home() {
       setInterrogValutazione("");
       setInterrogFase("valuta");
       try {
+        const token = await getAccessToken();
         const res = await fetch("/api/interroga-valuta", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ conversazione: nuovaConv, argomenti: interrogArgomenti, materia: mat.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M" }),
+          body: JSON.stringify({ conversazione: nuovaConv, argomenti: interrogArgomenti, materia: mat.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M", accessToken: token }),
         });
         const d = await res.json();
         if (d.errore) { alert(d.errore); setInterrogFase("domanda"); return; }
@@ -3966,10 +4039,8 @@ export default function Home() {
           <button onClick={async () => {
             await supabase.auth.signOut();
             setUtente(null); setEmail(""); setFigli([]); setFiglioAttivo(null);
-            setPiano("trial"); setProfiloUtente(null); setTrialGiorni(3);
-            setReferralCode(null); setReferralCount(0); setMesiGratisGuadagnati(0);
-            setStreak(0); setPagamentoFlash(null); setShowWelcomeModal(false);
-            setScreen("landing");
+            setPiano("trial"); setProfiloUtente(null);
+            window.location.href = "/";
           }} style={{ background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.2)", borderRadius:"10px", padding:"8px 14px", color:"#ef4444", fontFamily:"'Nunito'", fontWeight:700, fontSize:"12px", cursor:"pointer" }}>
             Esci
           </button>
@@ -4177,9 +4248,11 @@ export default function Home() {
                     });
                     const d = await r.json();
                     if (d.errore) { alert("Errore: " + d.errore); return; }
+                    setProfiloUtente(prev => ({ ...prev, abbonamento_disdetto: true, abbonamento_scadenza: d.fine_periodo }));
                     setShowGestisciAbb(false);
                     setDisdettaConfermata(false);
-                    alert("Abbonamento disdetto. Hai accesso fino alla fine del periodo già pagato.");
+                    const dataFine = d.fine_periodo ? new Date(d.fine_periodo).toLocaleDateString("it-IT") : "fine periodo";
+                    alert(`Abbonamento disdetto. Hai accesso fino al ${dataFine}.`);
                   } catch { alert("Errore di rete. Riprova."); }
                 }} style={{ width:"100%", padding:"13px", background:"rgba(239,68,68,0.15)", border:"1px solid rgba(239,68,68,0.4)", borderRadius:"14px", color:"#f87171", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer", marginBottom:"10px" }}>
                   Sì, disdico l'abbonamento
@@ -4319,9 +4392,10 @@ export default function Home() {
     const avviaSfida = async (forceNew = false) => {
       setSvState({ fase: "loading" });
       try {
+        const token = await getAccessToken();
         const r = await fetch("/api/sfida-velocita", {
           method:"POST", headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({ materia: matInfo.label, classe: prog2?.label, argomento: giocaArgomento, forceNew, sesso: figlioAttivo?.sesso || "M" }),
+          body: JSON.stringify({ materia: matInfo.label, classe: prog2?.label, argomento: giocaArgomento, forceNew, sesso: figlioAttivo?.sesso || "M", accessToken: token }),
         });
         const d = await r.json();
         if (d.errore || !d.domande?.length) { setSvState(null); alert("Errore: " + (d.errore || "nessuna domanda")); return; }
@@ -4508,9 +4582,10 @@ export default function Home() {
     const avviaChiSono = async () => {
       setCsState({ fase:"loading" });
       try {
+        const token = await getAccessToken();
         const r = await fetch("/api/chi-sono", {
           method:"POST", headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({ materia: matInfo.label, classe: prog2?.label, argomento: giocaArgomento, sesso: figlioAttivo?.sesso || "M" }),
+          body: JSON.stringify({ materia: matInfo.label, classe: prog2?.label, argomento: giocaArgomento, sesso: figlioAttivo?.sesso || "M", accessToken: token }),
         });
         const d = await r.json();
         if (d.errore || !d.soggetto) { setCsState(null); alert(d.errore || "Errore. Riprova."); return; }
@@ -4522,9 +4597,10 @@ export default function Home() {
       if (!csRisposta.trim() || !csState) return;
       setCsLoading(true);
       try {
+        const token = await getAccessToken();
         const r = await fetch("/api/chi-sono", {
           method:"POST", headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({ fase:"verifica", soggetto:csState.soggetto, risposta:csRisposta }),
+          body: JSON.stringify({ fase:"verifica", soggetto:csState.soggetto, risposta:csRisposta, accessToken: token }),
         });
         const d = await r.json();
         if (d.corretta) {
@@ -4680,10 +4756,11 @@ export default function Home() {
     const avviaQuizMC = async (forceNew = false) => {
       setMcLoading(true);
       try {
+        const token = await getAccessToken();
         const r = await fetch("/api/quiz-multipla", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ materia: MATERIE[materia]?.label, classe: prog?.label, argomento: giocaArgomento, forceNew, sesso: figlioAttivo?.sesso || "M" }),
+          body: JSON.stringify({ materia: MATERIE[materia]?.label, classe: prog?.label, argomento: giocaArgomento, forceNew, sesso: figlioAttivo?.sesso || "M", accessToken: token }),
         });
         const d = await r.json();
         if (d.errore) { setMcQuiz([]); setMcLoading(false); return; }
@@ -4869,9 +4946,10 @@ export default function Home() {
     const avviaParole = async () => {
       setWordLoading(true); setCwSelected(null); setCwDir('H');
       try {
+        const token = await getAccessToken();
         const r = await fetch("/api/parole-crociate", {
           method:"POST", headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({materia:MATERIE[materia]?.label,classe:prog?.label,argomento:giocaArgomento,sesso:figlioAttivo?.sesso||"M"}),
+          body:JSON.stringify({materia:MATERIE[materia]?.label,classe:prog?.label,argomento:giocaArgomento,sesso:figlioAttivo?.sesso||"M",accessToken:token}),
         });
         const d = await r.json();
         if(d.parole&&d.parole.length>0){ setWordGame(buildCrossword(d.parole)); setWordInputs({}); setWordVerificato(false); }
@@ -5446,10 +5524,11 @@ export default function Home() {
     const avviaRipassoQuiz = async () => {
       setRipassoLoading(true);
       try {
+        const token = await getAccessToken();
         const r = await fetch("/api/ripasso-genera", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ materia: info.label, classe: prog?.label, argomento: argomentoCorrente, sesso: figlioAttivo?.sesso || "M" }),
+          body: JSON.stringify({ materia: info.label, classe: prog?.label, argomento: argomentoCorrente, sesso: figlioAttivo?.sesso || "M", accessToken: token }),
         });
         const d = await r.json();
         setRipassoQuiz(d.domande || []);
@@ -5958,7 +6037,8 @@ export default function Home() {
     const generaProva = async (tipo) => {
       setEsameLoading(true);
       try {
-        const r = await fetch("/api/esame-matematica", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ classe, tipo }) });
+        const token = await getAccessToken();
+        const r = await fetch("/api/esame-matematica", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ classe, tipo, accessToken: token }) });
         const d = await r.json();
         if (d.errore) throw new Error(d.errore);
         const problemi = [...(d.problemi_matematica||[]), ...(d.domande_scienze||[]).map(ds => ({ ...ds, testo: ds.domanda, risposta_corretta: ds.risposta_modello, isScienze: true }))];
@@ -6112,7 +6192,8 @@ export default function Home() {
     const iniziaColloquio = async () => {
       setEsameOrale({ fase:"loading", storico:[], domandaNum:1 });
       try {
-        const r = await fetch("/api/esame-colloquio", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ classe, storico:[], domandaNum:1 }) });
+        const token = await getAccessToken();
+        const r = await fetch("/api/esame-colloquio", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ classe, storico:[], domandaNum:1, accessToken: token }) });
         const d = await r.json();
         if (d.errore) throw new Error(d.errore);
         setEsameOrale({ fase:"domanda", storico:[], domandaNum:1, domandaCorrente: d.prossima_domanda, materia: d.materia, valutazionePrecedente: null, rispostaBambino:"" });
@@ -6126,7 +6207,8 @@ export default function Home() {
       if (prossimaNum > TOTALE_DOMANDE) {
         setEsameLoading(true);
         try {
-          const r = await fetch("/api/esame-voto-colloquio", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ classe, storico: nuovoStorico }) });
+          const token = await getAccessToken();
+          const r = await fetch("/api/esame-voto-colloquio", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ classe, storico: nuovoStorico, accessToken: token }) });
           const d = await r.json();
           if (d.errore) throw new Error(d.errore);
           const stelle = (d.voto_finale || 5) * 3;
@@ -6143,7 +6225,8 @@ export default function Home() {
       }
       setEsameOrale(prev => ({ ...prev, fase:"loading_domanda", storico: nuovoStorico }));
       try {
-        const r = await fetch("/api/esame-colloquio", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ classe, storico: nuovoStorico, domandaNum: prossimaNum }) });
+        const token = await getAccessToken();
+        const r = await fetch("/api/esame-colloquio", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ classe, storico: nuovoStorico, domandaNum: prossimaNum, accessToken: token }) });
         const d = await r.json();
         if (d.errore) throw new Error(d.errore);
         setEsameOrale(prev => ({ ...prev, fase:"domanda", domandaNum: prossimaNum, domandaCorrente: d.prossima_domanda, materia: d.materia, valutazionePrecedente: d.valutazione_precedente, rispostaBambino:"" }));
@@ -6362,7 +6445,8 @@ export default function Home() {
     const generaDomande = async () => {
       setEsameLoading(true);
       try {
-        const r = await fetch("/api/esame-interrogazione", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ classe, materia: esameInterrMateria }) });
+        const token = await getAccessToken();
+        const r = await fetch("/api/esame-interrogazione", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ classe, materia: esameInterrMateria, accessToken: token }) });
         const d = await r.json();
         if (d.errore) throw new Error(d.errore);
         setEsameInterrRisposta("");
@@ -6374,8 +6458,9 @@ export default function Home() {
     const valutaRisposte = async (risposte) => {
       setEsameInterrState(prev => ({ ...prev, fase:"correzione_loading" }));
       try {
+        const token = await getAccessToken();
         const payload = st.domande.map((d,i) => ({ domanda: d.domanda, risposta: risposte[i] || "" }));
-        const r = await fetch("/api/esame-valuta-interrogazione", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ classe, materia: esameInterrMateria, domande: payload }) });
+        const r = await fetch("/api/esame-valuta-interrogazione", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ classe, materia: esameInterrMateria, domande: payload, accessToken: token }) });
         const d = await r.json();
         if (d.errore) throw new Error(d.errore);
         addStelle(Math.round((d.voto_finale || 6) * 1.5));

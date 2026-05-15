@@ -7,7 +7,7 @@ import { verifyPremium } from "../../lib/verify-premium";
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const MAX_VARIANTS = 5;
-const TTL = 48 * 60 * 60 * 1000;
+const TTL = 14 * 24 * 60 * 60 * 1000;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
@@ -23,6 +23,7 @@ export default async function handler(req, res) {
         trial_esaurito: true,
       });
     }
+    forceNew = false; // trial: sempre dalla cache
   }
 
   const key = ck("dettato", classe, materia, argomento, difficolta, tipo);
@@ -31,13 +32,13 @@ export default async function handler(req, res) {
     let risposta;
 
     if (forceNew) {
-      const dati = await genera(client, classe, materia, argomento, difficolta, tipo, adattivita, sesso);
+      const dati = await genera(client, classe, materia, argomento, difficolta, tipo, adattivita, sesso, isPremium);
       cacheAddVariant(key, dati, MAX_VARIANTS, TTL);
       res.setHeader("X-Cache", "FORCE");
       risposta = { ...dati, tipo };
     } else {
       const { data: dati, hit } = await cacheGetOrFetch(key, () =>
-        genera(client, classe, materia, argomento, difficolta, tipo, adattivita, sesso),
+        genera(client, classe, materia, argomento, difficolta, tipo, adattivita, sesso, isPremium),
         MAX_VARIANTS, TTL
       );
       res.setHeader("X-Cache", hit ? "HIT" : "MISS");
@@ -48,11 +49,11 @@ export default async function handler(req, res) {
     return res.json(risposta);
   } catch (e) {
     console.error("ERRORE GENERA:", e.message);
-    res.status(500).json({ errore: e.message });
+    res.status(500).json({ errore: "Errore temporaneo. Riprova." });
   }
 }
 
-async function genera(client, classe, materia, argomento, difficolta, tipo, adattivita, sesso) {
+async function genera(client, classe, materia, argomento, difficolta, tipo, adattivita, sesso, isPremium = true) {
   const bambino = sesso === "F" ? "bambina" : "bambino";
   const ilBambino = sesso === "F" ? "la bambina" : "il bambino";
   const delBambino = sesso === "F" ? "della bambina" : "del bambino";
@@ -81,8 +82,8 @@ Scrivi SOLO la storia, con un titolo creativo in prima riga, poi la storia. Ness
   }
 
   const response = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 600,
+    model: isPremium ? "claude-sonnet-4-6" : "claude-haiku-4-5-20251001",
+    max_tokens: isPremium ? 600 : 350,
     system: [{
       type: "text",
       text: `Sei un esperto di didattica italiana per la scuola primaria e secondaria di primo grado.

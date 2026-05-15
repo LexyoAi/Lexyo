@@ -20,7 +20,7 @@ export default async function handler(req, res) {
   try {
     const { data: profilo } = await sb
       .from("profili")
-      .select("stripe_customer_id")
+      .select("email,stripe_customer_id")
       .ilike("email", emailNorm)
       .maybeSingle();
 
@@ -45,7 +45,7 @@ export default async function handler(req, res) {
     await sb
       .from("profili")
       .update({ abbonamento_disdetto: true, abbonamento_scadenza: fineperiodo })
-      .ilike("email", emailNorm);
+      .eq("email", profilo.email);
 
     return res.json({ ok: true, fine_periodo: fineperiodo });
   } catch (e) {

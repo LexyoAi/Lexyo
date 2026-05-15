@@ -1,12 +1,15 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getAdattivita } from "../../lib/adattivita";
 import { parseJSON } from "../../lib/parse-json";
+import { verifyAuth } from "../../lib/verify-auth";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { classe, materia, domande } = req.body;
+  const { accessToken, classe, materia, domande } = req.body;
+  const user = await verifyAuth(accessToken);
+  if (!user) return res.status(401).json({ errore: "Accesso richiesto. Effettua il login." });
   if (!materia || !classe) return res.status(400).json({ errore: "materia e classe richiesti" });
   if (!Array.isArray(domande) || domande.length === 0) return res.status(400).json({ errore: "domande non valide" });
   const adattivita = getAdattivita(classe);
@@ -20,5 +23,8 @@ export default async function handler(req, res) {
       messages: [{ role: "user", content: testo }],
     });
     return res.json(parseJSON(r.content[0].text.trim()));
-  } catch (e) { return res.status(500).json({ errore: e.message }); }
+  } catch (e) {
+    console.error("ERRORE esame-valuta-interrogazione:", e.message);
+    return res.status(500).json({ errore: "Errore temporaneo. Riprova." });
+  }
 }

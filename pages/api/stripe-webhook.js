@@ -30,7 +30,6 @@ async function getEmailFromCustomer(customerId) {
 }
 
 async function upsertProfilo(email, fields) {
-  // First find canonical row to preserve is_admin and other columns
   const { data: existing } = await supabase
     .from("profili")
     .select("email")
@@ -48,7 +47,18 @@ async function upsertProfilo(email, fields) {
     const { error } = await supabase
       .from("profili")
       .insert({ email: email.trim().toLowerCase(), ...fields });
-    if (error) console.error("Supabase insert error:", error.message);
+    if (error) {
+      if (error.code === "23505") {
+        // Race condition: row was inserted by another webhook between SELECT and INSERT
+        const { error: retryError } = await supabase
+          .from("profili")
+          .update(fields)
+          .ilike("email", email);
+        if (retryError) console.error("Supabase retry update error:", retryError.message);
+      } else {
+        console.error("Supabase insert error:", error.message);
+      }
+    }
   }
 }
 
@@ -76,6 +86,23 @@ export default async function handler(req, res) {
 
   try {
     switch (event.type) {
+      case "checkout.session.completed": {
+        const session = obj;
+        let email = session.customer_email;
+        if (!email && session.customer) {
+          email = await getEmailFromCustomer(session.customer);
+        }
+        if (email) {
+          await upsertProfilo(email, {
+            abbonamento_attivo: true,
+            stripe_customer_id: session.customer,
+            trial_usato: true,
+            pagamento_fallito: false,
+          });
+        }
+        break;
+      }
+
       case "customer.subscription.created": {
         const email = await getEmailFromCustomer(obj.customer);
         if (email) {
@@ -84,6 +111,7 @@ export default async function handler(req, res) {
             abbonamento_attivo: true,
             abbonamento_scadenza: new Date(obj.current_period_end * 1000).toISOString(),
             trial_usato: true,
+            abbonamento_disdetto: false,
           });
         }
         break;
@@ -133,10 +161,14 @@ export default async function handler(req, res) {
         const email = await getEmailFromCustomer(obj.customer);
         if (email) {
           const attivo = obj.status === "active" || obj.status === "trialing";
-          await upsertProfilo(email, {
+          const fields = {
             abbonamento_attivo: attivo,
             abbonamento_scadenza: new Date(obj.current_period_end * 1000).toISOString(),
-          });
+          };
+          if (obj.status === "active") fields.pagamento_fallito = false;
+          // Sync cancellation state: true se schedulato per fine periodo, false se rinnovato
+          if (attivo) fields.abbonamento_disdetto = obj.cancel_at_period_end === true;
+          await upsertProfilo(email, fields);
         }
         break;
       }

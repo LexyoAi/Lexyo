@@ -31,8 +31,8 @@ export default async function handler(req, res) {
     const mediaType = photo.split(";")[0].split(":")[1];
 
     const response = await client.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 600,
+      model: isPremium ? "claude-sonnet-4-6" : "claude-haiku-4-5-20251001",
+      max_tokens: isPremium ? 600 : 400,
       system: [{
         type: "text",
         text: `Sei Lexyo, insegnante esperto di italiano per la ${classe} italiana.
@@ -79,6 +79,6 @@ Livello studente: ${adattivita}`,
     res.json({ correzione: response.content[0].text });
   } catch (e) {
     console.error("ERRORE CORREGGI:", e.message);
-    res.status(500).json({ errore: e.message });
+    res.status(500).json({ errore: "Errore temporaneo. Riprova." });
   }
 }

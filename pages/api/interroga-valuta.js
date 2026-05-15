@@ -2,12 +2,15 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getAdattivita } from "../../lib/adattivita";
 import { tts, VOICE_INTERROGA } from "../../lib/tts";
 import { parseJSON } from "../../lib/parse-json";
+import { verifyAuth } from "../../lib/verify-auth";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { conversazione, argomenti, materia, classe, sesso } = req.body;
+  const { accessToken, conversazione, argomenti, materia, classe, sesso } = req.body;
+  const user = await verifyAuth(accessToken);
+  if (!user) return res.status(401).json({ errore: "Accesso richiesto. Effettua il login." });
   const bambino = sesso === "F" ? "bambina" : "bambino";
   const ilBambino = sesso === "F" ? "la bambina" : "il bambino";
   const delBambino = sesso === "F" ? "della bambina" : "del bambino";
@@ -69,6 +72,6 @@ JSON richiesto: {"valutazione":"commento breve ultima risposta (1-2 righe, incor
     }
   } catch (e) {
     console.error("ERRORE interroga-valuta:", e.message);
-    res.status(500).json({ errore: e.message });
+    res.status(500).json({ errore: "Errore temporaneo. Riprova." });
   }
 }

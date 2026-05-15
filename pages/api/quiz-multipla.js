@@ -2,11 +2,13 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getAdattivita, getDifficoltaMateria } from "../../lib/adattivita";
 import { cacheGetOrFetch, cacheAddVariant, ck } from "../../lib/cache";
 import { parseJSON } from "../../lib/parse-json";
+import { verifyAuth } from "../../lib/verify-auth";
+import { verifyPremium } from "../../lib/verify-premium";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const MAX_VARIANTS = 6;
-const TTL = 24 * 60 * 60 * 1000;
+const TTL = 14 * 24 * 60 * 60 * 1000;
 
 // Corregge l'indice "corretta" confrontandolo con "risposta_corretta".
 // Se Claude ha sbagliato l'indice ma la risposta giusta è comunque nelle opzioni, la trova.
@@ -24,9 +26,17 @@ function fixCorrettaIndex(domande) {
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { materia, classe, argomento, forceNew } = req.body;
+  const { accessToken, materia, classe, argomento, forceNew } = req.body;
+  const user = await verifyAuth(accessToken);
+  if (!user) return res.status(401).json({ errore: "Accesso richiesto. Effettua il login." });
   const adattivita = getAdattivita(classe);
   const difficolta = getDifficoltaMateria(classe, materia);
+
+  // Trial: forceNew ignorato, usa sempre la cache
+  if (forceNew) {
+    const isPremium = await verifyPremium(accessToken);
+    if (!isPremium) forceNew = false;
+  }
 
   const key = ck("quiz", classe, materia, argomento);
 
@@ -74,6 +84,6 @@ IMPORTANTE: opzioni[corretta] deve essere identico a risposta_corretta.`, cache_
     res.json(dati);
   } catch (e) {
     console.error("ERRORE quiz-multipla:", e.message);
-    res.status(500).json({ errore: e.message });
+    res.status(500).json({ errore: "Errore temporaneo. Riprova." });
   }
 }

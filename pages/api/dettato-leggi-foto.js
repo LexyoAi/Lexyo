@@ -1,11 +1,16 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { tts, VOICE_DETTATO } from "../../lib/tts";
+import { verifyPremium } from "../../lib/verify-premium";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { photo } = req.body;
+  const { photo, accessToken } = req.body;
+
+  const isPremium = await verifyPremium(accessToken);
+  if (!isPremium) return res.status(403).json({ errore: "Funzione disponibile solo con abbonamento premium." });
+
   if (!photo) return res.status(400).json({ errore: "Foto mancante" });
 
   try {
@@ -49,6 +54,6 @@ Se la foto non contiene testo leggibile, scrivi solo: "NESSUN_TESTO"`,
     res.json({ audio, formato: "audio/mpeg", testo: testoEstratto });
   } catch (e) {
     console.error("ERRORE LEGGI FOTO:", e.message);
-    res.status(500).json({ errore: e.message });
+    res.status(500).json({ errore: "Errore temporaneo. Riprova." });
   }
 }
