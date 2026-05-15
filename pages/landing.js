@@ -178,19 +178,10 @@ export default function Landing({ onEntra }) {
           .spot-grid { gap:36px !important; }
         }
 
-        .hero-badge-row { display:none; }
-
         /* ── Tablet piccolo / landscape mobile (≤ 768px) ── */
         @media(max-width:768px){
           .spot-grid { grid-template-columns:1fr !important; gap:32px; }
           .spot-grid > div { width:100%; max-width:520px; margin:0 auto; }
-          .hero-grid { grid-template-columns:1fr !important; }
-          .hero-badge-row { display:flex; justify-content:center; order:-2; margin-bottom:8px; }
-          .hero-badge-desktop { display:none !important; }
-          .hero-lex { order:-1; width:100%; }
-          .hero-text { text-align:center; }
-          .hero-btn-group { margin-left:auto !important; margin-right:auto !important; }
-          .hero-classi { justify-content:center !important; }
           .nav-install-btn { display:none !important; }
           .nav-wrap { padding:0 16px !important; }
           .confronto-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:6px; }
@@ -245,61 +236,54 @@ export default function Landing({ onEntra }) {
         <div style={{ position:"absolute", top:0, right:0, width:"50%", height:"100%", background:"radial-gradient(ellipse 80% 70% at 85% 40%, rgba(99,102,241,0.07) 0%, transparent 70%)", pointerEvents:"none" }} />
         <div style={{ position:"absolute", bottom:0, left:0, width:"40%", height:"60%", background:"radial-gradient(ellipse 60% 60% at 20% 80%, rgba(139,92,246,0.05) 0%, transparent 70%)", pointerEvents:"none" }} />
 
-        <div className="hero-grid" style={{ maxWidth:"980px", margin:"0 auto", width:"100%", display:"grid", gridTemplateColumns:"1fr 1fr", gap:"40px", alignItems:"center" }}>
+        <div style={{ maxWidth:"640px", margin:"0 auto", width:"100%", textAlign:"center", animation:"fadeUp 0.8s ease 0.1s both" }}>
 
-          {/* BADGE mobile-only — appare sopra il leone su smartphone */}
-          <div className="hero-badge-row">
-            <div style={{ display:"inline-flex", alignItems:"center", gap:"8px", background:"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.18)", borderRadius:"100px", padding:"6px 16px" }}>
-              <span style={{ width:"7px", height:"7px", borderRadius:"50%", background:"#6366f1", display:"block", animation:"glow 2s ease-in-out infinite" }} />
-              <span style={{ fontSize:"12px", fontWeight:800, color:"#6366f1", letterSpacing:"0.5px" }}>La prima app AI educativa italiana</span>
-            </div>
+          {/* Badge */}
+          <div style={{ display:"inline-flex", alignItems:"center", gap:"8px", background:"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.18)", borderRadius:"100px", padding:"6px 16px", marginBottom:"20px" }}>
+            <span style={{ width:"7px", height:"7px", borderRadius:"50%", background:"#6366f1", display:"block", animation:"glow 2s ease-in-out infinite" }} />
+            <span style={{ fontSize:"12px", fontWeight:800, color:"#6366f1", letterSpacing:"0.5px" }}>La prima app AI educativa italiana</span>
           </div>
 
-          {/* SINISTRA: Lex */}
-          <div className="hero-lex" style={{ display:"flex", justifyContent:"center", alignItems:"center", animation:"fadeUp 0.8s ease 0.1s both" }}>
+          <h1 style={{ fontSize:"clamp(32px, 5vw, 58px)", fontWeight:900, letterSpacing:"-2px", lineHeight:1.1, color:"#0D0F2B", marginBottom:"16px" }}>
+            Il professore AI<br/>
+            <span style={{ background:"linear-gradient(135deg,#6366f1,#8b5cf6,#a78bfa)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>di tuo figlio.</span>
+          </h1>
+
+          <div style={{ marginBottom:"32px", display:"flex", flexDirection:"column", gap:"6px" }}>
+            <p style={{ fontSize:"clamp(14px, 2vw, 17px)", color:"#44476A", fontWeight:500 }}>Sempre paziente. Disponibile 24/7.</p>
+            <p style={{ fontSize:"clamp(14px, 2vw, 17px)", color:"#44476A", fontWeight:500 }}>Non dà mai le risposte.</p>
+            <p style={{ fontSize:"clamp(20px, 3vw, 26px)", color:"#0D0F2B", fontWeight:900, letterSpacing:"-0.5px" }}>Insegna a trovarle.</p>
+            <p style={{ fontSize:"clamp(12px, 1.5vw, 14px)", color:"#8892AE", fontWeight:500, marginTop:"4px" }}>Programma MIUR · Zero pubblicità. Mai.</p>
+          </div>
+
+          {/* Leone */}
+          <div style={{ display:"flex", justifyContent:"center", alignItems:"center", marginBottom:"32px" }}>
             <div style={{ position:"relative" }}>
               <div style={{ position:"absolute", inset:"-32px", borderRadius:"50%", background:"radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)", animation:"glow 4s ease-in-out infinite" }} />
-              <img src="/Lex-prof.png" alt="Lex Professore" style={{ width:"clamp(220px, 32vw, 380px)", height:"clamp(220px, 32vw, 380px)", objectFit:"contain", display:"block", animation:"lexProfIdle 5s ease-in-out infinite, lexGlow 5s ease-in-out infinite", transformOrigin:"bottom center", position:"relative", zIndex:1 }} />
+              <img src="/Lex-prof.png" alt="Lex Professore" style={{ width:"clamp(200px, 40vw, 340px)", objectFit:"contain", display:"block", animation:"lexProfIdle 5s ease-in-out infinite, lexGlow 5s ease-in-out infinite", transformOrigin:"bottom center", position:"relative", zIndex:1 }} />
             </div>
           </div>
 
-          {/* DESTRA: testo */}
-          <div className="hero-text" style={{ animation:"fadeUp 0.8s ease 0.2s both" }}>
-            <div className="hero-badge-desktop" style={{ display:"inline-flex", alignItems:"center", gap:"8px", background:"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.18)", borderRadius:"100px", padding:"6px 16px", marginBottom:"20px" }}>
-              <span style={{ width:"7px", height:"7px", borderRadius:"50%", background:"#6366f1", display:"block", animation:"glow 2s ease-in-out infinite" }} />
-              <span style={{ fontSize:"12px", fontWeight:800, color:"#6366f1", letterSpacing:"0.5px" }}>La prima app AI educativa italiana</span>
-            </div>
-
-            <h1 style={{ fontSize:"clamp(32px, 5vw, 58px)", fontWeight:900, letterSpacing:"-2px", lineHeight:1.1, color:"#0D0F2B", marginBottom:"16px" }}>
-              Il professore AI<br/>
-              <span style={{ background:"linear-gradient(135deg,#6366f1,#8b5cf6,#a78bfa)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>di tuo figlio.</span>
-            </h1>
-
-            <p style={{ fontSize:"clamp(15px, 2vw, 18px)", color:"#44476A", lineHeight:1.8, marginBottom:"28px", fontWeight:500 }}>
-              Sempre paziente. Disponibile 24/7. Non dà mai le risposte — <strong style={{ color:"#0D0F2B" }}>insegna a trovarle.</strong><br/>
-              Programma MIUR. <strong style={{ color:"#0D0F2B" }}>Zero pubblicità. Mai.</strong>
-            </p>
-
-            <div className="hero-btn-group" style={{ display:"flex", flexDirection:"column", gap:"10px", maxWidth:"380px", marginBottom:"24px" }}>
-              <button onClick={onEntra} className="btn-cta" style={{ padding:"18px 28px", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", border:"none", borderRadius:"16px", color:"white", fontFamily:"'Plus Jakarta Sans'", fontWeight:800, fontSize:"17px" }}>
-                Inizia gratis — 3 giorni
-              </button>
-              <div style={{ display:"flex", alignItems:"center", gap:"6px", flexWrap:"wrap" }}>
-                {["poi 12,90€/mese","annulla quando vuoi","GDPR"].map((t,i) => (
-                  <span key={i} style={{ fontSize:"12px", color:"#8892AE", fontWeight:500 }}>{i>0&&<span style={{ margin:"0 6px", color:"#C5C9E0" }}>·</span>}{t}</span>
-                ))}
-              </div>
-            </div>
-
-            <div className="hero-classi" style={{ display:"flex", flexWrap:"wrap", gap:"8px" }}>
-              {classi.map((c,i) => (
-                <div key={i} style={{ display:"flex", alignItems:"center", gap:"6px", background:`${c.colore}0f`, border:`1px solid ${c.colore}28`, borderRadius:"20px", padding:"5px 12px" }}>
-                  <span style={{ fontSize:"10px", fontWeight:900, color:c.colore }}>{c.emoji}</span>
-                  <span style={{ fontSize:"12px", fontWeight:700, color:"#44476A" }}>{c.nome}</span>
-                </div>
+          <div style={{ display:"flex", flexDirection:"column", gap:"10px", maxWidth:"380px", margin:"0 auto 24px" }}>
+            <button onClick={onEntra} className="btn-cta" style={{ padding:"18px 28px", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", border:"none", borderRadius:"16px", color:"white", fontFamily:"'Plus Jakarta Sans'", fontWeight:800, fontSize:"17px" }}>
+              Inizia gratis — 3 giorni
+            </button>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"6px", flexWrap:"wrap" }}>
+              {["poi 12,90€/mese","annulla quando vuoi","GDPR"].map((t,i) => (
+                <span key={i} style={{ fontSize:"12px", color:"#8892AE", fontWeight:500 }}>{i>0&&<span style={{ margin:"0 6px", color:"#C5C9E0" }}>·</span>}{t}</span>
               ))}
             </div>
           </div>
+
+          <div style={{ display:"flex", flexWrap:"wrap", gap:"8px", justifyContent:"center" }}>
+            {classi.map((c,i) => (
+              <div key={i} style={{ display:"flex", alignItems:"center", gap:"6px", background:`${c.colore}0f`, border:`1px solid ${c.colore}28`, borderRadius:"20px", padding:"5px 12px" }}>
+                <span style={{ fontSize:"10px", fontWeight:900, color:c.colore }}>{c.emoji}</span>
+                <span style={{ fontSize:"12px", fontWeight:700, color:"#44476A" }}>{c.nome}</span>
+              </div>
+            ))}
+          </div>
+
         </div>
       </section>
 
