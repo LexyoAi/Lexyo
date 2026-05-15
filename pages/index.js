@@ -1814,7 +1814,7 @@ export default function Home() {
           const evo = getLexEvolution(figlioAttivo.livello || 1);
           const ora = new Date().getHours();
           const saluto = ora < 6 ? "Buonanotte 🌙" : ora < 12 ? "Buongiorno ☀️" : ora < 18 ? "Buon pomeriggio 🌤️" : "Buona sera 🌙";
-          const msgs = [`${saluto}, ${figlioAttivo.nome}! Pronto a imparare?`, `Cosa studiamo oggi? Scegli una sezione! 👇`, `Ogni giorno un passo avanti! 💪`];
+          const msgs = [`${saluto}, ${figlioAttivo.nome}! Pront${figlioAttivo.sesso === "F" ? "a" : "o"} a imparare?`, `Cosa studiamo oggi? Scegli una sezione! 👇`, `Ogni giorno un passo avanti! 💪`];
           const msg = msgs[new Date().getDate() % msgs.length];
           const nextEvoLvl = [4,8,13,19,99][[0,1,2,3,4].find(i => [4,8,13,19,Infinity][i] > (figlioAttivo.livello||1))];
           return (
@@ -3696,7 +3696,7 @@ export default function Home() {
             <div>
               <div style={{ ...S.card, marginBottom:"16px", background:`${t.primario}0D`, border:`1px solid ${t.primario}33`, textAlign:"center", padding:"24px" }}>
                 <LexChar stato="idle" size={110} style={{ margin:"0 auto 12px" }} />
-                <p style={{ fontWeight:900, fontSize:"17px", marginBottom:"6px" }}>Pronto per l'interrogazione?</p>
+                <p style={{ fontWeight:900, fontSize:"17px", marginBottom:"6px" }}>Pront{figlioAttivo?.sesso === "F" ? "a" : "o"} per l'interrogazione?</p>
                 <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.5)", fontWeight:600, lineHeight:1.8 }}>
                   Carica una foto dei tuoi appunti.<br/>Lex ti farà {maxDomande} domande a voce!
                 </p>
@@ -4646,7 +4646,7 @@ export default function Home() {
 
             {csState.fase === "vinto" && (
               <div style={{ textAlign:"center", marginTop:"16px" }}>
-                <p style={{ fontSize:"20px", fontWeight:900, color:"#00F090", marginBottom:"8px" }}>🎉 Bravo/a! Risposta corretta!</p>
+                <p style={{ fontSize:"20px", fontWeight:900, color:"#00F090", marginBottom:"8px" }}>🎉 Brav{figlioAttivo?.sesso === "F" ? "a" : "o"}! Risposta corretta!</p>
                 <p style={{ color:"#fbbf24", fontWeight:800, fontSize:"15px", marginBottom:"16px" }}>+{csState.stelleGuadagnate * 3} ⭐</p>
                 <div style={{ display:"flex", gap:"10px", justifyContent:"center", flexWrap:"wrap" }}>
                   <button onClick={() => { setCsRisposta(""); setCsState(prev => ({ ...prev, fase:"gioco", indizioCorrente:0, stelleGuadagnate:5, messaggioVerifica:null })); }} style={{ padding:"12px 18px", borderRadius:"14px", background:"rgba(41,201,255,0.15)", border:"1px solid rgba(41,201,255,0.35)", color:"#29C9FF", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", cursor:"pointer" }}>🔄 Rigioca</button>
@@ -4722,7 +4722,7 @@ export default function Home() {
           <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"24px", gap:"20px" }}>
             <LexChar stato="happy" size={150} />
             <div style={{ textAlign:"center" }}>
-              <p style={{ fontSize:"22px", fontWeight:900, marginBottom:"8px" }}>Pronto per il quiz? 🎯</p>
+              <p style={{ fontSize:"22px", fontWeight:900, marginBottom:"8px" }}>Pront{figlioAttivo?.sesso === "F" ? "a" : "o"} per il quiz? 🎯</p>
               <p style={{ color: luce?"rgba(0,0,30,0.55)":"rgba(255,255,255,0.5)", fontSize:"14px", fontWeight:600 }}>5 domande su: <strong style={{ color: luce?"#0a0a20":"white" }}>{giocaArgomento}</strong></p>
               <p style={{ color:"#fbbf24", fontSize:"13px", fontWeight:700, marginTop:"4px" }}>Ogni risposta giusta = 2 ⭐</p>
             </div>
@@ -5502,7 +5502,7 @@ export default function Home() {
         <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"24px", gap:"20px" }}>
           <LexChar stato="happy" size={155} />
           <div style={{ textAlign:"center" }}>
-            <p style={{ fontSize:"22px", fontWeight:900, marginBottom:"8px" }}>Pronto per il ripasso? 🎯</p>
+            <p style={{ fontSize:"22px", fontWeight:900, marginBottom:"8px" }}>Pront{figlioAttivo?.sesso === "F" ? "a" : "o"} per il ripasso? 🎯</p>
             <p style={{ color: luce?"rgba(0,0,30,0.5)":"rgba(255,255,255,0.5)", fontSize:"14px", fontWeight:600 }}>10 domande su: <strong style={{ color: luce?"#0a0a20":"white" }}>{argomentoCorrente}</strong></p>
             <p style={{ color:info.colore, fontSize:"13px", fontWeight:700, marginTop:"4px" }}>Ogni risposta giusta = 1 XP 💫</p>
           </div>
@@ -6163,7 +6163,7 @@ export default function Home() {
           <LexChar stato="talk" size={150} />
           <div>
             <p style={{ fontSize:"18px", fontWeight:900, marginBottom:"12px" }}>🎤 Simulazione Colloquio</p>
-            <p style={{ fontSize:"14px", fontWeight:600, color:"rgba(255,255,255,0.65)", lineHeight:1.6 }}>Ciao! Sono la tua commissione d'esame. Ti farò {TOTALE_DOMANDE} domande su tutte le materie. Cerca di rispondere in modo completo. Sei pronto/a?</p>
+            <p style={{ fontSize:"14px", fontWeight:600, color:"rgba(255,255,255,0.65)", lineHeight:1.6 }}>Ciao! Sono la tua commissione d'esame. Ti farò {TOTALE_DOMANDE} domande su tutte le materie. Cerca di rispondere in modo completo. Sei pront{figlioAttivo?.sesso === "F" ? "a" : "o"}?</p>
           </div>
           <div style={{ width:"100%", maxWidth:"300px", display:"flex", flexDirection:"column", gap:"10px" }}>
             <button onClick={iniziaColloquio} style={{ ...S.btn, background:"linear-gradient(135deg,#29C9FF,#007ACC)", fontWeight:900 }}>Inizia il colloquio →</button>
