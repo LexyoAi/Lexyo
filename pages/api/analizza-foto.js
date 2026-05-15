@@ -8,8 +8,11 @@ export const config = { api: { bodyParser: { sizeLimit: "10mb" } } };
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { photo, materia, classe, fase, messaggi, photoOriginale, fingerprint, isTrial } = req.body;
+  const { photo, materia, classe, fase, messaggi, photoOriginale, fingerprint, isTrial, sesso } = req.body;
   const adattivita = getAdattivita(classe);
+  const ilBambino = sesso === "F" ? "la bambina" : "il bambino";
+  const delBambino = sesso === "F" ? "della bambina" : "del bambino";
+  const alBambino = sesso === "F" ? "alla bambina" : "al bambino";
 
   // ── VERIFICA TRIAL SERVER-SIDE ────────────────────────────────────────────
   if (isTrial && fase === "analisi") {
@@ -21,6 +24,13 @@ export default async function handler(req, res) {
         trial_esaurito: true,
       });
     }
+  }
+
+  if (!photo || !photo.startsWith("data:image/")) {
+    return res.status(400).json({ risposta: "Foto non valida", bloccata: true });
+  }
+  if (fase === "correzione" && photoOriginale && !photoOriginale.startsWith("data:image/")) {
+    return res.status(400).json({ risposta: "Foto originale non valida", bloccata: true });
   }
 
   try {
@@ -61,7 +71,7 @@ Rispondi SOLO con: SCOLASTICO oppure PERSONALE`,
       const response = await client.messages.create({
         model: "claude-sonnet-4-6",
         max_tokens: 400,
-        system: [{ type: "text", text: `Sei Lexyo, insegnante di ${materia} per la ${classe} italiana.
+        system: [{ type: "text", text: `Sei Lexyo, insegnante di ${materia} per la ${classe} italiana. Stai aiutando ${ilBambino}.
 Guardi la foto di un esercizio. Devi:
 1. Spiegare in modo CHIARO e SEMPLICE il tipo di esercizio e come si risolve
 2. NON dare la risposta finale
@@ -137,7 +147,7 @@ Livello studente: ${adattivita}`, cache_control: { type: "ephemeral" } }],
         model: "claude-sonnet-4-6",
         max_tokens: 400,
         system: [{ type: "text", text: `Sei Lexyo, insegnante di ${materia} per la ${classe} italiana.
-Il bambino ha fatto l'esercizio sul quaderno. Correggi il suo lavoro:
+${ilBambino.charAt(0).toUpperCase() + ilBambino.slice(1)} ha fatto l'esercizio sul quaderno. Correggi il lavoro ${delBambino}:
 1. Se ci sono errori: spiegali in modo CHIARO e GENTILE
 2. Se è tutto giusto: complimentati calorosamente
 3. Alla fine scrivi sempre: "Ora puoi vedere la soluzione completa! 🔓"

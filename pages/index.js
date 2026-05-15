@@ -196,8 +196,8 @@ export default function Home() {
     if (typeof window === "undefined") return "ssr";
     const d = [
       navigator.userAgent,
-      `${screen.width}x${screen.height}`,
-      screen.colorDepth,
+      `${window.screen.width}x${window.screen.height}`,
+      window.screen.colorDepth,
       navigator.language,
       Intl.DateTimeFormat().resolvedOptions().timeZone,
       navigator.hardwareConcurrency || 0,
@@ -574,6 +574,28 @@ export default function Home() {
     return () => clearTimeout(id);
   }, [svState?.fase, svState?.countdown]);
 
+  // Risultato Sfida Velocità — side effects fuori dal render
+  useEffect(() => {
+    if (!svState || svState.fase !== "risultato") return;
+    const recPrev = recordGiochi?.sfida_velocita?.[giocaArgomento] || 0;
+    const isRecord = svState.punteggio > recPrev;
+    if (isRecord) {
+      setRecordGiochi(prev => {
+        const nuovi = { ...prev, sfida_velocita: { ...(prev.sfida_velocita||{}), [giocaArgomento]: Math.max((prev.sfida_velocita?.[giocaArgomento])||0, svState.punteggio) } };
+        localStorage.setItem("lexyo_record_giochi", JSON.stringify(nuovi));
+        return nuovi;
+      });
+      addStelle(svState.punteggio * 2);
+      suona("obiettivo");
+      setMostraCoriandoli(true);
+      setTimeout(() => setMostraCoriandoli(false), 4000);
+    } else {
+      addStelle(svState.punteggio);
+      suona("stelle");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [svState?.fase, svState?.punteggio]);
+
   // Timer Sfida Velocità
   useEffect(() => {
     if (!svState || svState.fase !== "gioco") { clearInterval(svIntervalRef.current); return; }
@@ -845,6 +867,7 @@ export default function Home() {
     if (s === "esame5_orale") { setEsameOrale(null); setEsameLoading(false); }
     if (s === "esame5_storico") { setEsameLoading(false); }
     if (s === "esame5_interrogazione") { setEsameInterrState(null); setEsameLoading(false); }
+    if (s === "aggiungi_figlio") { setNomeFiglio(""); setClasseScelta(null); }
     if (s === "ripasso_home") { setRipassoQuiz(null); setRipassoRisposte([]); setRipassoFine(false); setRipassoLoading(false); setRipassoNuovoLivelloOverlay(false); setRipassoTransizione(false); }
     if (s === "ripasso_mappa") { setRipassoQuiz(null); setRipassoRisposte([]); setRipassoFine(false); setRipassoLoading(false); setRipassoNuovoLivelloOverlay(false); setRipassoTransizione(false); }
     if (s === "ripasso_quiz") {
@@ -990,7 +1013,7 @@ export default function Home() {
     if (!photo) return;
     setSbloccato(true); setFotoLoading(true);
     try {
-      const res = await fetch("/api/sblocca-soluzione", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ photo, materia: mat.label, classe: prog?.label }) });
+      const res = await fetch("/api/sblocca-soluzione", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ photo, materia: mat.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M", fingerprint: (isTrial&&!isAdmin) ? getFingerprint() : undefined, isTrial: isTrial&&!isAdmin }) });
       const d = await res.json();
       setFotoMsgs((prev) => [...prev, { role: "assistant", content: "🔓 Soluzione completa:\n\n" + d.risposta }]);
       addStelle(5); addBadge("perseverante");
@@ -1925,7 +1948,7 @@ export default function Home() {
                   }
                   setFotoFase("analisi_loading");
                   try {
-                    const res = await fetch("/api/analizza-foto", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ photo, materia:mat.label, classe:prog?.label, fase:"analisi", fingerprint:(isTrial&&!isAdmin)?getFingerprint():undefined, isTrial:isTrial&&!isAdmin }) });
+                    const res = await fetch("/api/analizza-foto", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ photo, materia:mat.label, classe:prog?.label, fase:"analisi", fingerprint:(isTrial&&!isAdmin)?getFingerprint():undefined, isTrial:isTrial&&!isAdmin, sesso:figlioAttivo?.sesso||"M" }) });
                     const d = await res.json();
                     if (d.bloccata) { setPhoto(null); setFotoFase("carica"); setFotoMsgs([{ role:"assistant", content:d.risposta }]); return; }
                     setFotoMsgs([{ role:"assistant", content:d.risposta }]); setFotoFase("domande");
@@ -2160,7 +2183,7 @@ export default function Home() {
         try {
           const res = await fetch("/api/dettato-correggi", {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ photo: compressed, testoOriginale: dettatoTesto, classe: prog?.label, materia: mat.label }),
+            body: JSON.stringify({ photo: compressed, testoOriginale: dettatoTesto, classe: prog?.label, materia: mat.label, sesso: figlioAttivo?.sesso || "M" }),
           });
           const d = await res.json();
           if (d.correzione) { setDettatoCorrezione(d.correzione); setDettatoFase("corretto"); addStelle(3); }
@@ -2939,7 +2962,7 @@ export default function Home() {
         const r = await fetch("/api/quiz-multipla", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ materia: matInfo.label, classe: prog?.label, argomento: rs.argomento }),
+          body: JSON.stringify({ materia: matInfo.label, classe: prog?.label, argomento: rs.argomento, sesso: figlioAttivo?.sesso || "M" }),
         });
         const d = await r.json();
         setRipassoEstateState(prev => ({ ...prev, fase: "quiz", quizDomande: (d.domande || []).slice(0,3), quizRisposte: [] }));
@@ -3932,12 +3955,12 @@ export default function Home() {
                     <p key={i} style={{ fontSize:"12px", color:"rgba(239,68,68,0.7)", fontWeight:600, marginBottom: i < 4 ? "4px" : 0 }}>✗ {t}</p>
                   ))}
                 </div>
-                <button onClick={() => {
-                  setPiano("trial");
-                  setTrialGiorni(0);
-                  setShowGestisciAbb(false);
-                  setDisdettaConfermata(false);
-                  alert("Abbonamento disdetto. Hai accesso fino alla fine del periodo pagato.");
+                <button onClick={async () => {
+                  const r = await fetch("/api/cancel-subscription", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ email: utente?.email }) });
+                  const d = await r.json();
+                  if (d.errore) { alert("Errore: " + d.errore); return; }
+                  setShowGestisciAbb(false); setDisdettaConfermata(false);
+                  alert("Abbonamento disdetto. Hai accesso fino alla fine del periodo già pagato.");
                 }} style={{ width:"100%", padding:"13px", background:"rgba(239,68,68,0.15)", border:"1px solid rgba(239,68,68,0.4)", borderRadius:"14px", color:"#f87171", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer", marginBottom:"10px" }}>
                   Sì, disdico l'abbonamento
                 </button>
@@ -4078,7 +4101,7 @@ export default function Home() {
       try {
         const r = await fetch("/api/sfida-velocita", {
           method:"POST", headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({ materia: matInfo.label, classe: prog2?.label, argomento: giocaArgomento, forceNew }),
+          body: JSON.stringify({ materia: matInfo.label, classe: prog2?.label, argomento: giocaArgomento, forceNew, sesso: figlioAttivo?.sesso || "M" }),
         });
         const d = await r.json();
         if (d.errore || !d.domande?.length) { setSvState(null); alert("Errore: " + (d.errore || "nessuna domanda")); return; }
@@ -4231,8 +4254,6 @@ export default function Home() {
     if (svState.fase === "risultato") {
       const recPrev = recordGiochi?.sfida_velocita?.[giocaArgomento] || 0;
       const isRecord = svState.punteggio > recPrev;
-      if (isRecord) { salvaSvRecord(svState.punteggio); addStelle(svState.punteggio * 2); suona("obiettivo"); setMostraCoriandoli(true); setTimeout(() => setMostraCoriandoli(false), 4000); }
-      else { addStelle(svState.punteggio); suona("stelle"); }
 
       const CORIANDOLI_D2 = Array.from({length:50},(_,i)=>({ left:((i*37+7)%100), dur:1.5+((i*13)%15)/10, delay:((i*23)%80)/100, size:8+(i%9), round:i%3!==0, color:['#FFE500','#FF70C8','#00F090','#29C9FF','#6C47FF','#FF8533'][i%6] }));
 
@@ -4269,7 +4290,7 @@ export default function Home() {
       try {
         const r = await fetch("/api/chi-sono", {
           method:"POST", headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({ materia: matInfo.label, classe: prog2?.label, argomento: giocaArgomento }),
+          body: JSON.stringify({ materia: matInfo.label, classe: prog2?.label, argomento: giocaArgomento, sesso: figlioAttivo?.sesso || "M" }),
         });
         const d = await r.json();
         if (d.errore || !d.soggetto) { setCsState(null); alert(d.errore || "Errore. Riprova."); return; }
@@ -4442,7 +4463,7 @@ export default function Home() {
         const r = await fetch("/api/quiz-multipla", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ materia: MATERIE[materia]?.label, classe: prog?.label, argomento: giocaArgomento, forceNew }),
+          body: JSON.stringify({ materia: MATERIE[materia]?.label, classe: prog?.label, argomento: giocaArgomento, forceNew, sesso: figlioAttivo?.sesso || "M" }),
         });
         const d = await r.json();
         if (d.errore) { setMcQuiz([]); setMcLoading(false); return; }
@@ -4630,7 +4651,7 @@ export default function Home() {
       try {
         const r = await fetch("/api/parole-crociate", {
           method:"POST", headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({materia:MATERIE[materia]?.label,classe:prog?.label,argomento:giocaArgomento}),
+          body:JSON.stringify({materia:MATERIE[materia]?.label,classe:prog?.label,argomento:giocaArgomento,sesso:figlioAttivo?.sesso||"M"}),
         });
         const d = await r.json();
         if(d.parole&&d.parole.length>0){ setWordGame(buildCrossword(d.parole)); setWordInputs({}); setWordVerificato(false); }
@@ -5208,7 +5229,7 @@ export default function Home() {
         const r = await fetch("/api/ripasso-genera", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ materia: info.label, classe: prog?.label, argomento: argomentoCorrente }),
+          body: JSON.stringify({ materia: info.label, classe: prog?.label, argomento: argomentoCorrente, sesso: figlioAttivo?.sesso || "M" }),
         });
         const d = await r.json();
         setRipassoQuiz(d.domande || []);

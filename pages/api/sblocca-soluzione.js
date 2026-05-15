@@ -1,10 +1,29 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { checkTrialUsage, incrementTrialUsage } from "../../lib/trial-server";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+export const config = { api: { bodyParser: { sizeLimit: "10mb" } } };
+
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { photo, materia, classe } = req.body;
+  const { photo, materia, classe, sesso, fingerprint, isTrial } = req.body;
+
+  if (!photo || !photo.startsWith("data:image/")) {
+    return res.status(400).json({ risposta: "Foto non valida" });
+  }
+
+  if (isTrial) {
+    const check = await checkTrialUsage(fingerprint, "sblocca");
+    if (!check.consentito) {
+      return res.status(429).json({
+        risposta: "🔓 Hai esaurito le soluzioni disponibili nella prova gratuita.\nAbbonati per soluzioni illimitate!",
+        trial_esaurito: true,
+      });
+    }
+  }
+
+  const ilBambino = sesso === "F" ? "la bambina" : "il bambino";
 
   try {
     const base64 = photo.split(",")[1];
@@ -14,7 +33,7 @@ export default async function handler(req, res) {
       max_tokens: 500,
       system: [{
         type: "text",
-        text: `Sei Lexyo, insegnante di ${materia} per la ${classe} italiana. Mostra la soluzione completa spiegata passo per passo. Lo studente ha già provato — ora merita la spiegazione completa. Spiega PERCHÉ ogni passaggio è giusto. Linguaggio semplice per bambini. In italiano.`,
+        text: `Sei Lexyo, insegnante di ${materia} per la ${classe} italiana. Stai aiutando ${ilBambino}. Mostra la soluzione completa spiegata passo per passo. Lo studente ha già provato — ora merita la spiegazione completa. Spiega PERCHÉ ogni passaggio è giusto. Linguaggio semplice per bambini. In italiano.`,
         cache_control: { type: "ephemeral" }
       }],
       messages: [{
@@ -25,6 +44,7 @@ export default async function handler(req, res) {
         ]
       }],
     });
+    if (isTrial) await incrementTrialUsage(fingerprint, "sblocca");
     res.json({ risposta: response.content[0].text });
   } catch (e) {
     console.error("ERRORE SOLUZIONE:", e.message);

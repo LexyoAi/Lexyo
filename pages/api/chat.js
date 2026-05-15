@@ -6,7 +6,10 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { messages, materia, classe, contesto, fingerprint, isTrial } = req.body;
+  const { messages, materia, classe, contesto, fingerprint, isTrial, sesso } = req.body;
+
+  if (!Array.isArray(messages) || messages.length === 0) return res.status(400).json({ risposta: "Richiesta non valida" });
+  const safeMessages = messages.slice(-20).map(m => ({ role: m.role === "assistant" ? "assistant" : "user", content: String(m.content || "").slice(0, 2000) }));
 
   // ── VERIFICA TRIAL SERVER-SIDE ────────────────────────────────────────────
   if (isTrial) {
@@ -21,6 +24,7 @@ export default async function handler(req, res) {
 
   const adattivita = getAdattivita(classe);
   const contestoTxt = contesto?.argomento ? `\nArgomento specifico: "${contesto.argomento}". Concentrati su questo.` : "";
+  const ilBambino = sesso === "F" ? "la bambina" : "il bambino";
 
   try {
     const response = await client.messages.create({
@@ -28,10 +32,10 @@ export default async function handler(req, res) {
       max_tokens: 350,
       system: [{
         type: "text",
-        text: `Sei Lexyo, insegnante di ${materia} per la ${classe} italiana. Metodo socratico: NON dare mai la risposta diretta. Guida con domande brevi. In italiano. Max 3 righe + 1 domanda finale.${contestoTxt}\nLivello: ${adattivita}`,
+        text: `Sei Lexyo, insegnante di ${materia} per la ${classe} italiana. Parla con ${ilBambino}. Metodo socratico: NON dare mai la risposta diretta. Guida con domande brevi. In italiano. Max 3 righe + 1 domanda finale.${contestoTxt}\nLivello: ${adattivita}`,
         cache_control: { type: "ephemeral" }
       }],
-      messages,
+      messages: safeMessages,
     });
 
     if (isTrial) await incrementTrialUsage(fingerprint, "chat");
