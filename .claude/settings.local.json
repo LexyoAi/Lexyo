@@ -14,7 +14,10 @@
       "PowerShell(\\(Get-Content \"C:\\\\Users\\\\Shq\\\\Desktop\\\\maiprof\\\\pages\\\\index.js\" | Measure-Object -Line\\).Lines)",
       "PowerShell(\\(Get-Content \"C:\\\\Users\\\\Shq\\\\Desktop\\\\maiprof\\\\styles\\\\globals.css\" | Measure-Object -Line\\).Lines)",
       "Bash(python3 *)",
-      "Bash(del *)"
+      "Bash(del *)",
+      "Bash(git checkout *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }
