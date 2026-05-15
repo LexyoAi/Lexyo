@@ -1,11 +1,23 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getAdattivita } from "../../lib/adattivita";
+import { checkTrialUsage, incrementTrialUsage } from "../../lib/trial-server";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { messages, materia, classe, contesto } = req.body;
+  const { messages, materia, classe, contesto, fingerprint, isTrial } = req.body;
+
+  // ── VERIFICA TRIAL SERVER-SIDE ────────────────────────────────────────────
+  if (isTrial) {
+    const check = await checkTrialUsage(fingerprint, "chat");
+    if (!check.consentito) {
+      return res.status(429).json({
+        risposta: "💬 Hai esaurito i messaggi disponibili nella prova gratuita.\nAbbonati per messaggi illimitati!",
+        trial_esaurito: true,
+      });
+    }
+  }
 
   const adattivita = getAdattivita(classe);
   const contestoTxt = contesto?.argomento ? `\nArgomento specifico: "${contesto.argomento}". Concentrati su questo.` : "";
@@ -21,9 +33,12 @@ export default async function handler(req, res) {
       }],
       messages,
     });
+
+    if (isTrial) await incrementTrialUsage(fingerprint, "chat");
+
     res.json({ risposta: response.content[0].text });
   } catch (e) {
-    console.error("ERRORE:", e.message);
+    console.error("ERRORE chat:", e.message);
     res.status(500).json({ risposta: `Errore: ${e.message}` });
   }
 }

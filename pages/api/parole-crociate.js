@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getAdattivita } from "../../lib/adattivita";
 import { cacheGetOrFetch, ck } from "../../lib/cache";
+import { parseJSON } from "../../lib/parse-json";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -28,9 +29,7 @@ Livello studente: ${adattivita}`, cache_control: { type: "ephemeral" } }],
         messages: [{ role: "user", content: `Crea 6 parole su "${argomento}" di ${materia} per ${classe}.` }],
       });
 
-      const testo = risposta.content[0].text.trim();
-      const match = testo.match(/\{[\s\S]*\}/);
-      return JSON.parse(match ? match[0] : testo);
+      return parseJSON(risposta.content[0].text.trim());
     }, MAX_VARIANTS, TTL);
 
     res.setHeader("X-Cache", hit ? "HIT" : "MISS");

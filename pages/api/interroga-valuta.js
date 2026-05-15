@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getAdattivita } from "../../lib/adattivita";
 import { tts, VOICE_INTERROGA } from "../../lib/tts";
+import { parseJSON } from "../../lib/parse-json";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -40,14 +41,7 @@ JSON richiesto: {"valutazione":"commento breve ultima risposta (1-2 righe, incor
       messages: [{ role: "user", content: userPrompt }],
     });
 
-    let dati;
-    const testo = risposta.content[0].text.trim();
-    try {
-      const match = testo.match(/\{[\s\S]*\}/);
-      dati = JSON.parse(match ? match[0] : testo);
-    } catch {
-      return res.status(500).json({ errore: "Errore nella valutazione della risposta." });
-    }
+    const dati = parseJSON(risposta.content[0].text.trim());
 
     // TTS con cache condivisa — evita ri-generazioni di frasi identiche
     const audio = await tts(dati.testo_audio || "", VOICE_INTERROGA);

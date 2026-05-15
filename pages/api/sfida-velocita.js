@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getAdattivita, getDifficoltaMateria } from "../../lib/adattivita";
 import { cacheGetOrFetch, cacheAddVariant, ck } from "../../lib/cache";
+import { parseJSON } from "../../lib/parse-json";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MAX_VARIANTS = 6;
@@ -31,9 +32,7 @@ Rispondi SOLO con JSON array senza markdown senza backtick:
 opzioneA è SEMPRE la risposta corretta.`, cache_control: { type: "ephemeral" } }],
       messages: [{ role: "user", content: `Crea 20 domande flash su "${argomento}" di ${materia} per ${classe}. Usa domande diverse da sessioni precedenti.` }],
     });
-    const testo = r.content[0].text.trim();
-    const match = testo.match(/\[[\s\S]*\]/);
-    return JSON.parse(match ? match[0] : testo);
+    return parseJSON(r.content[0].text.trim(), "array");
   };
 
   try {

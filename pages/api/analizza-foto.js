@@ -1,18 +1,33 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getAdattivita } from "../../lib/adattivita";
+import { checkTrialUsage, incrementTrialUsage } from "../../lib/trial-server";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+export const config = { api: { bodyParser: { sizeLimit: "10mb" } } };
+
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { photo, materia, classe, fase, messaggi, photoOriginale } = req.body;
+  const { photo, materia, classe, fase, messaggi, photoOriginale, fingerprint, isTrial } = req.body;
   const adattivita = getAdattivita(classe);
+
+  // ── VERIFICA TRIAL SERVER-SIDE ────────────────────────────────────────────
+  if (isTrial && fase === "analisi") {
+    const check = await checkTrialUsage(fingerprint, "foto");
+    if (!check.consentito) {
+      return res.status(429).json({
+        risposta: "📸 Hai usato tutte le foto disponibili nella prova gratuita.\nAbbonati per foto illimitate!",
+        bloccata: true,
+        trial_esaurito: true,
+      });
+    }
+  }
 
   try {
     const base64 = photo.split(",")[1];
     const mediaType = photo.split(";")[0].split(":")[1];
 
-    // ── CONTROLLO SICUREZZA ───────────────────────────────────────────────
+    // ── CONTROLLO SICUREZZA (Haiku: classificazione binaria rapida) ──────────
     if (fase === "analisi" || fase === "correzione" || fase === "compito_estivo" || fase === "compito_estivo_semplice") {
       const check = await client.messages.create({
         model: "claude-haiku-4-5-20251001",
@@ -41,10 +56,10 @@ Rispondi SOLO con: SCOLASTICO oppure PERSONALE`,
       }
     }
 
-    // ── ANALISI ESERCIZIO ─────────────────────────────────────────────────
+    // ── ANALISI ESERCIZIO (Sonnet: riconosce scrittura a mano) ──────────────
     if (fase === "analisi") {
       const response = await client.messages.create({
-        model: "claude-haiku-4-5-20251001",
+        model: "claude-sonnet-4-6",
         max_tokens: 400,
         system: [{ type: "text", text: `Sei Lexyo, insegnante di ${materia} per la ${classe} italiana.
 Guardi la foto di un esercizio. Devi:
@@ -62,10 +77,11 @@ Formato risposta:
           { type: "text", text: "Analizza questo esercizio e spiegami come si fa." }
         ]}],
       });
+      if (isTrial) await incrementTrialUsage(fingerprint, "foto");
       return res.json({ risposta: response.content[0].text, fase: "domande" });
     }
 
-    // ── DOMANDE INTERATTIVE ───────────────────────────────────────────────
+    // ── DOMANDE INTERATTIVE (Haiku: solo testo, veloce) ─────────────────────
     if (fase === "domande") {
       const msgs = messaggi.map(m => ({ role: m.role, content: m.content }));
       const response = await client.messages.create({
@@ -89,13 +105,13 @@ Livello studente: ${adattivita}`, cache_control: { type: "ephemeral" } }],
       return res.json({ risposta: testo, fase: pronto ? "attendi_correzione" : "domande" });
     }
 
-    // ── COMPITO ESTIVO ────────────────────────────────────────────────────
+    // ── COMPITO ESTIVO (Sonnet: analisi contenuto scolastico) ───────────────
     if (fase === "compito_estivo" || fase === "compito_estivo_semplice") {
       const extra = fase === "compito_estivo_semplice"
         ? "Spiega come se avessi 6 anni: usa solo parole semplicissime e un esempio pratico della vita di tutti i giorni."
         : `Usa un linguaggio adatto alla ${classe}, parole semplici, esempi concreti della vita quotidiana.`;
       const response = await client.messages.create({
-        model: "claude-haiku-4-5-20251001",
+        model: "claude-sonnet-4-6",
         max_tokens: 550,
         system: [{ type: "text", text: `Sei Lex, un professore AI simpatico e incoraggiante per bambini italiani di ${classe}.
 Analizza questa foto di un compito estivo assegnato dalla scuola.
@@ -113,12 +129,12 @@ Livello studente: ${adattivita}`, cache_control: { type: "ephemeral" } }],
       return res.json({ risposta: response.content[0].text, fase: "compito_risposta" });
     }
 
-    // ── CORREZIONE QUADERNO ───────────────────────────────────────────────
+    // ── CORREZIONE QUADERNO (Sonnet: confronto due immagini scritte a mano) ─
     if (fase === "correzione") {
       const b64orig = photoOriginale.split(",")[1];
       const mtOrig = photoOriginale.split(";")[0].split(":")[1];
       const response = await client.messages.create({
-        model: "claude-haiku-4-5-20251001",
+        model: "claude-sonnet-4-6",
         max_tokens: 400,
         system: [{ type: "text", text: `Sei Lexyo, insegnante di ${materia} per la ${classe} italiana.
 Il bambino ha fatto l'esercizio sul quaderno. Correggi il suo lavoro:
@@ -143,7 +159,7 @@ Livello studente: ${adattivita}`, cache_control: { type: "ephemeral" } }],
     }
 
   } catch (e) {
-    console.error("ERRORE:", e.message);
+    console.error("ERRORE analizza-foto:", e.message);
     return res.status(500).json({ risposta: `Errore: ${e.message}` });
   }
 }

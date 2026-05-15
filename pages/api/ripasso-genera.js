@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getAdattivita, getDifficoltaMateria } from "../../lib/adattivita";
 import { cacheGetOrFetch, ck } from "../../lib/cache";
+import { parseJSON } from "../../lib/parse-json";
 
 function fixCorrettaIndex(domande) {
   return domande.map(d => {
@@ -46,9 +47,7 @@ Rispondi SOLO con JSON valido:
         messages: [{ role: "user", content: `Crea 10 domande di ripasso su "${argomento}" di ${materia} per ${classe}.` }],
       });
 
-      const testo = risposta.content[0].text.trim();
-      const match = testo.match(/\{[\s\S]*\}/);
-      const parsed = JSON.parse(match ? match[0] : testo);
+      const parsed = parseJSON(risposta.content[0].text.trim());
       parsed.domande = fixCorrettaIndex(parsed.domande || []);
       return parsed;
     }, MAX_VARIANTS, TTL);

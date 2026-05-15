@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getAdattivita, getDifficoltaMateria } from "../../lib/adattivita";
 import { cacheGetOrFetch, cacheAddVariant, ck } from "../../lib/cache";
+import { parseJSON } from "../../lib/parse-json";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -54,8 +55,7 @@ IMPORTANTE: opzioni[corretta] deve essere identico a risposta_corretta.`, cache_
       messages: [{ role: "user", content: `Crea 5 domande su "${argomento}" di ${materia} per ${classe}.` }],
     });
     const testo = r.content[0].text.trim();
-    const match = testo.match(/\{[\s\S]*\}/);
-    const parsed = JSON.parse(match ? match[0] : testo);
+    const parsed = parseJSON(testo);
     // Correzione server-side: se l'indice è sbagliato, lo ripariamo
     parsed.domande = fixCorrettaIndex(parsed.domande || []);
     return parsed;

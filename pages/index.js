@@ -23,8 +23,8 @@ export default function Home() {
   const [newBadge, setNewBadge] = useState(null);
   const [meseAperto, setMeseAperto] = useState(null);
   const [trialGiorni, setTrialGiorni] = useState(3);
-  const TRIAL_FOTO_MAX = 3;
-  const TRIAL_CHAT_MAX = 10;
+  const TRIAL_FOTO_MAX = 5;
+  const TRIAL_CHAT_MAX = 20;
   const trialFotoUsate = typeof window !== "undefined" ? parseInt(localStorage.getItem("lexyo_trial_foto") || "0", 10) : 0;
   const trialChatUsate = typeof window !== "undefined" ? parseInt(localStorage.getItem("lexyo_trial_chat") || "0", 10) : 0;
   const isTrial = piano === "trial";
@@ -975,6 +975,8 @@ export default function Home() {
           materia: mat.label,
           classe: prog?.label,
           contesto: chatContesto,
+          fingerprint: (isTrial && !isAdmin) ? getFingerprint() : undefined,
+          isTrial: isTrial && !isAdmin,
         }),
       });
       const d = await res.json();
@@ -1923,7 +1925,7 @@ export default function Home() {
                   }
                   setFotoFase("analisi_loading");
                   try {
-                    const res = await fetch("/api/analizza-foto", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ photo, materia:mat.label, classe:prog?.label, fase:"analisi" }) });
+                    const res = await fetch("/api/analizza-foto", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ photo, materia:mat.label, classe:prog?.label, fase:"analisi", fingerprint:(isTrial&&!isAdmin)?getFingerprint():undefined, isTrial:isTrial&&!isAdmin }) });
                     const d = await res.json();
                     if (d.bloccata) { setPhoto(null); setFotoFase("carica"); setFotoMsgs([{ role:"assistant", content:d.risposta }]); return; }
                     setFotoMsgs([{ role:"assistant", content:d.risposta }]); setFotoFase("domande");
@@ -5486,18 +5488,6 @@ export default function Home() {
           {!esameSubTipo ? (
             <div style={{ display:"flex", flexDirection:"column", gap:"14px" }}>
               <p style={{ fontSize:"13px", fontWeight:700, color: luce?"rgba(0,0,30,0.5)":"rgba(255,255,255,0.5)", textAlign:"center", marginBottom:"4px" }}>Quale esame vuoi preparare?</p>
-              <button className="hcard" onClick={() => setEsameSubTipo("elementare")} style={{ width:"100%", padding:"0", borderRadius:"22px", background:"linear-gradient(145deg,#FF70C8,#E0008A,#C026D3)", boxShadow:"0 6px 18px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", cursor:"pointer", "--card-border":"linear-gradient(135deg,#C026D3,#FF70C8)" }}>
-                <div className="card-shine" />
-                <div className="card-content" style={{ padding:"22px 20px", display:"flex", alignItems:"center", gap:"16px" }}>
-                  <div style={{ fontSize:"44px", lineHeight:1, flexShrink:0 }}>🎒</div>
-                  <div style={{ flex:1, textAlign:"left" }}>
-                    <p style={{ fontSize:"17px", fontWeight:900, color:"white", marginBottom:"4px" }}>Esame 5° Elementare</p>
-                    <p style={{ fontSize:"12px", fontWeight:700, color:"rgba(255,255,255,0.75)" }}>Italiano · Matematica · Colloquio orale</p>
-                  </div>
-                  <span style={{ fontSize:"24px", color:"rgba(255,255,255,0.8)", flexShrink:0 }}>→</span>
-                </div>
-                <div className="card-depth" />
-              </button>
               <button className="hcard" onClick={() => setEsameSubTipo("media")} style={{ width:"100%", padding:"0", borderRadius:"22px", background:"linear-gradient(145deg,#29C9FF,#0088FF,#0044DD)", boxShadow:"0 6px 18px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", cursor:"pointer", "--card-border":"linear-gradient(135deg,#0022CC,#29C9FF)" }}>
                 <div className="card-shine" />
                 <div className="card-content" style={{ padding:"22px 20px", display:"flex", alignItems:"center", gap:"16px" }}>

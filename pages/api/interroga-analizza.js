@@ -2,11 +2,12 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getAdattivita } from "../../lib/adattivita";
 import { cacheGetOrFetch, ck } from "../../lib/cache";
 import { tts, VOICE_INTERROGA } from "../../lib/tts";
+import { parseJSON } from "../../lib/parse-json";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const TEXT_VARIANTS = 5;
-const TEXT_TTL = 2 * 60 * 60 * 1000; // 2h — fresh questions each school session
+const TEXT_TTL = 2 * 60 * 60 * 1000;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
@@ -31,16 +32,13 @@ Rispondi SOLO con JSON valido (niente testo fuori, niente markdown, niente backt
 Livello studente: ${adattivita}`, cache_control: { type: "ephemeral" } }],
           messages: [{ role: "user", content: `Prepara un'interrogazione sull'argomento: "${argomento}"` }],
         });
-
-        const testo = analisi.content[0].text.trim();
-        const match = testo.match(/\{[\s\S]*\}/);
-        return JSON.parse(match ? match[0] : testo);
+        return parseJSON(analisi.content[0].text.trim());
       }, TEXT_VARIANTS, TEXT_TTL);
 
       dati = data;
 
     } else {
-      // ── PHOTO MODE — not cacheable ─────────────────────────────────────
+      // ── PHOTO MODE — Sonnet per riconoscimento scrittura/appunti ──────
       const base64 = photo.split(",")[1];
       const mediaType = photo.split(";")[0].split(":")[1];
 
@@ -61,7 +59,7 @@ PERSONALE: selfie, bambini fotografati, persone, foto private.`, cache_control: 
       }
 
       const analisi = await client.messages.create({
-        model: "claude-haiku-4-5-20251001",
+        model: "claude-sonnet-4-6",
         max_tokens: 400,
         system: [{ type: "text", text: `Sei Lex, insegnante AI di ${materia} per la ${classe} italiana.
 Analizzi gli appunti fotografati e prepari un'interrogazione orale.
@@ -74,10 +72,8 @@ Livello studente: ${adattivita}`, cache_control: { type: "ephemeral" } }],
         ]}],
       });
 
-      const testo = analisi.content[0].text.trim();
-      const match = testo.match(/\{[\s\S]*\}/);
       try {
-        dati = JSON.parse(match ? match[0] : testo);
+        dati = parseJSON(analisi.content[0].text.trim());
       } catch {
         return res.status(500).json({ errore: "Non riesco ad analizzare gli appunti. Riprova con una foto più nitida." });
       }
