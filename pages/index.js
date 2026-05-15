@@ -3863,19 +3863,6 @@ export default function Home() {
           );
         })()}
 
-        {/* Tema chiaro / scuro */}
-        <div style={{ ...S.card, marginTop:"14px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-          <div>
-            <p style={{ fontWeight:800, fontSize:"14px", marginBottom:"2px" }}>{luce ? "☀️ Tema Chiaro" : "🌙 Tema Scuro"}</p>
-            <p style={{ fontSize:"12px", color: luce ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.4)", fontWeight:600 }}>{luce ? "Sfondo bianco · testo scuro" : "Sfondo scuro · testo chiaro"}</p>
-          </div>
-          <button
-            onClick={() => setTema(t => t === "dark" ? "light" : "dark")}
-            style={{ position:"relative", width:"52px", height:"28px", borderRadius:"14px", background: luce ? "linear-gradient(135deg,#a78bfa,#6366f1)" : "rgba(255,255,255,0.12)", border: luce ? "none" : "1px solid rgba(255,255,255,0.15)", cursor:"pointer", transition:"all 0.3s ease", flexShrink:0 }}
-          >
-            <div style={{ position:"absolute", top:"3px", left: luce ? "27px" : "3px", width:"22px", height:"22px", borderRadius:"50%", background:"white", boxShadow:"0 2px 6px rgba(0,0,0,0.25)", transition:"left 0.3s ease" }} />
-          </button>
-        </div>
 
         {/* ── Link Legali ── */}
         <div style={{ marginTop:"14px", padding:"14px 16px", background: luce ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)", border: luce ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.07)", borderRadius:"14px" }}>
