@@ -11,7 +11,8 @@ const TTL = 14 * 24 * 60 * 60 * 1000;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { accessToken, materia, classe, argomento, forceNew } = req.body;
+  const { accessToken, materia, classe, argomento } = req.body;
+  let forceNew = req.body.forceNew;
   const user = await verifyAuth(accessToken);
   if (!user) return res.status(401).json({ errore: "Accesso richiesto. Effettua il login." });
   const adattivita = getAdattivita(classe);

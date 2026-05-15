@@ -11,7 +11,8 @@ const TTL = 14 * 24 * 60 * 60 * 1000;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { classe, materia, argomento, difficolta = "media", tipo = "dettato", forceNew, fingerprint, accessToken, sesso } = req.body;
+  const { classe, materia, argomento, difficolta = "media", tipo = "dettato", fingerprint, accessToken, sesso } = req.body;
+  let forceNew = req.body.forceNew;
   const adattivita = getAdattivita(classe);
 
   const isPremium = await verifyPremium(accessToken);
