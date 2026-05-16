@@ -65,7 +65,7 @@ export default function Landing({ onEntra }) {
   const features = [
     { Icon: Camera,        titolo: "Foto Compiti",             desc: "Scatta la foto dell'esercizio. Lex guida tuo figlio passo per passo senza mai dare la risposta diretta — metodo socratico.", tag: "Metodo Socratico",    colore: "#6366f1" },
     { Icon: MessageCircle, titolo: "Chat con Lex 24/7",        desc: "Domande su qualsiasi materia, a qualsiasi ora. Lex risponde stimolando il ragionamento, non sostituendolo.", tag: "Sempre Disponibile",  colore: "#0ea5e9" },
-    { Icon: Mic,           titolo: "Dettato AI con Voce",      desc: "Lex legge il testo in italiano con voce naturale. Tuo figlio scrive e riceve correzione con ogni regola grammaticale spiegata.", tag: "Voce Italiana",       colore: "#ec4899" },
+
     { Icon: Zap,           titolo: "Quiz a Scelta Multipla",   desc: "Quiz su ogni argomento del programma con 4 opzioni. Feedback immediato e spiegazione della risposta corretta inclusa.", tag: "Feedback Immediato",   colore: "#10b981" },
     { Icon: GraduationCap, titolo: "Interrogazione Orale",     desc: "Lex simula l'interrogazione con domande reali del programma MIUR. Valuta, approfondisce e indica cosa ripassare.", tag: "Come a Scuola",       colore: "#8b5cf6" },
     { Icon: CalendarDays,  titolo: "Programma Ministeriale",   desc: "Calendario sincronizzato mese per mese per tutte le classi. Lex sa esattamente cosa studia tuo figlio ogni settimana.", tag: "MIUR Ufficiale",      colore: "#f59e0b" },
@@ -358,7 +358,7 @@ export default function Landing({ onEntra }) {
       <div style={{ overflow:"hidden", padding:"14px 0", borderTop:"1px solid rgba(99,102,241,0.1)", borderBottom:"1px solid rgba(99,102,241,0.1)", background:"rgba(99,102,241,0.03)" }}>
         <div className="marquee-inner" style={{ display:"flex", gap:"40px", width:"max-content" }}>
           {[...Array(2)].map((_,r) => (
-            ["Programma MIUR","Voce Italiana","Zero Pubblicità","Foto Compiti AI","Dettato AI","Quiz Interattivi","Calendario Scolastico","Dashboard Genitore","Compiti Estivi","GDPR Compliant","Made in Italy","Metodo Socratico"].map((t,i) => (
+            ["Programma MIUR","Zero Pubblicità","Foto Compiti AI","Quiz Interattivi","Calendario Scolastico","Dashboard Genitore","Compiti Estivi","GDPR Compliant","Made in Italy","Metodo Socratico"].map((t,i) => (
               <span key={`${r}-${i}`} style={{ fontSize:"13px", fontWeight:700, color:"#8892AE", whiteSpace:"nowrap" }}>{t}</span>
             ))
           ))}
@@ -396,11 +396,12 @@ export default function Landing({ onEntra }) {
         </div>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(260px, 1fr))", gap:"13px" }}>
           {[
-            { label:"Studia con Lex",             sub:"Foto, chat e dettato",              desc:"Scatta una foto al compito, fai una domanda su qualsiasi materia o esercitati con il dettato. Lex guida passo per passo senza mai dare la risposta.", emoji:"📚", bg:"linear-gradient(145deg,#00CFFF,#0088FF,#0044DD)", border:"linear-gradient(135deg,#0022CC,#0099FF)" },
+            { label:"Studia con Lex",             sub:"Foto e chat con Lex AI",            desc:"Scatta una foto al compito o fai una domanda su qualsiasi materia. Lex guida passo per passo senza mai dare la risposta diretta.", emoji:"📚", bg:"linear-gradient(145deg,#00CFFF,#0088FF,#0044DD)", border:"linear-gradient(135deg,#0022CC,#0099FF)" },
             { label:"Verifiche e Interrogazioni", sub:"Quiz e orale",                       desc:"Quiz a scelta multipla e interrogazione orale simulata basata sul programma MIUR. Voto automatico con feedback dettagliato su ogni risposta.", emoji:"✏️", bg:"linear-gradient(145deg,#FF44BB,#FF0099,#CC0066)", border:"linear-gradient(135deg,#AA0055,#FF44BB)" },
             { label:"Estate con Lex",             sub:"Compiti e ripasso",                  desc:"Piano di ripasso estivo personalizzato con letture consigliate, quiz e anteprima degli argomenti dell'anno prossimo. Nessuna lacuna a settembre.", emoji:"🌊", bg:"linear-gradient(145deg,#FFE500,#FFC200,#FF9900)", border:"linear-gradient(135deg,#FF7700,#FFE500)" },
-            { label:"Dashboard Genitore",         sub:"Controllo totale",                   desc:"Area protetta da PIN con statistiche complete: sessioni, argomenti capiti, semaforo preparazione, badge conquistati e streak giornaliero.", emoji:"👨‍👩‍👧", bg:"linear-gradient(145deg,#6C47FF,#9B3FD4,#7B2FBE)", border:"linear-gradient(135deg,#4400AA,#9B3FD4)" },
-            { label:"Preparazione Esame",         sub:"Solo 3ª Media",                      desc:"Tema italiano, matematica, storia, geografia, inglese e colloquio orale simulato. Tutto quello che serve per superare l'esame di Stato.", emoji:"🎓", bg:"linear-gradient(145deg,#AA33FF,#8800EE,#6600BB)", border:"linear-gradient(135deg,#4400AA,#CC55FF)" },
+            { label:"Dashboard Genitore",         sub:"Controllo totale",                   desc:"Area protetta da PIN con statistiche complete: sessioni, argomenti capiti, semaforo preparazione, badge conquistati e streak giornaliero.", emoji:"👨‍👩‍👧", bg:"linear-gradient(145deg,#00BCD4,#0097A7,#006064)", border:"linear-gradient(135deg,#004D5E,#26C6DA)" },
+            { label:"Preparazione Esame",         sub:"Solo 3ª Media",                      desc:"Tema italiano, matematica, storia, geografia, inglese e colloquio orale simulato. Tutto quello che serve per superare l'esame di Stato.", emoji:"🎓", bg:"linear-gradient(145deg,#FF8F00,#F57C00,#E65100)", border:"linear-gradient(135deg,#BF360C,#FFCA28)" },
+            { label:"Inglese con Lex",            sub:"Dal vocabolario alla conversazione",  desc:"Vocabolario con pronuncia fonetica, esercizi di grammatica, quiz a scelta multipla e conversazione guidata in inglese. Calibrato per classe e mese.", emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", bg:"linear-gradient(145deg,#C084FC,#A855F7,#9333EA)", border:"linear-gradient(135deg,#7C3AED,#EC4899)" },
           ].map((c,i) => (
             <div key={i} className="lcard" style={{ padding:"22px 16px", borderRadius:"22px", background:c.bg, boxShadow:"0 6px 18px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", "--card-border":c.border }}>
               <div className="lcard-shine" />
@@ -508,6 +509,67 @@ export default function Landing({ onEntra }) {
         </div>
       </section>
 
+      {/* ── INGLESE CON LEX ── */}
+      <section style={{ padding:"0 24px 48px", maxWidth:"960px", margin:"0 auto" }}>
+        <div className="lcard" style={{ borderRadius:"28px", background:"linear-gradient(145deg,#C084FC,#A855F7,#9333EA)", boxShadow:"0 8px 40px rgba(168,85,247,0.4), inset 0 -4px 0 rgba(0,0,0,0.15)", "--card-border":"linear-gradient(135deg,#7C3AED,#EC4899)", overflow:"hidden", position:"relative" }}>
+          <div className="lcard-shine" />
+          <div className="lcard-depth" />
+          <div className="lcard-content" style={{ padding:"48px 40px" }}>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:"40px", alignItems:"center" }}>
+              <div style={{ flex:"1", minWidth:"260px" }}>
+                <div style={{ display:"inline-flex", alignItems:"center", gap:"10px", background:"rgba(0,0,0,0.15)", borderRadius:"100px", padding:"6px 18px", marginBottom:"20px" }}>
+                  <span style={{ fontSize:"16px" }}>🏴󠁧󠁢󠁥󠁮󠁧󠁿</span>
+                  <span style={{ fontSize:"12px", fontWeight:900, color:"rgba(255,255,255,0.85)", textTransform:"uppercase", letterSpacing:"2px" }}>Inglese con Lex</span>
+                </div>
+                <h2 style={{ fontSize:"clamp(26px,4vw,42px)", fontWeight:900, letterSpacing:"-1.5px", lineHeight:1.1, color:"white", marginBottom:"14px" }}>
+                  L'inglese spiegato<br/>dal tuo prof AI.
+                </h2>
+                <p style={{ fontSize:"16px", color:"rgba(255,255,255,0.75)", lineHeight:1.75, marginBottom:"28px", fontWeight:500 }}>
+                  Ogni mese scolastico, vocabolario e grammatica calibrati sulla classe di tuo figlio. Si impara ascoltando, scrivendo e conversando — non memorizzando.
+                </p>
+                <div style={{ display:"flex", flexDirection:"column", gap:"12px", marginBottom:"28px" }}>
+                  {[
+                    { e:"🔤", t:"Vocabolario del mese",          d:"10 parole selezionate dal programma con pronuncia fonetica semplificata in italiano." },
+                    { e:"📝", t:"Esercizi di grammatica",         d:"6 esercizi pratici per ogni regola: scelta multipla, vero/falso e traduzione." },
+                    { e:"🎯", t:"Quiz Inglese",                   d:"10 domande su vocabolario e grammatica del mese con punteggio e spiegazioni." },
+                    { e:"💬", t:"Conversazione con Lex",          d:"Chat guidata in inglese sull'argomento del mese. Lex corregge gli errori in tempo reale." },
+                  ].map((item,i) => (
+                    <div key={i} style={{ display:"flex", gap:"12px", alignItems:"flex-start" }}>
+                      <div style={{ width:"36px", height:"36px", borderRadius:"10px", background:"rgba(255,255,255,0.15)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"18px", flexShrink:0 }}>{item.e}</div>
+                      <div>
+                        <p style={{ fontWeight:800, fontSize:"13px", color:"white", marginBottom:"2px" }}>{item.t}</p>
+                        <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.6)", lineHeight:1.5 }}>{item.d}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={onEntra} className="btn-cta" style={{ display:"inline-flex", alignItems:"center", gap:"8px", padding:"14px 28px", background:"rgba(255,255,255,0.18)", border:"2px solid rgba(255,255,255,0.3)", borderRadius:"14px", color:"white", fontFamily:"'Plus Jakarta Sans'", fontWeight:900, fontSize:"15px", cursor:"pointer" }}>
+                  Prova gratis adesso →
+                </button>
+              </div>
+              <div style={{ display:"flex", flexDirection:"column", gap:"10px", minWidth:"190px" }}>
+                {[
+                  { emoji:"🔤", label:"Vocabolario",    desc:"10 parole + fonetica" },
+                  { emoji:"📝", label:"Grammatica",     desc:"6 esercizi pratici" },
+                  { emoji:"🎯", label:"Quiz",           desc:"10 domande a scelta multipla" },
+                  { emoji:"💬", label:"Conversazione",  desc:"Parla con Lex in inglese" },
+                ].map((item,i) => (
+                  <div key={i} style={{ background:"rgba(255,255,255,0.12)", borderRadius:"16px", padding:"14px 18px", backdropFilter:"blur(10px)", border:"1px solid rgba(255,255,255,0.2)" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+                      <span style={{ fontSize:"20px" }}>{item.emoji}</span>
+                      <div>
+                        <p style={{ fontWeight:900, fontSize:"13px", color:"white", margin:0 }}>{item.label}</p>
+                        <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.6)", margin:"2px 0 0", fontWeight:600 }}>{item.desc}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── GIOCHI ── */}
       <section style={{ padding:"0 24px 48px", maxWidth:"960px", margin:"0 auto" }}>
         <div style={{ background:"linear-gradient(135deg,rgba(99,102,241,0.06),rgba(139,92,246,0.04))", border:"1px solid rgba(99,102,241,0.15)", borderRadius:"28px", padding:"40px 32px" }}>
@@ -539,73 +601,6 @@ export default function Landing({ onEntra }) {
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── DETTATO AI ── */}
-      <section style={{ padding:"0 24px 48px", maxWidth:"960px", margin:"0 auto" }}>
-        <div id="spot-dettato" data-animate className={`spot-grid ${V("spot-dettato")}`}>
-          <div>
-            <div style={{ display:"inline-flex", alignItems:"center", gap:"8px", background:"rgba(236,72,153,0.08)", border:"1px solid rgba(236,72,153,0.2)", borderRadius:"20px", padding:"6px 16px", marginBottom:"20px" }}>
-              <Mic size={18} color="#ec4899" strokeWidth={2.5} />
-              <span style={{ fontSize:"12px", fontWeight:800, color:"#ec4899", textTransform:"uppercase", letterSpacing:"1.5px" }}>Dettato AI</span>
-            </div>
-            <h2 style={{ fontSize:"clamp(26px,4vw,38px)", fontWeight:900, letterSpacing:"-1px", lineHeight:1.15, marginBottom:"16px", color:"#0D0F2B" }}>
-              Il dettato corretto<br/>
-              <span style={{ color:"#ec4899" }}>con ogni regola spiegata.</span>
-            </h2>
-            <p style={{ fontSize:"15px", color:"#44476A", lineHeight:1.8, marginBottom:"28px" }}>
-              Lex legge il testo ad alta voce con accento italiano naturale. Tuo figlio scrive mentre ascolta. Al termine, Lex corregge ogni errore spiegando la regola grammaticale — non solo una croce rossa.
-            </p>
-            <div style={{ display:"flex", flexDirection:"column", gap:"14px" }}>
-              {[
-                { Icon: Mic,    t:"Voce italiana naturale",  d:"Lettura lenta, intonazione corretta. Tuo figlio scrive mentre ascolta." },
-                { Icon: MapPin, t:"Regola per ogni errore",  d:"Non solo sbagliato/giusto — spiega il perché ogni volta." },
-                { Icon: Star,   t:"Voto da 1 a 10",          d:"Punteggio automatico con messaggio di incoraggiamento personalizzato." },
-              ].map((item,i) => (
-                <div key={i} style={{ display:"flex", gap:"14px", alignItems:"flex-start" }}>
-                  <div style={{ width:"40px", height:"40px", borderRadius:"12px", background:"rgba(236,72,153,0.08)", border:"1px solid rgba(236,72,153,0.15)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><item.Icon size={20} color="#ec4899" strokeWidth={2} /></div>
-                  <div>
-                    <p style={{ fontWeight:800, fontSize:"14px", marginBottom:"3px", color:"#0D0F2B" }}>{item.t}</p>
-                    <p style={{ fontSize:"13px", color:"#44476A", lineHeight:1.6 }}>{item.d}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          {/* Phone mockup — resta dark */}
-          <div style={{ display:"flex", justifyContent:"center" }}>
-            <div style={{ width:"258px", background:"#0a0a1a", borderRadius:"36px", padding:"20px 16px 24px", border:"2px solid rgba(236,72,153,0.3)", boxShadow:"0 40px 80px rgba(0,0,0,0.15), 0 8px 32px rgba(236,72,153,0.12)", color:"rgba(255,255,255,0.8)" }}>
-              <div style={{ width:"56px", height:"4px", background:"rgba(255,255,255,0.12)", borderRadius:"4px", margin:"0 auto 16px" }} />
-              <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"14px" }}>
-                <div style={{ width:"30px", height:"30px", borderRadius:"9px", background:"rgba(236,72,153,0.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"14px" }}>✍️</div>
-                <div><p style={{ fontWeight:800, fontSize:"12px", color:"white" }}>Dettato AI</p><p style={{ fontSize:"9px", color:"rgba(255,255,255,0.3)" }}>Italiano · 4ª Elementare</p></div>
-              </div>
-              <div style={{ background:"rgba(236,72,153,0.08)", border:"1px solid rgba(236,72,153,0.15)", borderRadius:"10px", padding:"10px", marginBottom:"10px" }}>
-                <p style={{ fontSize:"9px", fontWeight:700, color:"#ec4899", marginBottom:"5px", textTransform:"uppercase", letterSpacing:"0.5px" }}>Testo originale</p>
-                <p style={{ fontSize:"10px", color:"rgba(255,255,255,0.55)", lineHeight:1.6, fontStyle:"italic" }}>"Il sole tramontava dietro le montagne mentre il vento portava profumo di primavera."</p>
-              </div>
-              <div style={{ display:"flex", justifyContent:"center", marginBottom:"10px" }}>
-                <div style={{ display:"inline-flex", alignItems:"center", gap:"8px", background:"linear-gradient(135deg,#ec4899,#f43f5e)", borderRadius:"100px", padding:"8px 18px" }}>
-                  <span style={{ fontSize:"12px" }}>▶</span>
-                  <span style={{ fontSize:"11px", fontWeight:800, color:"white" }}>Ascolta Lex</span>
-                </div>
-              </div>
-              <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:"10px", padding:"10px" }}>
-                <p style={{ fontSize:"9px", fontWeight:700, color:"rgba(255,255,255,0.3)", marginBottom:"8px", textTransform:"uppercase", letterSpacing:"0.5px" }}>Correzione</p>
-                <div style={{ display:"flex", gap:"6px", alignItems:"center", marginBottom:"6px" }}>
-                  <span style={{ fontSize:"11px", color:"#f87171", textDecoration:"line-through" }}>tramontave</span>
-                  <span style={{ fontSize:"9px", color:"rgba(255,255,255,0.25)" }}>→</span>
-                  <span style={{ fontSize:"11px", color:"#34d399", fontWeight:700 }}>tramontava</span>
-                </div>
-                <p style={{ fontSize:"9px", color:"rgba(255,255,255,0.35)", lineHeight:1.5, marginBottom:"8px" }}>📌 Imperfetto indicativo, 3ª pers. sing. del verbo "tramontare"</p>
-                <div style={{ background:"rgba(16,185,129,0.1)", border:"1px solid rgba(16,185,129,0.2)", borderRadius:"8px", padding:"8px", textAlign:"center" }}>
-                  <span style={{ fontSize:"18px", fontWeight:900, color:"#34d399" }}>9</span>
-                  <span style={{ fontSize:"10px", color:"rgba(255,255,255,0.4)" }}>/10 — Bravissimo!</span>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
@@ -697,8 +692,7 @@ export default function Landing({ onEntra }) {
             {[
               ["Non dà mai la risposta diretta",         true, false, false],
               ["Programma scolastico MIUR italiano",     true, false, false],
-              ["Voce italiana naturale per dettato",     true, false, false],
-              ["Dettato AI con correzione grammaticale", true, false, false],
+
               ["Semaforo preparazione per argomento",    true, false, false],
               ["Dashboard genitore con PIN",             true, false, false],
               ["Account solo genitore — GDPR minori",   true, false, false],

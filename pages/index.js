@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabase";
 import Head from "next/head";
 import PROGRAMMA from "../data/programma";
 import COMPITI_ESTIVI from "../data/compiti_estivi";
+import PROGRAMMA_INGLESE from "../data/programma_inglese";
 import Landing from "./landing";
 
 export default function Home() {
@@ -27,16 +28,16 @@ export default function Home() {
   const [trialAvviato, setTrialAvviato] = useState(false);
   const TRIAL_FOTO_MAX = 5;
   const TRIAL_CHAT_MAX = 20;
-  const TRIAL_DETTATO_MAX = 1;
+
   const TRIAL_SBLOCCA_MAX = 3;
   const [trialFotoUsate, setTrialFotoUsate] = useState(() => typeof window !== "undefined" ? parseInt(localStorage.getItem("lexyo_trial_foto") || "0", 10) : 0);
   const [trialChatUsate, setTrialChatUsate] = useState(() => typeof window !== "undefined" ? parseInt(localStorage.getItem("lexyo_trial_chat") || "0", 10) : 0);
-  const [trialDettatoUsati, setTrialDettatoUsati] = useState(() => typeof window !== "undefined" ? parseInt(localStorage.getItem("lexyo_trial_dettato") || "0", 10) : 0);
+
   const [trialSbloccaUsati, setTrialSbloccaUsati] = useState(() => typeof window !== "undefined" ? parseInt(localStorage.getItem("lexyo_trial_sblocca") || "0", 10) : 0);
   const isTrial = piano === "trial";
   const fotoBloccata = isTrial && trialFotoUsate >= TRIAL_FOTO_MAX;
   const chatBloccata = isTrial && trialChatUsate >= TRIAL_CHAT_MAX;
-  const dettatoBloccato = isTrial && trialDettatoUsati >= TRIAL_DETTATO_MAX;
+
   const sbloccaBloccato = isTrial && trialSbloccaUsati >= TRIAL_SBLOCCA_MAX;
   const [fotoFase, setFotoFase] = useState("carica");
   const [fotoMsgs, setFotoMsgs] = useState([]);
@@ -57,19 +58,14 @@ export default function Home() {
   const [pinInput, setPinInput] = useState("");
   const [pinScreen, setPinScreen] = useState("chiuso");
   const [pinErrore, setPinErrore] = useState(false);
-  const [dettatoFase, setDettatoFase] = useState("menu");
-  const [dettatoTesto, setDettatoTesto] = useState("");
-  const [dettatoAudio, setDettatoAudio] = useState(null);
-  const [dettatoLoading, setDettatoLoading] = useState(false);
-  const [dettatoVelocita, setDettatoVelocita] = useState("normale");
-  const [dettatoTipo, setDettatoTipo] = useState("genera");
-  const [dettatoCorrezione, setDettatoCorrezione] = useState(null);
+
   const [lexState, setLexState] = useState("idle");
   const [quizInput, setQuizInput] = useState("");
   const [quizLoading, setQuizLoading] = useState(false);
   const chatEndRef = useRef(null);
   const fotoEndRef = useRef(null);
   const quizEndRef = useRef(null);
+  const ingleseChatEndRef = useRef(null);
   const [interrogFase, setInterrogFase] = useState("carica");
   const [interrogArgomenti, setInterrogArgomenti] = useState([]);
   const [interrogConv, setInterrogConv] = useState([]);
@@ -144,7 +140,7 @@ export default function Home() {
   const [fotoCompitoPhoto, setFotoCompitoPhoto] = useState(null);
   const [compitoCompletamentoAnim, setCompitoCompletamentoAnim] = useState(null);
   const [chatMeseChip, setChatMeseChip] = useState(null);
-  const [dettatoMeseChip, setDettatoMeseChip] = useState(null);
+
   const [referralCode, setReferralCode] = useState(null);
   const [referralCount, setReferralCount] = useState(0);
   const [mesiGratisGuadagnati, setMesiGratisGuadagnati] = useState(0);
@@ -215,6 +211,33 @@ export default function Home() {
   const [trasformaEvoluzioneAnim, setTrasformaEvoluzioneAnim] = useState(null);
   const [trasformaCoriandoli, setTrasformaCoriandoli] = useState(false);
   const [trasformaConversioneMsg, setTrasformaConversioneMsg] = useState("");
+
+  // ── Inglese con Lex — stato ──
+  const [ingleseMese, setIngleseMese] = useState(null);
+  const [ingleseFonetica, setIngleseFonetica] = useState(null);
+  const [ingleseFoneticaLoading, setIngleseFoneticaLoading] = useState(false);
+  const [ingleseQuizDomande, setIngleseQuizDomande] = useState(null);
+  const [ingleseQuizIdx, setIngleseQuizIdx] = useState(0);
+  const [ingleseQuizRisposte, setIngleseQuizRisposte] = useState([]);
+  const [ingleseQuizRisposta, setIngleseQuizRisposta] = useState(null);
+  const [ingleseQuizFinale, setIngleseQuizFinale] = useState(false);
+  const [ingleseQuizLoading, setIngleseQuizLoading] = useState(false);
+  const [ingleseGramEsercizi, setIngleseGramEsercizi] = useState(null);
+  const [ingleseGramIdx, setIngleseGramIdx] = useState(0);
+  const [ingleseGramRisposta, setIngleseGramRisposta] = useState(null);
+  const [ingleseGramTraduci, setIngleseGramTraduci] = useState("");
+  const [ingleseGramFinale, setIngleseGramFinale] = useState(false);
+  const [ingleseGramLoading, setIngleseGramLoading] = useState(false);
+  const [ingleseChatMsgs, setIngleseChatMsgs] = useState([]);
+  const [ingleseChatInput, setIngleseChatInput] = useState("");
+  const [ingleseChatLoading, setIngleseChatLoading] = useState(false);
+  const [ingleseVocIdx, setIngleseVocIdx] = useState(0);
+  const [ingleseVocRisposta, setIngleseVocRisposta] = useState(null);
+  const [ingleseVocRisposte, setIngleseVocRisposte] = useState([]);
+  const [ingleseVocFinale, setIngleseVocFinale] = useState(false);
+  const [ingleseVocSession, setIngleseVocSession] = useState(null);
+  const [ingleseVocStreak, setIngleseVocStreak] = useState(0);
+
   const isAdmin = profiloUtente?.is_admin === true;
   const trialScaduto = isTrial && !isAdmin && trialGiorni === 0;
 
@@ -231,6 +254,12 @@ export default function Home() {
   const MAX_CONVERSIONE_GIORNO = 2;
   const TRASFORMA_EV_PARTICLES = [[5,10],[15,45],[25,80],[35,15],[45,60],[55,30],[65,75],[75,20],[85,55],[95,40],[10,90],[20,25],[30,65],[40,5],[50,85],[60,35],[70,50],[80,10],[90,70],[100,30]];
   const TRASFORMA_CORI_PARTICLES = [[2,12],[8,48],[14,82],[20,6],[26,55],[32,28],[38,72],[44,18],[50,63],[56,37],[62,80],[68,9],[74,44],[80,70],[86,22],[92,58],[98,35],[5,90],[11,33],[17,67],[23,15],[29,78],[35,42],[41,60],[47,25],[53,88],[59,50],[65,14],[71,72],[77,38],[83,5],[89,62],[95,20],[3,50],[9,76],[15,30],[21,94],[27,45],[33,68],[39,10]];
+
+  // ── Inglese con Lex — costanti ──
+  const MESI_SCUOLA_ING = ["settembre","ottobre","novembre","dicembre","gennaio","febbraio","marzo","aprile","maggio"];
+  const MESI_LABEL_ING  = ["Settembre","Ottobre","Novembre","Dicembre","Gennaio","Febbraio","Marzo","Aprile","Maggio"];
+  const CLASSE_ING_KEY  = { "3E":"3_elementare","4E":"4_elementare","5E":"5_elementare","1M":"1_media","2M":"2_media","3M":"3_media" };
+
   const playTrasformaSound = (freq, duration, type = "sine") => {
     if (typeof window === "undefined") return;
     try {
@@ -630,6 +659,7 @@ export default function Home() {
     scienze: { label: "Scienze", emoji: "🔬", colore: "#10b981" },
     storia: { label: "Storia", emoji: "📜", colore: "#f59e0b" },
     geografia: { label: "Geografia", emoji: "🌍", colore: "#0ea5e9" },
+    inglese: { label: "Inglese", emoji: "🇬🇧", colore: "#8b5cf6" },
   };
 
   const BADGE = [
@@ -713,6 +743,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMsgs]);
+  useEffect(() => { ingleseChatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [ingleseChatMsgs]);
   useEffect(() => { fotoEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [fotoMsgs]);
   useEffect(() => { quizEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [quizState?.msgs]);
 
@@ -1107,7 +1138,7 @@ export default function Home() {
     if (s === "foto") { setPhoto(null); setSbloccato(false); setFotoFase("carica"); setFotoMsgs([]); setFotoInput(""); setPhotoOriginale(null); }
     if (s === "famiglia") setPinScreen("chiuso");
     if (s === "aggiungi_figlio") { setNomeFiglio(""); setSessoFiglio("M"); setClasseScelta(null); }
-    if (s === "dettato") { setDettatoFase("menu"); setDettatoTesto(""); setDettatoAudio(null); setDettatoCorrezione(null); setDettatoMeseChip(null); }
+
     if (s === "estate") { /* menu semplice, nessun reset necessario */ }
     if (s === "compiti_estivi") { setCompitoPianoSettimana(null); setEstaTab("ripasso"); setEstaSezione("miei_compiti"); setFotoCompitoFase("idle"); setFotoCompitoRisposta(null); caricaCompitiEstivi(figlioAttivo?.id); }
     if (s === "compiti_lista") { setFotoCompitoFase("idle"); setFotoCompitoRisposta(null); caricaCompitiEstivi(figlioAttivo?.id); }
@@ -1117,6 +1148,11 @@ export default function Home() {
     if (s === "calendario") setMeseAperto(null);
     if (s === "interrogazione") { setInterrogFase("carica"); setInterrogArgomenti([]); setInterrogConv([]); setInterrogDomanda(""); setInterrogAudio(null); setInterrogVoto(null); setInterrogFeedback(""); setInterrogTrascrizione(""); setInterrogValutazione(""); setInterrogLexParla(false); setInterrogTopicScelto(""); setInterrogMeseChip(null); if (window._interrogAudio) { window._interrogAudio.pause(); window._interrogAudio = null; } }
     if (s === "studia") { /* sub-screens reset on their own entry */ }
+    if (s === "inglese") { setIngleseMese(null); }
+    if (s === "inglese_vocabolario") { setIngleseFonetica(null); setIngleseFoneticaLoading(false); setIngleseVocIdx(0); setIngleseVocRisposta(null); setIngleseVocRisposte([]); setIngleseVocFinale(false); setIngleseVocSession(null); setIngleseVocStreak(0); }
+    if (s === "inglese_quiz") { setIngleseQuizDomande(null); setIngleseQuizIdx(0); setIngleseQuizRisposte([]); setIngleseQuizRisposta(null); setIngleseQuizFinale(false); setIngleseQuizLoading(false); }
+    if (s === "inglese_grammatica") { setIngleseGramEsercizi(null); setIngleseGramIdx(0); setIngleseGramRisposta(null); setIngleseGramTraduci(""); setIngleseGramFinale(false); setIngleseGramLoading(false); }
+    if (s === "inglese_conversazione") { setIngleseChatMsgs([]); setIngleseChatInput(""); setIngleseChatLoading(false); }
     if (s === "verifiche") { setVerificheArgomento(""); setVerificheMeseAperto(null); setVerificheModalita(null); }
     if (s === "gioca") { setGiocaTab("giochi"); setGiocaArgomento(""); setGiocaMeseAperto(null); }
     if (s === "quiz_mc") { setMcQuiz(null); setMcRisposte([]); setMcFine(false); setMcLoading(false); }
@@ -1341,7 +1377,7 @@ export default function Home() {
   const TEMI = {
     foto:          { primario: "#FFE500", secondario: "#FF8C00", gradiente: "linear-gradient(135deg,#FF8C00,#FF3D00)", glow: "rgba(255,200,0,0.3)" },
     chat:          { primario: "#FF6EC7", secondario: "#C026D3", gradiente: "linear-gradient(135deg,#C026D3,#7C3AED)", glow: "rgba(255,75,163,0.3)" },
-    dettato:       { primario: "#00F090", secondario: "#00BFA5", gradiente: "linear-gradient(135deg,#00BFA5,#0091EA)", glow: "rgba(0,220,110,0.3)" },
+
     interrogazione:{ primario: "#29C9FF", secondario: "#651FFF", gradiente: "linear-gradient(135deg,#651FFF,#D500F9)", glow: "rgba(0,180,255,0.3)" },
     calendario:    { primario: "#FF8533", secondario: "#FF3D00", gradiente: "linear-gradient(135deg,#FF3D00,#FFD600)", glow: "rgba(255,110,0,0.3)" },
     estate:        { primario: "#E866FF", secondario: "#AA00FF", gradiente: "linear-gradient(135deg,#AA00FF,#FF4081)", glow: "rgba(200,50,255,0.3)" },
@@ -1668,7 +1704,7 @@ export default function Home() {
           </button>
           <div style={{ marginTop:"16px", marginBottom:"4px" }}>
             <p style={{ fontSize:"12px", fontWeight:800, color:"#059669", textAlign:"center", marginBottom:"10px" }}>✓ Accesso completo a tutto Lexyo</p>
-            {["📸 Foto compiti + spiegazione guidata","💬 Chat con Lex AI 24/7","🗓️ Calendario con quiz interattivi","🚦 Semaforo preparazione per materia","📊 Dashboard genitore con statistiche","🎮 Giochi educativi e badge","🎤 Dettato AI con correzione grammaticale","🚫 Zero pubblicità"].map((f) => (
+            {["📸 Foto compiti + spiegazione guidata","💬 Chat con Lex AI 24/7","🗓️ Calendario con quiz interattivi","🚦 Semaforo preparazione per materia","📊 Dashboard genitore con statistiche","🎮 Giochi educativi e badge","🚫 Zero pubblicità"].map((f) => (
               <div key={f} style={{ display:"flex", gap:"8px", marginBottom:"6px", fontSize:"13px", fontWeight:600, color: luce ? "#0a0a20" : "white" }}>
                 <span style={{ color:"#6366f1", flexShrink:0 }}>✓</span>{f}
               </div>
@@ -1860,7 +1896,7 @@ export default function Home() {
     <div style={S.nav}>
       {[["🏠","Home","home"],["📚","Studia","studia"],["✏️","Verifiche","verifiche"],["🌊","Estate","estate"],["🎮","Gioca","gioca"],["🏆","Ripasso","ripasso_home"]].map(([ico,lab,s]) => {
         const attivo = screen === s
-          || (s === "studia" && ["foto","chat","dettato"].includes(screen))
+          || (s === "studia" && ["foto","chat"].includes(screen))
           || (s === "verifiche" && ["interrogazione","quiz_mc"].includes(screen))
           || (s === "estate" && ["ripasso_estate","compiti_estivi","compiti_lista","compiti_studio"].includes(screen))
           || (s === "gioca" && ["parole_crociate","sfida_velocita","chi_sono"].includes(screen))
@@ -2139,16 +2175,24 @@ export default function Home() {
 
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"13px", marginBottom:"14px" }}>
           {[
-            { label:"Studia con Lex", sub:"Foto, chat e dettato", emoji:"📚", screen:"studia", bg:"linear-gradient(145deg,#00CFFF,#0088FF,#0044DD)", border:"linear-gradient(135deg,#0022CC,#0099FF)" },
-            { label:"Verifiche e Interrogazioni", sub:"Quiz e orale", emoji:"✏️", screen:"verifiche", bg:"linear-gradient(145deg,#FF44BB,#FF0099,#CC0066)", border:"linear-gradient(135deg,#AA0055,#FF44BB)" },
-            { label:"Estate con Lex", sub:"Compiti e ripasso", emoji:"🌊", screen:"estate", bg:"linear-gradient(145deg,#FFE500,#FFC200,#FF9900)", border:"linear-gradient(135deg,#FF7700,#FFE500)" },
-            { label:"Imparare è un Gioco", sub:"Gioca, Impara, Diventa Leggendario!", emoji:"🎮", screen:"gioca", bg:"linear-gradient(145deg,#FF4444,#FF0000,#CC0000)", border:"linear-gradient(135deg,#990000,#FF4444)" },
+            { label:"Studia con Lex",            sub:"Foto e chat con Lex AI",         emoji:"📚", screen:"studia",       bg:"linear-gradient(145deg,#29C9FF,#007ACC)",       border:"linear-gradient(135deg,#651FFF,#D500F9)" },
+            { label:"Verifiche e Interrogazioni", sub:"Quiz e interrogazione orale",    emoji:"✏️", screen:"verifiche",    bg:"linear-gradient(145deg,#FF70C8,#E0008A)",       border:"linear-gradient(135deg,#C026D3,#7C3AED)" },
+            { label:"Estate con Lex",             sub:"Compiti e ripasso",              emoji:"🌊", screen:"estate",       bg:"linear-gradient(145deg,#FFE500,#FFC200,#FF9900)", border:"linear-gradient(135deg,#FF7700,#FFE500)" },
+            { label:"Imparare è un Gioco",        sub:"Sfida e divertiti",              emoji:"🎮", screen:"gioca",        bg:"linear-gradient(145deg,#FF8533,#DD4400)",          border:"linear-gradient(135deg,#FF3D00,#FFD600)" },
+            { label:"La missione di Lex",          sub:"Nessuno ci è mai riuscito... potresti essere tu il primo!", emoji:"🔮", screen:"trasforma_lex",bg:"linear-gradient(145deg,#00F090,#00CC70,#00A855)",  border:"linear-gradient(135deg,#00BFA5,#007A3D)" },
+            { label:"Inglese con Lex",            sub:"Impara con il tuo prof AI",      emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", flag:true, screen:"inglese", bg:"linear-gradient(145deg,#C084FC,#A855F7,#9333EA)",  border:"linear-gradient(135deg,#7C3AED,#EC4899)" },
           ].map(c => (
             <button key={c.screen} className="hcard" onClick={() => goScreen(c.screen)} style={{ padding:"22px 16px", borderRadius:"22px", background:c.bg, boxShadow:"0 6px 18px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", textAlign:"left", cursor:"pointer", "--card-border":c.border }}>
               <div className="card-shine" />
               <div className="card-depth" />
               <div className="card-content">
-                <div style={{ fontSize:"32px", marginBottom:"10px" }}>{c.emoji}</div>
+                {c.flag ? (
+                  <div style={{ marginBottom:"10px" }}>
+                    <img src="https://flagcdn.com/w80/gb.png" alt="UK" width={46} height={31} style={{ borderRadius:"5px", boxShadow:"0 2px 8px rgba(0,0,0,0.3)", display:"block", objectFit:"cover" }} />
+                  </div>
+                ) : (
+                  <div style={{ fontSize:"32px", marginBottom:"10px" }}>{c.emoji}</div>
+                )}
                 <p style={{ fontSize:"13px", fontWeight:900, color:"#111", lineHeight:1.2 }}>{c.label}</p>
                 <p style={{ fontSize:"11px", color:"rgba(0,0,0,0.5)", marginTop:"4px", fontWeight:700 }}>{c.sub}</p>
               </div>
@@ -2172,27 +2216,13 @@ export default function Home() {
           </button>
         )}
 
-        {/* ── SFIDA LEGGENDA LEX ── */}
-        <button onClick={() => setScreen("trasforma_lex")} className="hcard" style={{ width:"100%", marginBottom:"12px", padding:"0", borderRadius:"22px", background:"linear-gradient(145deg,#00F090,#00CC70,#00A855)", boxShadow:"0 6px 18px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", cursor:"pointer", textAlign:"left", fontFamily:"'Nunito'", "--card-border":"linear-gradient(135deg,#00BFA5,#007A3D)" }}>
-          <div className="card-shine" />
-          <div className="card-content" style={{ padding:"20px 18px", display:"flex", alignItems:"center", gap:"14px" }}>
-            <div style={{ fontSize:"46px", lineHeight:1, flexShrink:0 }}>🔥</div>
-            <div style={{ flex:1 }}>
-              <p style={{ fontSize:"16px", fontWeight:900, color:"white", lineHeight:1.2, marginBottom:"5px" }}>Riesci a trasformare Lex?</p>
-              <p style={{ fontSize:"11px", fontWeight:800, color:"#fbbf24", lineHeight:1.4 }}>Nessuno ci è ancora riuscito —{"\n"}scrivi la leggenda di Super Lex! ⚡</p>
-            </div>
-            <span style={{ fontSize:"28px", flexShrink:0 }}>→</span>
-          </div>
-          <div className="card-depth" />
-        </button>
-
-        <button onClick={() => goScreen("famiglia")} style={{ width:"100%", padding:"14px 18px", borderRadius:"16px", background:"linear-gradient(135deg,rgba(108,71,255,0.15),rgba(155,63,212,0.1))", border:"1px solid rgba(108,71,255,0.25)", color: luce ? "#0a0a20" : "white", fontFamily:"'Nunito'", textAlign:"left", cursor:"pointer", display:"flex", alignItems:"center", gap:"12px", marginBottom:"16px" }}>
-          <span style={{ fontSize:"22px" }}>📊</span>
+        <button onClick={() => goScreen("famiglia")} style={{ width:"100%", padding:"16px 20px", borderRadius:"18px", background: luce ? "rgba(108,71,255,0.12)" : "rgba(108,71,255,0.22)", border:"2px solid rgba(108,71,255,0.5)", color: luce ? "#0a0a20" : "white", fontFamily:"'Nunito'", textAlign:"left", cursor:"pointer", display:"flex", alignItems:"center", gap:"14px", marginBottom:"16px", boxShadow:"0 2px 12px rgba(108,71,255,0.2)" }}>
+          <span style={{ fontSize:"26px" }}>📊</span>
           <div style={{ flex:1 }}>
-            <p style={{ fontSize:"13px", fontWeight:800, color: luce ? "#0a0a20" : "white" }}>Dashboard Genitore</p>
-            <p style={{ fontSize:"11px", color:"#a78bfa", fontWeight:700 }}>Statistiche, abbonamento e referral</p>
+            <p style={{ fontSize:"14px", fontWeight:900, color: luce ? "#3b1fa8" : "white", margin:0 }}>Dashboard Genitore</p>
+            <p style={{ fontSize:"11px", color:"#a78bfa", fontWeight:700, margin:"2px 0 0" }}>Statistiche, abbonamento e referral</p>
           </div>
-          <span style={{ fontSize:"14px", color: luce ? "rgba(0,0,30,0.3)" : "rgba(255,255,255,0.3)" }}>→</span>
+          <span style={{ fontSize:"18px", color: luce ? "#6C47FF" : "#a78bfa" }}>→</span>
         </button>
 
       </div>
@@ -2215,7 +2245,7 @@ export default function Home() {
         {[
           { label:"Foto Compiti", sub:"Scatta gli appunti, Lex ti spiega", emoji:"📸", screen:"foto", bg:"linear-gradient(145deg,#FFE500,#FFCC00,#FFB300)", border:"linear-gradient(135deg,#FF8C00,#FF3D00)" },
           { label:"Chiedi a Lex", sub:"Hai un dubbio? Scrivilo a Lex", emoji:"💬", screen:"chat", bg:"linear-gradient(145deg,#FF70C8,#FF3FA3,#E0008A)", border:"linear-gradient(135deg,#C026D3,#7C3AED)" },
-          { label:"Dettato AI", sub:"Lex legge, tu scrivi", emoji:"✍️", screen:"dettato", bg:"linear-gradient(145deg,#E866FF,#CC33FF,#AA00EE)", border:"linear-gradient(135deg,#9900CC,#6600AA)" },
+
         ].map(c => (
           <button key={c.screen} className="hcard" onClick={() => goScreen(c.screen)} style={{ width:"100%", padding:"22px 20px", borderRadius:"22px", background:c.bg, boxShadow:"0 6px 20px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", textAlign:"left", cursor:"pointer", "--card-border":c.border, display:"block" }}>
             <div className="card-shine" />
@@ -2569,328 +2599,6 @@ export default function Home() {
   }
 
   // ── QUIZ ──────────────────────────────────────────────────────────────────
-
-  if (screen === "dettato") {
-    const mesiProg = PROGRAMMA[figlioAttivo.classe]?.materie[materia] || [];
-    const mesiShortD = ["Set","Ott","Nov","Dic","Gen","Feb","Mar","Apr","Mag"];
-    const temiDettatoMese = dettatoMeseChip !== null ? (mesiProg[dettatoMeseChip]?.temi || []) : [];
-
-    const riproduciAudio = (base64Audio) => {
-      if (window._lexAudio) { window._lexAudio.pause(); }
-      const audio = new Audio(`data:audio/mpeg;base64,${base64Audio}`);
-      window._lexAudio = audio;
-      window._lexAudioPaused = false;
-      audio.play().catch(e => console.log("Audio error:", e));
-    };
-
-    const pausaRiprendi = () => {
-      if (!window._lexAudio) return;
-      if (window._lexAudio.paused) {
-        window._lexAudio.play();
-        window._lexAudioPaused = false;
-      } else {
-        window._lexAudio.pause();
-        window._lexAudioPaused = true;
-      }
-    };
-
-    const generaTesto = async (tipo, argomento) => {
-      if (isTrial && !isAdmin && dettatoBloccato) {
-        alert("Hai già generato il tuo dettato oggi. Torna domani oppure abbonati per dettati illimitati!");
-        return;
-      }
-      setDettatoLoading(true); setDettatoTesto(""); setDettatoAudio(null);
-      try {
-        const token = await getAccessToken();
-        const res = await fetch("/api/dettato-genera", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ classe: prog?.label, materia: mat.label, sesso: figlioAttivo?.sesso || "M", argomento, tipo, fingerprint: getFingerprint(), accessToken: token }),
-        });
-        const d = await res.json();
-        if (d.trial_esaurito) {
-          if (isTrial && !isAdmin) { localStorage.setItem("lexyo_trial_dettato", String(TRIAL_DETTATO_MAX)); setTrialDettatoUsati(TRIAL_DETTATO_MAX); }
-          alert(d.errore || "Hai già generato il tuo dettato oggi. Torna domani oppure abbonati per dettati illimitati!");
-          return;
-        }
-        if (d.testo) {
-          if (isTrial && !isAdmin) {
-            const nu = trialDettatoUsati + 1;
-            localStorage.setItem("lexyo_trial_dettato", String(nu));
-            setTrialDettatoUsati(nu);
-          }
-          setDettatoTesto(d.testo); setDettatoFase("testo_pronto");
-        }
-      } catch { alert("Errore generazione testo"); }
-      setDettatoLoading(false);
-    };
-
-    const leggiTesto = async () => {
-      if (!dettatoTesto) return;
-      setDettatoLoading(true);
-      try {
-        const token = await getAccessToken();
-        const res = await fetch("/api/dettato-leggi", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ testo: dettatoTesto, velocita: dettatoVelocita, accessToken: token }),
-        });
-        const d = await res.json();
-        if (d.audio) {
-          setDettatoAudio(d.audio); riproduciAudio(d.audio); setDettatoFase("in_corso");
-        } else {
-          setDettatoFase("menu");
-          alert("Lex non riesce a leggere il testo. Riprova tra qualche secondo.");
-        }
-      } catch {
-        setDettatoFase("menu");
-        alert("Errore di connessione. Controlla internet e riprova.");
-      }
-      setDettatoLoading(false);
-    };
-
-    const leggiDaFoto = async (file) => {
-      setDettatoLoading(true);
-      try {
-        await new Promise((resolve) => {
-          compressPhoto(file, async (compressed) => {
-            try {
-              const res = await fetch("/api/dettato-leggi-foto", {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ photo: compressed, accessToken: await getAccessToken() }),
-              });
-              const d = await res.json();
-              if (d.audio) {
-                setDettatoTesto(d.testo || "");
-                setDettatoAudio(d.audio);
-                riproduciAudio(d.audio);
-                setDettatoFase("in_corso");
-              } else {
-                alert(d.errore || "Non riesco a leggere la foto. Prova con una foto più nitida.");
-              }
-            } catch {
-              alert("Errore di connessione. Controlla internet e riprova.");
-            }
-            resolve();
-          });
-        });
-      } catch {
-        alert("Errore nella lettura della foto.");
-      }
-      setDettatoLoading(false);
-    };
-
-    const correggiDettato = async (file) => {
-      setDettatoLoading(true); setDettatoCorrezione(null);
-      const token = await getAccessToken();
-      compressPhoto(file, async (compressed) => {
-        try {
-          const res = await fetch("/api/dettato-correggi", {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ photo: compressed, testoOriginale: dettatoTesto, classe: prog?.label, materia: mat.label, sesso: figlioAttivo?.sesso || "M", fingerprint: getFingerprint(), accessToken: token }),
-          });
-          const d = await res.json();
-          if (d.correzione) { setDettatoCorrezione(d.correzione); setDettatoFase("corretto"); addStelle(3); }
-        } catch { alert("Errore correzione"); }
-        setDettatoLoading(false);
-      }, () => { alert("Errore lettura foto"); setDettatoLoading(false); });
-    };
-
-    return (
-      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
-        <Head><title>Lexyo — Dettato AI</title></Head>
-        <div style={{ ...S.hdr, borderBottomColor:`${t.secondario}44` }}>
-          <button onClick={() => dettatoFase === "menu" ? goScreen("studia") : setDettatoFase("menu")} style={S.back}>←</button>
-          <div style={{ width:"44px", height:"44px", borderRadius:"14px", background:t.gradiente, boxShadow:`0 4px 16px ${t.glow}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", flexShrink:0 }}>✍️</div>
-          <div>
-            <p style={{ fontWeight:900, fontSize:"15px" }}>Dettato AI</p>
-            <p style={{ fontSize:"11px", color:t.primario, fontWeight:700 }}>Lex legge — tu scrivi</p>
-          </div>
-        </div>
-        <div style={{ flex:1, overflowY:"auto", padding:"18px" }}>
-          {dettatoFase === "menu" && (
-            <div>
-              {/* Materia */}
-              <div style={{ display:"flex", gap:"8px", marginBottom:"14px" }}>
-                {Object.entries(MATERIE).map(([key, info]) => (
-                  <button key={key} onClick={() => { setMateria(key); setDettatoMeseChip(null); }} style={{ flex:1, padding:"8px 4px", borderRadius:"12px", background:materia===key?`${info.colore}22`:"rgba(255,255,255,0.04)", border:`2px solid ${materia===key?info.colore:"rgba(255,255,255,0.08)"}`, color:"white", fontFamily:"'Nunito', sans-serif", fontWeight:800, fontSize:"10px", cursor:"pointer" }}>
-                    <div style={{ fontSize:"16px", marginBottom:"2px" }}>{info.emoji}</div>{info.label.split(" ")[0]}
-                  </button>
-                ))}
-              </div>
-              <div style={{ ...S.card, marginBottom:"14px", background:`${t.primario}0D`, border:`1px solid ${t.primario}33`, textAlign:"center" }}>
-                <p style={{ fontSize:"28px", marginBottom:"8px" }}>✍️</p>
-                <p style={{ fontWeight:900, fontSize:"16px", marginBottom:"6px" }}>Come vuoi fare il dettato?</p>
-                <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.5)", fontWeight:600 }}>Lex legge il testo ad alta voce — tu scrivi sul quaderno</p>
-              </div>
-              {isTrial && !isAdmin && dettatoTipo !== "foto" && (
-                <div style={{ marginBottom:"12px", padding:"10px 14px", borderRadius:"12px", background: dettatoBloccato ? (luce?"rgba(239,68,68,0.12)":"rgba(239,68,68,0.12)") : (luce?"rgba(245,158,11,0.15)":"rgba(245,158,11,0.1)"), border:`1px solid ${dettatoBloccato?(luce?"rgba(239,68,68,0.5)":"rgba(239,68,68,0.4)"):(luce?"rgba(245,158,11,0.4)":"rgba(245,158,11,0.3)")}`, display:"flex", alignItems:"center", gap:"8px" }}>
-                  <span style={{ fontSize:"18px" }}>{dettatoBloccato ? "🔒" : "✍️"}</span>
-                  <p style={{ fontSize:"12px", fontWeight:700, color: dettatoBloccato ? (luce?"#991b1b":"#f87171") : (luce?"#92400e":"#fbbf24"), margin:0 }}>
-                    {dettatoBloccato
-                      ? "Dettato AI esaurito per oggi. Torna domani o abbonati!"
-                      : `${TRIAL_DETTATO_MAX - trialDettatoUsati} dettato AI rimasto oggi (versione prova)`}
-                  </p>
-                </div>
-              )}
-              <div style={{ display:"flex", flexDirection:"column", gap:"10px", marginBottom:"18px" }}>
-                {[
-                  { tipo:"genera", emoji:"🤖", titolo:"Dettato generato da AI", desc:"Lex crea un testo sugli argomenti del mese", colore:"#ec4899" },
-                  { tipo:"storia", emoji:"📖", titolo:"Storia AI sull'argomento", desc:"Lex scrive una storia che include i concetti studiati", colore:"#8b5cf6" },
-                  { tipo:"foto", emoji:"📷", titolo:"Leggi da foto", desc:"Fotografa una pagina del libro — Lex la legge", colore:"#0ea5e9" },
-                ].map(item => (
-                  <button key={item.tipo} onClick={() => setDettatoTipo(item.tipo)} style={{ padding:"16px", borderRadius:"14px", background: dettatoTipo===item.tipo?`rgba(${item.tipo==="genera"?"236,72,153":item.tipo==="storia"?"139,92,246":"14,165,233"},0.15)`:"rgba(255,255,255,0.04)", border:`2px solid ${dettatoTipo===item.tipo?item.colore:"rgba(255,255,255,0.08)"}`, color:"white", fontFamily:"'Nunito'", textAlign:"left", cursor:"pointer", display:"flex", alignItems:"center", gap:"12px" }}>
-                    <span style={{ fontSize:"24px" }}>{item.emoji}</span>
-                    <div>
-                      <p style={{ fontWeight:900, fontSize:"14px" }}>{item.titolo}</p>
-                      <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.5)", marginTop:"2px", fontWeight:600 }}>{item.desc}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-              <div style={{ ...S.card, marginBottom:"14px" }}>
-                <p style={{ fontSize:"12px", fontWeight:800, color:"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px" }}>🎙️ Velocità lettura</p>
-                <div style={{ display:"flex", gap:"8px" }}>
-                  {[["lenta","🐢 Lenta"],["normale","🚶 Normale"],["veloce","🏃 Veloce"]].map(([v,l]) => (
-                    <button key={v} onClick={() => setDettatoVelocita(v)} style={{ flex:1, padding:"10px 6px", borderRadius:"10px", background:dettatoVelocita===v?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.04)", border:`1px solid ${dettatoVelocita===v?"#6366f1":"rgba(255,255,255,0.08)"}`, color:dettatoVelocita===v?"#a78bfa":"rgba(255,255,255,0.5)", fontFamily:"'Nunito'", fontWeight:700, fontSize:"12px", cursor:"pointer" }}>
-                      {l}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {dettatoTipo !== "foto" && (
-                <div style={S.card}>
-                  <p style={{ fontSize:"12px", fontWeight:800, color:"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px" }}>📅 Scegli mese e argomento — {mat.label}</p>
-                  {mesiProg.some(m => m?.temi?.length > 0) ? (
-                    <>
-                      <div style={{ display:"flex", gap:"6px", marginBottom: dettatoMeseChip !== null ? "12px" : "0", overflowX:"auto", paddingBottom:"4px", WebkitOverflowScrolling:"touch" }}>
-                        {mesiShortD.map((nome, idx) => {
-                          const temi = mesiProg[idx]?.temi || [];
-                          if (temi.length === 0) return null;
-                          const sel = dettatoMeseChip === idx;
-                          return (
-                            <button key={idx} className="chip-mese" onClick={() => setDettatoMeseChip(sel ? null : idx)} style={{ padding:"9px 16px", borderRadius:"20px", background:sel?`${t.primario}33`:"rgba(255,255,255,0.06)", border:`2px solid ${sel?t.primario:"rgba(255,255,255,0.1)"}`, color:sel?"white":"rgba(255,255,255,0.65)", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
-                              {nome}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      {dettatoMeseChip !== null && temiDettatoMese.length > 0 && (
-                        <div className="vfade" style={{ display:"flex", flexWrap:"wrap", gap:"8px" }}>
-                          {temiDettatoMese.map((arg, i) => (
-                            <button key={i} className="chip-tema" onClick={() => generaTesto(dettatoTipo === "storia" ? "storia" : "dettato", arg)} style={{ padding:"10px 16px", borderRadius:"14px", background:`${mat.colore}18`, border:`2px solid ${mat.colore}44`, color:"white", fontFamily:"'Nunito'", fontWeight:700, fontSize:"13px", cursor:"pointer", display:"flex", alignItems:"center", gap:"6px" }}>
-                              <span>{arg}</span>
-                              <span style={{ color:mat.colore, fontSize:"11px" }}>{dettatoTipo === "storia" ? "📖 →" : "✍️ →"}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                      {dettatoMeseChip === null && (
-                        <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.35)", fontWeight:600, textAlign:"center", paddingTop:"4px" }}>Tocca un mese per vedere gli argomenti</p>
-                      )}
-                    </>
-                  ) : (
-                    <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.4)", fontWeight:600, textAlign:"center" }}>Seleziona una materia 👆</p>
-                  )}
-                </div>
-              )}
-              {dettatoTipo === "foto" && (
-                <label style={{ display:"flex", border:"2px dashed rgba(14,165,233,0.4)", borderRadius:"18px", padding:"24px", textAlign:"center", cursor:"pointer", alignItems:"center", justifyContent:"center", minHeight:"140px" }}>
-                  <div>
-                    <div style={{ fontSize:"40px", marginBottom:"10px" }}>📷</div>
-                    <p style={{ fontWeight:800, fontSize:"15px", color:"white", marginBottom:"6px" }}>Fotografa pagina del libro</p>
-                    <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.4)", fontWeight:600 }}>Lex leggerà il testo ad alta voce</p>
-                  </div>
-                  <input type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={(e) => { const f=e.target.files[0]; if(f) leggiDaFoto(f); }} />
-                </label>
-              )}
-            </div>
-          )}
-          {dettatoLoading && (
-            <div style={{ textAlign:"center", padding:"40px", background:"rgba(255,255,255,0.05)", borderRadius:"18px" }}>
-              <div style={{ fontSize:"40px", marginBottom:"12px" }}>🎙️</div>
-              <p style={{ fontWeight:800, fontSize:"16px", marginBottom:"6px" }}>Lex sta preparando il dettato...</p>
-              <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.4)", fontWeight:600 }}>Generazione in corso</p>
-            </div>
-          )}
-          {dettatoFase === "testo_pronto" && !dettatoLoading && (
-            <div>
-              <div style={{ ...S.card, marginBottom:"14px", background:"rgba(16,185,129,0.08)", border:"1px solid rgba(16,185,129,0.2)" }}>
-                <p style={{ fontSize:"12px", fontWeight:800, color:"#10b981", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px" }}>✅ Testo pronto</p>
-                <p style={{ fontSize:"14px", lineHeight:1.9, color:"rgba(0,0,0,0.7)", fontWeight:600, whiteSpace:"pre-wrap" }}>{dettatoTesto}</p>
-              </div>
-              <div style={{ ...S.card, marginBottom:"14px", background:"rgba(245,158,11,0.08)", border:"1px solid rgba(245,158,11,0.2)" }}>
-                <p style={{ fontSize:"13px", color:"#fbbf24", fontWeight:700, marginBottom:"8px" }}>📋 Istruzioni</p>
-                <div style={{ fontSize:"13px", color:"rgba(255,255,255,0.6)", fontWeight:600, lineHeight:2 }}>
-                  <div>1. Prendi carta e penna ✏️</div>
-                  <div>2. Clicca il pulsante qui sotto — Lex leggerà il testo</div>
-                  <div>3. Scrivi quello che senti sul quaderno</div>
-                  <div>4. Fotografa il quaderno per la correzione</div>
-                </div>
-              </div>
-              <button onClick={leggiTesto} style={{ ...S.btn, background:t.gradiente, boxShadow:`0 6px 20px ${t.glow}`, border:"none", marginBottom:"10px" }}>
-                🎙️ Inizia Dettato — Lex legge
-              </button>
-              <button onClick={() => setDettatoFase("menu")} style={{ ...S.btn, ...S.btnS }}>
-                ← Scegli altro argomento
-              </button>
-            </div>
-          )}
-          {dettatoFase === "in_corso" && !dettatoLoading && (
-            <div>
-              <div style={{ ...S.card, marginBottom:"14px", background:"rgba(236,72,153,0.1)", border:"1px solid rgba(236,72,153,0.3)", textAlign:"center" }}>
-                <LexChar stato="talking" size={130} style={{ margin:"0 auto 12px" }} />
-                <p style={{ fontWeight:900, fontSize:"18px", marginBottom:"8px" }}>Lex sta leggendo...</p>
-                <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.5)", fontWeight:600 }}>Scrivi sul quaderno quello che senti!</p>
-              </div>
-              {dettatoAudio && (
-                <div style={{ display:"flex", gap:"8px", marginBottom:"12px" }}>
-                  <button onClick={pausaRiprendi} style={{ ...S.btn, flex:1, background:"linear-gradient(135deg,#6366f1,#8b5cf6)", border:"none" }}>
-                    ⏯ Pausa / Riprendi
-                  </button>
-                  <button onClick={() => riproduciAudio(dettatoAudio)} style={{ ...S.btn, ...S.btnS, flex:1 }}>
-                    🔄 Ricomincia
-                  </button>
-                </div>
-              )}
-              <div style={{ ...S.card, background:"rgba(16,185,129,0.08)", border:"1px solid rgba(16,185,129,0.2)" }}>
-                <p style={{ fontSize:"13px", color:"#10b981", fontWeight:700, marginBottom:"6px" }}>✏️ Hai finito di scrivere?</p>
-                <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.6)", fontWeight:600, marginBottom:"12px" }}>Fotografa il quaderno — Lex lo correggerà!</p>
-                <label style={{ display:"flex", border:"2px dashed rgba(16,185,129,0.4)", borderRadius:"14px", padding:"16px", textAlign:"center", cursor:"pointer", alignItems:"center", justifyContent:"center", minHeight:"100px" }}>
-                  <div>
-                    <div style={{ fontSize:"32px", marginBottom:"8px" }}>📷</div>
-                    <p style={{ fontWeight:800, fontSize:"14px", color:"#10b981" }}>Carica foto del quaderno</p>
-                  </div>
-                  <input type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={(e) => { const f=e.target.files[0]; if(f) correggiDettato(f); }} />
-                </label>
-              </div>
-            </div>
-          )}
-          {dettatoFase === "corretto" && dettatoCorrezione && !dettatoLoading && (
-            <div>
-              <div style={{ ...S.card, marginBottom:"14px" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"12px" }}>
-                  <LexChar stato="happy" size={48} />
-                  <div>
-                    <p style={{ fontWeight:900, fontSize:"14px" }}>Correzione di Lex</p>
-                    <p style={{ fontSize:"11px", color:"#ec4899", fontWeight:700 }}>+3 ⭐ guadagnate!</p>
-                  </div>
-                </div>
-                <p style={{ fontSize:"14px", lineHeight:1.8, color:"rgba(0,0,0,0.7)", fontWeight:600, whiteSpace:"pre-wrap" }}>{dettatoCorrezione}</p>
-              </div>
-              <div style={{ display:"flex", gap:"10px" }}>
-                <button onClick={() => { setDettatoFase("menu"); setDettatoTesto(""); setDettatoAudio(null); setDettatoCorrezione(null); }} style={{ ...S.btn, ...S.btnS, flex:1 }}>
-                  🔄 Nuovo dettato
-                </button>
-                <button onClick={() => dettatoAudio && riproduciAudio(dettatoAudio)} style={{ ...S.btn, flex:1, background:"linear-gradient(135deg,#ec4899,#8b5cf6)", border:"none" }}>
-                  🔊 Riascolta
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-        <Nav />
-      </div>
-    );
-  }
 
   if (screen === "quiz" && quizState) {
     const qMat = MATERIE[quizState.materia];
@@ -5550,62 +5258,35 @@ export default function Home() {
           {/* ── SKILL TREE ── */}
           <p style={{ fontSize:"11px", fontWeight:800, color: luce?"rgba(0,0,30,0.35)":"rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"1.2px", marginBottom:"16px", textAlign:"center" }}>Scegli la materia</p>
 
-          <div style={{ position:"relative", paddingLeft:"50%", display:"flex", flexDirection:"column", alignItems:"flex-start" }}>
-            {/* Linea verticale centrale */}
-            <div style={{ position:"absolute", left:"50%", top:"40px", bottom:"40px", width:"3px", background: luce?"rgba(99,102,241,0.15)":"rgba(168,85,247,0.2)", transform:"translateX(-50%)", borderLeft:"3px dashed " + (luce?"rgba(99,102,241,0.2)":"rgba(168,85,247,0.25)"), width:"0" }} />
-
-            {materieList.map(([key, info], idx) => {
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px" }}>
+            {materieList.map(([key, info]) => {
               const temi = (PROGRAMMA[figlioAttivo?.classe]?.materie?.[key] || []).flatMap(m => m.temi || []);
               const scores = ripassoScores[key] || {};
               const completati = temi.filter((_, i) => scores[i] !== undefined && scores[i] !== null).length;
               const pct = temi.length > 0 ? Math.round((completati / temi.length) * 100) : 0;
               const inCorso = completati > 0 && completati < temi.length;
               const isLex = key === materiaLex && maxScore > 0;
-              // Alterna sinistra/destra
-              const isDestra = idx % 2 === 0;
 
               return (
-                <div key={key} style={{ width:"100%", display:"flex", flexDirection:"column", alignItems:"center", marginBottom:"18px", position:"relative" }}>
-                  {/* Connettore alla linea centrale */}
-                  {idx > 0 && (
-                    <div style={{ position:"absolute", top:"-9px", left:"50%", width:"0", height:"18px", borderLeft:`2px dashed ${luce?"rgba(99,102,241,0.2)":"rgba(168,85,247,0.25)"}`, transform:"translateX(-50%)" }} />
+                <button key={key} onClick={() => { setMateriaRipasso(key); goScreen("ripasso_mappa"); }}
+                  style={{ position:"relative", display:"flex", flexDirection:"column", alignItems:"center", padding:"18px 10px 14px", borderRadius:"20px", background: pct === 100 ? `linear-gradient(145deg,${info.colore}cc,${info.colore}99)` : luce ? `${info.colore}12` : `${info.colore}18`, border:`2px solid ${info.colore}${pct===100?"":"55"}`, cursor:"pointer", fontFamily:"'Nunito', sans-serif", animation: inCorso ? "nodePulse 2s infinite" : "none", "--pulse-c": info.colore + "44", boxShadow: pct===100 ? `0 4px 16px ${info.colore}44` : "none", transition:"all 0.2s" }}>
+
+                  {isLex && (
+                    <div style={{ animation:"lexFloat 2.8s ease-in-out infinite", marginBottom:"-6px", zIndex:2, position:"relative" }}>
+                      <LexChar stato="idle" size={48} />
+                    </div>
                   )}
 
-                  <button onClick={() => { setMateriaRipasso(key); goScreen("ripasso_mappa"); }}
-                    style={{ display:"flex", flexDirection:"column", alignItems:"center", background:"none", border:"none", cursor:"pointer", fontFamily:"'Nunito', sans-serif", padding:0, position:"relative" }}>
+                  <div style={{ fontSize:"30px", marginBottom:"8px", lineHeight:1 }}>
+                    {pct === 100 ? "✅" : info.emoji}
+                  </div>
 
-                    {/* Lex sopra il nodo */}
-                    {isLex && (
-                      <div style={{ animation:"lexFloat 2.8s ease-in-out infinite", marginBottom:"-8px", zIndex:2, position:"relative" }}>
-                        <LexChar stato="idle" size={68} />
-                      </div>
-                    )}
-
-                    {/* Cerchio nodo */}
-                    <div style={{
-                      width:"80px", height:"80px", borderRadius:"50%",
-                      background: pct === 100 ? `linear-gradient(135deg,${info.colore},${info.colore}cc)` : `${info.colore}22`,
-                      border: `3px solid ${info.colore}`,
-                      display:"flex", alignItems:"center", justifyContent:"center",
-                      fontSize:"30px", position:"relative", zIndex:1,
-                      animation: inCorso ? "nodePulse 2s infinite" : "none",
-                      "--pulse-c": info.colore + "55",
-                      boxShadow: pct === 100 ? `0 6px 24px ${info.colore}55` : inCorso ? `0 0 0 0 ${info.colore}44` : "none",
-                      transition:"all 0.2s"
-                    }}>
-                      {pct === 100 ? <span style={{ fontSize:"32px" }}>✓</span> : info.emoji}
-                    </div>
-
-                    {/* Label + progress sotto il nodo */}
-                    <div style={{ textAlign:"center", marginTop:"8px", maxWidth:"100px" }}>
-                      <p style={{ fontWeight:900, fontSize:"13px", color: luce?info.colore:"white", marginBottom:"4px" }}>{info.label}</p>
-                      <p style={{ fontSize:"10px", fontWeight:700, color: luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.4)", marginBottom:"4px" }}>{completati}/{temi.length} livelli</p>
-                      <div style={{ width:"80px", height:"5px", borderRadius:"3px", background: luce?"rgba(0,0,0,0.08)":"rgba(255,255,255,0.1)", overflow:"hidden" }}>
-                        <div style={{ height:"100%", width:`${pct}%`, background:info.colore, borderRadius:"3px", transition:"width 0.6s" }} />
-                      </div>
-                    </div>
-                  </button>
-                </div>
+                  <p style={{ fontWeight:900, fontSize:"13px", color: pct===100 ? "white" : luce ? info.colore : "white", marginBottom:"4px", textAlign:"center" }}>{info.label}</p>
+                  <p style={{ fontSize:"10px", fontWeight:700, color: pct===100 ? "rgba(255,255,255,0.8)" : luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.4)", marginBottom:"8px" }}>{completati}/{temi.length} livelli</p>
+                  <div style={{ width:"100%", height:"5px", borderRadius:"3px", background: luce?"rgba(0,0,0,0.1)":"rgba(255,255,255,0.1)", overflow:"hidden" }}>
+                    <div style={{ height:"100%", width:`${pct}%`, background: pct===100 ? "rgba(255,255,255,0.8)" : info.colore, borderRadius:"3px", transition:"width 0.6s" }} />
+                  </div>
+                </button>
               );
             })}
           </div>
@@ -7166,6 +6847,672 @@ export default function Home() {
                 <p style={{ fontSize:"12px", color:"#6C47FF", fontWeight:700, margin:0 }}>💡 {domanda.spiegazione}</p>
               </div>
             )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── INGLESE CON LEX — HUB ─────────────────────────────────────
+  if (screen === "inglese") {
+    const ingKey = CLASSE_ING_KEY[figlioAttivo?.classe] || "3_elementare";
+    const ingMeseData = ingleseMese ? PROGRAMMA_INGLESE[ingKey]?.[ingleseMese] : null;
+    const mesiShortIng = ["Set","Ott","Nov","Dic","Gen","Feb","Mar","Apr","Mag"];
+    return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <Head><title>Lexyo — Inglese</title></Head>
+        <div style={S.hdr}>
+          <button onClick={() => goScreen("home")} style={S.back}>←</button>
+          <div>
+            <p style={{ fontWeight:900, fontSize:"17px" }}>🏴󠁧󠁢󠁥󠁮󠁧󠁿 Inglese con Lex</p>
+            <p style={{ fontSize:"11px", color: luce ? "rgba(0,0,30,0.4)" : "rgba(255,255,255,0.4)", fontWeight:600 }}>{figlioAttivo?.nome} · {CLASSI[figlioAttivo?.classe]?.label}</p>
+          </div>
+        </div>
+
+        <div style={{ flex:1, overflowY:"auto", padding:"18px 16px 120px" }}>
+
+          <p style={{ fontSize:"10px", fontWeight:800, color: luce ? "rgba(0,0,30,0.35)" : "rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"10px" }}>Scegli il mese</p>
+          <div style={{ display:"flex", gap:"6px", marginBottom:"20px", overflowX:"auto", paddingBottom:"4px", WebkitOverflowScrolling:"touch" }}>
+            {mesiShortIng.map((nome, i) => {
+              const m = MESI_SCUOLA_ING[i];
+              const sel = ingleseMese === m;
+              return (
+                <button key={m} onClick={() => setIngleseMese(sel ? null : m)} style={{ padding:"9px 16px", borderRadius:"20px", background: sel ? "rgba(168,85,247,0.22)" : luce ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)", border:`2px solid ${sel ? "#a855f7" : luce ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)"}`, color: sel ? (luce ? "#7e22ce" : "white") : luce ? "rgba(0,0,30,0.65)" : "rgba(255,255,255,0.65)", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", cursor:"pointer", whiteSpace:"nowrap", flexShrink:0, transition:"all 0.18s" }}>
+                  {nome}
+                </button>
+              );
+            })}
+          </div>
+
+          {ingMeseData ? (
+            <div className="vfade">
+              <div style={{ background: luce ? "rgba(168,85,247,0.08)" : "rgba(168,85,247,0.12)", borderRadius:"16px", padding:"12px 16px", marginBottom:"20px", border:`1px solid ${luce ? "rgba(168,85,247,0.25)" : "rgba(168,85,247,0.3)"}` }}>
+                <p style={{ margin:"0 0 3px", fontSize:"10px", fontWeight:800, color:"#a855f7", textTransform:"uppercase", letterSpacing:"1px" }}>📝 Grammatica di {MESI_LABEL_ING[MESI_SCUOLA_ING.indexOf(ingleseMese)]}</p>
+                <p style={{ margin:0, fontSize:"13px", fontWeight:700, color: luce ? "#6b21a8" : "#d8b4fe" }}>{ingMeseData.grammatica}</p>
+              </div>
+
+              <p style={{ fontSize:"10px", fontWeight:800, color: luce ? "rgba(0,0,30,0.35)" : "rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"12px" }}>Cosa vuoi fare?</p>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px" }}>
+                {[
+                  { label:"Vocabolario",    sub:"10 parole + fonetica",     emoji:"🔤", s:"inglese_vocabolario", bg:"linear-gradient(145deg,#29C9FF,#007ACC)", border:"linear-gradient(135deg,#0369A1,#29C9FF)" },
+                  { label:"Grammatica",     sub:"6 esercizi pratici",       emoji:"📝", s:"inglese_grammatica",   bg:"linear-gradient(145deg,#C084FC,#9333EA)", border:"linear-gradient(135deg,#7C3AED,#C084FC)" },
+                  { label:"Quiz Inglese",   sub:"10 domande",               emoji:"🎯", s:"inglese_quiz",         bg:"linear-gradient(145deg,#00F090,#00A855)", border:"linear-gradient(135deg,#059669,#00F090)" },
+                  { label:"Conversazione",  sub:"Parla con Lex in inglese", emoji:"💬", s:"inglese_conversazione",bg:"linear-gradient(145deg,#FF8533,#DD4400)", border:"linear-gradient(135deg,#C2410C,#FF8533)" },
+                ].map(a => (
+                  <button key={a.s} className="hcard" onClick={() => goScreen(a.s)} style={{ padding:"22px 12px 18px", borderRadius:"22px", background:a.bg, boxShadow:"0 6px 18px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", textAlign:"left", cursor:"pointer", fontFamily:"'Nunito'", "--card-border":a.border }}>
+                    <div className="card-shine" />
+                    <div className="card-depth" />
+                    <div className="card-content">
+                      <div style={{ fontSize:"30px", marginBottom:"10px" }}>{a.emoji}</div>
+                      <p style={{ margin:0, fontSize:"13px", fontWeight:900, color:"#111", lineHeight:1.2 }}>{a.label}</p>
+                      <p style={{ margin:"4px 0 0", fontSize:"10px", fontWeight:700, color:"rgba(0,0,0,0.5)" }}>{a.sub}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div style={{ textAlign:"center", padding:"50px 20px", color: luce ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.25)" }}>
+              <p style={{ fontSize:"36px", margin:"0 0 12px" }}>👆</p>
+              <p style={{ fontSize:"14px", fontWeight:700 }}>Scegli un mese per iniziare</p>
+            </div>
+          )}
+        </div>
+        <Nav />
+      </div>
+    );
+  }
+
+  // ── INGLESE — VOCABOLARIO INTERATTIVO ────────────────────────
+  if (screen === "inglese_vocabolario") {
+    const ingKey = CLASSE_ING_KEY[figlioAttivo?.classe] || "3_elementare";
+    const mesiShortIng2 = ["Set","Ott","Nov","Dic","Gen","Feb","Mar","Apr","Mag"];
+
+    // Quando cambia il mese dall'interno di questa schermata
+    const cambiaMese = (m) => {
+      setIngleseMese(m);
+      setIngleseFonetica(null);
+      setIngleseFoneticaLoading(false);
+      setIngleseVocSession(null);
+      setIngleseVocIdx(0);
+      setIngleseVocRisposta(null);
+      setIngleseVocRisposte([]);
+      setIngleseVocFinale(false);
+      setIngleseVocStreak(0);
+    };
+
+    const ingMeseData = ingleseMese ? PROGRAMMA_INGLESE[ingKey]?.[ingleseMese] : null;
+    const parole = ingMeseData?.vocabolario || [];
+    const meseLabel = ingleseMese ? MESI_LABEL_ING[MESI_SCUOLA_ING.indexOf(ingleseMese)] : "";
+
+    // Costruisce la sessione mescolando EN→IT e IT→EN
+    const buildSession = (raw) => {
+      const shuffled = [...raw].sort(() => Math.random() - 0.5);
+      return shuffled.map((c, idx, arr) => {
+        // Ogni 3a carta: domanda inversa IT→EN
+        if (idx % 3 === 2 && arr.length > 3) {
+          const altriEn = arr.filter((_,i) => i !== idx).map(x => x.parola).sort(() => Math.random() - 0.5).slice(0,3);
+          const opzioni = [...altriEn, c.parola].sort(() => Math.random() - 0.5);
+          return { tipo:"it_en", emoji:c.emoji, mostra:c.corretta, suggerimento:"What's the English word?", corretta:c.parola, opzioni };
+        }
+        return { tipo:"en_it", emoji:c.emoji, mostra:c.parola, suggerimento:"Come si dice in italiano?", corretta:c.corretta, opzioni:c.opzioni };
+      });
+    };
+
+    const caricaFlashcard = async () => {
+      if (ingleseFoneticaLoading || !parole.length) return;
+      setIngleseFoneticaLoading(true);
+      try {
+        const token = await getAccessToken();
+        const r = await fetch("/api/inglese-vocabolario", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ accessToken:token, parole, classe: CLASSI[figlioAttivo?.classe]?.label, mese: meseLabel }) });
+        const d = await r.json();
+        if (d.flashcards) {
+          setIngleseFonetica(d.flashcards);
+          setIngleseVocSession(buildSession(d.flashcards));
+        }
+      } catch {}
+      setIngleseFoneticaLoading(false);
+    };
+    if (ingleseMese && !ingleseFonetica && !ingleseFoneticaLoading) caricaFlashcard();
+
+    const session = ingleseVocSession;
+    const totale = session?.length || 0;
+    const carta = session?.[ingleseVocIdx];
+    const corrFin = ingleseVocRisposte.filter(Boolean).length;
+
+    const rispondi = (i) => {
+      if (ingleseVocRisposta !== null || !carta) return;
+      const corr = carta.opzioni[i] === carta.corretta;
+      setIngleseVocRisposta(i);
+      if (corr) {
+        playTrasformaSound(523, 0.1); setTimeout(() => playTrasformaSound(659, 0.1), 110); setTimeout(() => playTrasformaSound(784, 0.12), 220);
+        setIngleseVocStreak(s => s + 1);
+        addStelle(1);
+      } else {
+        playTrasformaSound(200, 0.3, "sawtooth");
+        setIngleseVocStreak(0);
+      }
+      setTimeout(() => {
+        const nuove = [...ingleseVocRisposte, corr];
+        setIngleseVocRisposte(nuove);
+        setIngleseVocRisposta(null);
+        if (ingleseVocIdx + 1 >= totale) setIngleseVocFinale(true);
+        else setIngleseVocIdx(prev => prev + 1);
+      }, corr ? 850 : 1600);
+    };
+
+    const rigioca = () => {
+      if (!ingleseFonetica) return;
+      setIngleseVocSession(buildSession(ingleseFonetica));
+      setIngleseVocIdx(0);
+      setIngleseVocRisposta(null);
+      setIngleseVocRisposte([]);
+      setIngleseVocFinale(false);
+      setIngleseVocStreak(0);
+    };
+
+    // ── Selettore mese (sempre visibile in cima) ──
+    const MesiChips = () => (
+      <div style={{ padding:"10px 16px 0", overflowX:"auto", display:"flex", gap:"6px", WebkitOverflowScrolling:"touch", flexShrink:0 }}>
+        {mesiShortIng2.map((nome, i) => {
+          const m = MESI_SCUOLA_ING[i];
+          const sel = ingleseMese === m;
+          return (
+            <button key={m} onClick={() => cambiaMese(m)} style={{ padding:"7px 14px", borderRadius:"20px", background: sel ? "rgba(41,201,255,0.22)" : luce ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)", border:`2px solid ${sel ? "#29C9FF" : luce ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)"}`, color: sel ? (luce ? "#0369a1" : "#29C9FF") : luce ? "rgba(0,0,30,0.55)" : "rgba(255,255,255,0.55)", fontFamily:"'Nunito'", fontWeight:800, fontSize:"12px", cursor:"pointer", whiteSpace:"nowrap", flexShrink:0, transition:"all 0.18s" }}>
+              {nome}
+            </button>
+          );
+        })}
+      </div>
+    );
+
+    // ── Selezione argomento (browser mesi) ──
+    if (!ingleseMese) return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <div style={S.hdr}>
+          <button onClick={() => goScreen("inglese")} style={S.back}>←</button>
+          <div>
+            <p style={{ fontWeight:900, fontSize:"17px", margin:0 }}>🔤 Vocabolario</p>
+            <p style={{ fontSize:"11px", color: luce ? "rgba(0,0,30,0.4)" : "rgba(255,255,255,0.4)", fontWeight:600, margin:0 }}>{CLASSI[figlioAttivo?.classe]?.label} — scegli argomento</p>
+          </div>
+        </div>
+        <div style={{ flex:1, overflowY:"auto", padding:"14px 16px 100px" }}>
+          <p style={{ fontSize:"10px", fontWeight:800, color: luce ? "rgba(0,0,30,0.35)" : "rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"12px" }}>Di quale argomento vuoi fare il vocabolario?</p>
+          <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
+            {MESI_SCUOLA_ING.map((m, i) => {
+              const dati = PROGRAMMA_INGLESE[ingKey]?.[m];
+              if (!dati) return null;
+              const preview = (dati.vocabolario || []).slice(0, 5).join(" · ");
+              return (
+                <button key={m} onClick={() => cambiaMese(m)} style={{ width:"100%", textAlign:"left", background: luce ? "white" : "rgba(255,255,255,0.06)", border: luce ? "1px solid rgba(0,0,0,0.08)" : "1px solid rgba(255,255,255,0.09)", borderRadius:"18px", padding:"16px 18px", cursor:"pointer", fontFamily:"'Nunito'", boxShadow: luce ? "0 2px 8px rgba(0,0,0,0.06)" : "none", display:"flex", alignItems:"center", gap:"14px" }}>
+                  <div style={{ width:"44px", height:"44px", borderRadius:"14px", background:"linear-gradient(135deg,#29C9FF,#007ACC)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    <span style={{ fontSize:"13px", fontWeight:900, color:"white" }}>{MESI_LABEL_ING[i].slice(0,3)}</span>
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ margin:"0 0 3px", fontSize:"14px", fontWeight:900, color: luce ? "#0a0a20" : "white" }}>{MESI_LABEL_ING[i]}</p>
+                    <p style={{ margin:"0 0 4px", fontSize:"11px", fontWeight:700, color:"#29C9FF", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{dati.grammatica}</p>
+                    <p style={{ margin:0, fontSize:"11px", fontWeight:600, color: luce ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.4)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{preview}…</p>
+                  </div>
+                  <span style={{ fontSize:"16px", color: luce ? "rgba(0,0,30,0.25)" : "rgba(255,255,255,0.25)", flexShrink:0 }}>→</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <Nav />
+      </div>
+    );
+
+    // ── Loading ──
+    if (ingleseFoneticaLoading && !session) return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <div style={S.hdr}><button onClick={() => goScreen("inglese")} style={S.back}>←</button><p style={{ fontWeight:900, fontSize:"17px" }}>🔤 Vocabolario</p></div>
+        <MesiChips />
+        <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"14px", padding:"24px" }}>
+          <p style={{ fontSize:"52px", margin:0 }}>📖</p>
+          <p style={{ fontSize:"15px", fontWeight:800, color: luce ? "#374151" : "rgba(255,255,255,0.6)" }}>Lex prepara le flashcard...</p>
+          <p style={{ fontSize:"12px", color: luce ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.35)", fontWeight:600 }}>{meseLabel}</p>
+        </div>
+        <Nav />
+      </div>
+    );
+
+    // ── Finale ──
+    if (ingleseVocFinale) {
+      const perc = Math.round((corrFin / totale) * 100);
+      const stelle = corrFin === totale ? "⭐⭐⭐" : corrFin >= totale * 0.7 ? "⭐⭐" : "⭐";
+      return (
+        <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+          <div style={S.hdr}><button onClick={() => goScreen("inglese")} style={S.back}>←</button><p style={{ fontWeight:900, fontSize:"17px" }}>🔤 Vocabolario</p></div>
+          <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"24px", gap:"14px" }}>
+            <p style={{ fontSize:"60px", margin:0 }}>{corrFin === totale ? "🏆" : corrFin >= totale * 0.7 ? "🎉" : "📚"}</p>
+            <p style={{ fontSize:"32px", margin:0 }}>{stelle}</p>
+            <p style={{ fontSize:"26px", fontWeight:900, color: luce ? "#0a0a20" : "white", textAlign:"center", margin:0 }}>
+              {corrFin === totale ? "Perfetto!" : corrFin >= totale * 0.7 ? "Ottimo!" : "Continua!"}
+            </p>
+            <p style={{ fontSize:"44px", fontWeight:900, color: corrFin === totale ? "#f59e0b" : corrFin >= totale * 0.7 ? "#10b981" : "#ef4444", margin:0 }}>{corrFin}/{totale}</p>
+            <p style={{ fontSize:"13px", color: luce ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.45)", fontWeight:700, margin:0 }}>{perc}% corretto · {meseLabel}</p>
+            <div style={{ display:"flex", gap:"12px", marginTop:"10px" }}>
+              <button onClick={() => goScreen("inglese")} style={{ padding:"14px 22px", borderRadius:"16px", background: luce ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.1)", border: luce ? "1px solid rgba(0,0,0,0.12)" : "1px solid rgba(255,255,255,0.12)", color: luce ? "#0a0a20" : "white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer" }}>← Torna</button>
+              <button onClick={rigioca} style={{ padding:"14px 22px", borderRadius:"16px", background:"linear-gradient(135deg,#29C9FF,#007ACC)", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer" }}>Rigioca 🔄</button>
+            </div>
+          </div>
+          <Nav />
+        </div>
+      );
+    }
+
+    // ── Flashcard game ──
+    const opzioni = carta?.opzioni || [];
+    const correttaIdx = carta ? opzioni.indexOf(carta.corretta) : -1;
+    const isItEn = carta?.tipo === "it_en";
+
+    return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <style>{`
+          @keyframes vocShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+          @keyframes vocPop{0%{transform:scale(0.9);opacity:0}100%{transform:scale(1);opacity:1}}
+          .voc-card{animation:vocPop 0.22s ease forwards}
+          .voc-shake{animation:vocShake 0.4s ease}
+        `}</style>
+
+        <div style={S.hdr}>
+          <button onClick={() => goScreen("inglese")} style={S.back}>←</button>
+          <div style={{ flex:1 }}>
+            <p style={{ fontWeight:900, fontSize:"17px", margin:0 }}>🔤 Vocabolario</p>
+            <p style={{ fontSize:"11px", color: luce ? "rgba(0,0,30,0.4)" : "rgba(255,255,255,0.4)", fontWeight:600, margin:0 }}>{meseLabel}</p>
+          </div>
+          <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
+            {ingleseVocStreak >= 2 && (
+              <div style={{ background:"rgba(245,158,11,0.18)", borderRadius:"10px", padding:"4px 10px" }}>
+                <span style={{ fontWeight:900, fontSize:"13px", color:"#f59e0b" }}>🔥 {ingleseVocStreak}</span>
+              </div>
+            )}
+            <div style={{ background: luce ? "rgba(41,201,255,0.12)" : "rgba(41,201,255,0.18)", borderRadius:"10px", padding:"4px 10px" }}>
+              <span style={{ fontWeight:900, fontSize:"13px", color:"#29C9FF" }}>{ingleseVocIdx + 1}/{totale}</span>
+            </div>
+          </div>
+        </div>
+
+        <MesiChips />
+
+        <div style={{ flex:1, display:"flex", flexDirection:"column", padding:"14px 16px 16px" }}>
+          {/* Barra progresso */}
+          <div style={{ display:"flex", gap:"3px", marginBottom:"16px" }}>
+            {Array.from({length:totale}).map((_,i) => (
+              <div key={i} style={{ flex:1, height:"5px", borderRadius:"4px", background: i < ingleseVocIdx ? "#29C9FF" : i === ingleseVocIdx ? "rgba(41,201,255,0.5)" : luce ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.1)", transition:"background 0.3s" }} />
+            ))}
+          </div>
+
+          {carta && (
+            <div key={`${ingleseMese}-${ingleseVocIdx}`} className="voc-card" style={{ flex:1, display:"flex", flexDirection:"column", gap:"12px" }}>
+              {/* Tipo domanda badge */}
+              <div style={{ alignSelf:"center" }}>
+                <span style={{ fontSize:"11px", fontWeight:800, color: isItEn ? "#f59e0b" : "#29C9FF", background: isItEn ? "rgba(245,158,11,0.12)" : "rgba(41,201,255,0.12)", padding:"4px 12px", borderRadius:"20px", letterSpacing:"0.5px" }}>
+                  {isItEn ? "🇮🇹 → 🏴󠁧󠁢󠁥󠁮󠁧󠁿  IT → EN" : "🏴󠁧󠁢󠁥󠁮󠁧󠁿 → 🇮🇹  EN → IT"}
+                </span>
+              </div>
+
+              {/* Card centrale */}
+              <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background: luce ? "white" : "rgba(255,255,255,0.055)", borderRadius:"26px", padding:"28px 20px", border: luce ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.08)", boxShadow: luce ? "0 4px 20px rgba(0,0,0,0.07)" : "none" }}>
+                <p style={{ fontSize:"76px", margin:"0 0 10px", lineHeight:1 }}>{carta.emoji}</p>
+                <p style={{ fontSize:"30px", fontWeight:900, color: luce ? "#0a0a20" : "white", margin:"0 0 8px", textAlign:"center", letterSpacing:"-0.3px" }}>{carta.mostra}</p>
+                <p style={{ fontSize:"12px", fontWeight:700, color: luce ? "rgba(0,0,30,0.38)" : "rgba(255,255,255,0.38)", margin:0 }}>{carta.suggerimento}</p>
+              </div>
+
+              {/* Opzioni 2×2 */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"9px" }}>
+                {opzioni.map((op, i) => {
+                  const sel = ingleseVocRisposta === i;
+                  const mostra = ingleseVocRisposta !== null;
+                  const isCorr = i === correttaIdx;
+                  let bg = luce ? "rgba(41,201,255,0.07)" : "rgba(41,201,255,0.1)";
+                  let border = `2px solid ${luce ? "rgba(41,201,255,0.2)" : "rgba(41,201,255,0.18)"}`;
+                  let color = luce ? "#075985" : "#7dd3fc";
+                  if (mostra && isCorr) { bg = "rgba(16,185,129,0.16)"; border = "2px solid #10b981"; color = "#10b981"; }
+                  else if (mostra && sel && !isCorr) { bg = "rgba(239,68,68,0.12)"; border = "2px solid #ef4444"; color = "#ef4444"; }
+                  return (
+                    <button key={i} disabled={ingleseVocRisposta !== null} onClick={() => rispondi(i)}
+                      className={mostra && sel && !isCorr ? "voc-shake" : ""}
+                      style={{ padding:"15px 10px", borderRadius:"16px", background:bg, border, color, fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor: ingleseVocRisposta !== null ? "default" : "pointer", textAlign:"center", transition:"background 0.18s, border 0.18s", minHeight:"56px", lineHeight:1.3 }}>
+                      {op}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+        <Nav />
+      </div>
+    );
+  }
+
+  // ── INGLESE — GRAMMATICA ──────────────────────────────────────
+  if (screen === "inglese_grammatica") {
+    const ingKey = CLASSE_ING_KEY[figlioAttivo?.classe] || "3_elementare";
+    const ingMeseData = PROGRAMMA_INGLESE[ingKey]?.[ingleseMese] || {};
+    const meseLabel = ingleseMese ? MESI_LABEL_ING[MESI_SCUOLA_ING.indexOf(ingleseMese)] : "";
+    const totale = ingleseGramEsercizi?.length || 6;
+    const esercizio = ingleseGramEsercizi?.[ingleseGramIdx];
+
+    const caricaGram = async () => {
+      if (ingleseGramLoading || ingleseGramEsercizi) return;
+      setIngleseGramLoading(true);
+      try {
+        const token = await getAccessToken();
+        const r = await fetch("/api/inglese-grammatica", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ accessToken:token, classe: CLASSI[figlioAttivo?.classe]?.label, grammatica: ingMeseData.grammatica, vocabolario: ingMeseData.vocabolario }) });
+        const d = await r.json();
+        if (d.esercizi) setIngleseGramEsercizi(d.esercizi);
+      } catch {}
+      setIngleseGramLoading(false);
+    };
+    if (!ingleseGramEsercizi && !ingleseGramLoading) caricaGram();
+
+    return (
+      <div style={{ ...S.app, background: luce ? "#F0F4FF" : "#0A0A1A" }}>
+        <div style={{ flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch", padding:"0 18px 100px" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:"12px", padding:"16px 0 20px" }}>
+            <button onClick={() => goScreen("inglese")} style={{ background:"rgba(255,255,255,0.12)", border:"none", borderRadius:"12px", width:"44px", height:"44px", fontSize:"20px", cursor:"pointer", flexShrink:0 }}>←</button>
+            <div>
+              <p style={{ margin:0, fontSize:"20px", fontWeight:900, color: luce ? "#0a0a20" : "white" }}>📝 Grammatica</p>
+              <p style={{ margin:0, fontSize:"12px", color:"#a78bfa", fontWeight:700 }}>{meseLabel}</p>
+            </div>
+          </div>
+
+          {ingleseGramLoading && !ingleseGramEsercizi ? (
+            <div style={{ textAlign:"center", padding:"60px 20px" }}>
+              <p style={{ fontSize:"32px", marginBottom:"12px" }}>⏳</p>
+              <p style={{ color: luce ? "#374151" : "rgba(255,255,255,0.5)", fontWeight:700, fontFamily:"'Nunito'" }}>Lex prepara gli esercizi...</p>
+            </div>
+          ) : ingleseGramFinale ? (
+            <div style={{ textAlign:"center", padding:"40px 20px" }}>
+              <p style={{ fontSize:"52px", margin:"0 0 16px" }}>🎉</p>
+              <p style={{ fontSize:"22px", fontWeight:900, color: luce ? "#0a0a20" : "white", marginBottom:"8px", fontFamily:"'Nunito'" }}>Esercizi completati!</p>
+              <p style={{ fontSize:"14px", color: luce ? "#374151" : "rgba(255,255,255,0.6)", marginBottom:"32px", fontFamily:"'Nunito'" }}>Hai finito tutti gli esercizi di grammatica</p>
+              <button onClick={() => goScreen("inglese")} style={{ padding:"14px 28px", borderRadius:"16px", background:"linear-gradient(135deg,#8b5cf6,#6d28d9)", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"15px", cursor:"pointer" }}>Torna all'Inglese</button>
+            </div>
+          ) : esercizio ? (
+            <>
+              <div style={{ display:"flex", gap:"6px", marginBottom:"20px" }}>
+                {Array.from({length:totale}).map((_,i) => (
+                  <div key={i} style={{ flex:1, height:"4px", borderRadius:"4px", background: i < ingleseGramIdx ? "#8b5cf6" : i === ingleseGramIdx ? "#a78bfa" : "rgba(255,255,255,0.15)" }} />
+                ))}
+              </div>
+              <p style={{ fontSize:"12px", fontWeight:800, color:"#a78bfa", marginBottom:"16px", fontFamily:"'Nunito'" }}>Esercizio {ingleseGramIdx + 1} di {totale}</p>
+
+              <div style={{ background: luce ? "white" : "rgba(255,255,255,0.07)", borderRadius:"20px", padding:"20px", marginBottom:"20px", boxShadow: luce ? "0 4px 16px rgba(0,0,0,0.1)" : "none", border: luce ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(255,255,255,0.08)" }}>
+                {esercizio.tipo === "scelta" && (
+                  <>
+                    <p style={{ fontSize:"13px", fontWeight:800, color:"#a78bfa", marginBottom:"10px", textTransform:"uppercase", fontFamily:"'Nunito'" }}>Scegli la forma corretta</p>
+                    <p style={{ fontSize:"16px", fontWeight:700, color: luce ? "#0a0a20" : "white", marginBottom:"20px", lineHeight:1.5, fontFamily:"'Nunito'" }}>{esercizio.frase}</p>
+                    <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
+                      {(esercizio.opzioni || []).map((op, i) => {
+                        const isCorr = i === esercizio.corretta;
+                        const mostra = ingleseGramRisposta !== null;
+                        let bg = luce ? "rgba(139,92,246,0.08)" : "rgba(139,92,246,0.15)";
+                        let border = "1px solid rgba(139,92,246,0.2)";
+                        let color = luce ? "#4c1d95" : "#c4b5fd";
+                        if (mostra && isCorr) { bg = "rgba(16,185,129,0.15)"; border = "1px solid #10b981"; color = "#10b981"; }
+                        else if (mostra && ingleseGramRisposta === i && !isCorr) { bg = "rgba(239,68,68,0.12)"; border = "1px solid #ef4444"; color = "#ef4444"; }
+                        return (
+                          <button key={i} disabled={ingleseGramRisposta !== null} onClick={() => { setIngleseGramRisposta(i); if (i === esercizio.corretta) addStelle(1); }} style={{ padding:"12px 16px", borderRadius:"12px", background:bg, border, color, fontFamily:"'Nunito'", fontWeight:700, fontSize:"14px", cursor: ingleseGramRisposta !== null ? "default" : "pointer", textAlign:"left", transition:"all 0.2s" }}>{op}</button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+                {esercizio.tipo === "vero_falso" && (
+                  <>
+                    <p style={{ fontSize:"13px", fontWeight:800, color:"#a78bfa", marginBottom:"10px", textTransform:"uppercase", fontFamily:"'Nunito'" }}>Vero o Falso?</p>
+                    <p style={{ fontSize:"16px", fontWeight:700, color: luce ? "#0a0a20" : "white", marginBottom:"20px", lineHeight:1.5, fontStyle:"italic", fontFamily:"'Nunito'" }}>"{esercizio.frase}"</p>
+                    <div style={{ display:"flex", gap:"12px" }}>
+                      {[true, false].map(v => {
+                        const isCorr = v === esercizio.corretta;
+                        const mostra = ingleseGramRisposta !== null;
+                        let bg = luce ? "rgba(139,92,246,0.08)" : "rgba(139,92,246,0.15)";
+                        let border = "1px solid rgba(139,92,246,0.2)";
+                        if (mostra && isCorr) { bg = "rgba(16,185,129,0.15)"; border = "1px solid #10b981"; }
+                        else if (mostra && ingleseGramRisposta === v && !isCorr) { bg = "rgba(239,68,68,0.12)"; border = "1px solid #ef4444"; }
+                        return (
+                          <button key={String(v)} disabled={ingleseGramRisposta !== null} onClick={() => { setIngleseGramRisposta(v); if (v === esercizio.corretta) addStelle(1); }} style={{ flex:1, padding:"14px", borderRadius:"14px", background:bg, border, color: luce ? "#4c1d95" : "#c4b5fd", fontFamily:"'Nunito'", fontWeight:800, fontSize:"15px", cursor: ingleseGramRisposta !== null ? "default" : "pointer", transition:"all 0.2s" }}>{v ? "✅ Vero" : "❌ Falso"}</button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+                {esercizio.tipo === "traduci" && (
+                  <>
+                    <p style={{ fontSize:"13px", fontWeight:800, color:"#a78bfa", marginBottom:"10px", textTransform:"uppercase", fontFamily:"'Nunito'" }}>Traduci in inglese</p>
+                    <p style={{ fontSize:"16px", fontWeight:700, color: luce ? "#0a0a20" : "white", marginBottom:"16px", fontFamily:"'Nunito'" }}>{esercizio.frase_ita}</p>
+                    {ingleseGramRisposta === null ? (
+                      <>
+                        <input value={ingleseGramTraduci} onChange={e => setIngleseGramTraduci(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && ingleseGramTraduci.trim()) setIngleseGramRisposta(ingleseGramTraduci.trim()); }} placeholder="Scrivi la traduzione..." style={{ width:"100%", padding:"12px 14px", borderRadius:"12px", border:"1px solid rgba(139,92,246,0.3)", background: luce ? "rgba(139,92,246,0.06)" : "rgba(139,92,246,0.12)", color: luce ? "#0a0a20" : "white", fontFamily:"'Nunito'", fontWeight:700, fontSize:"14px", boxSizing:"border-box", outline:"none" }} />
+                        <button onClick={() => { if (ingleseGramTraduci.trim()) setIngleseGramRisposta(ingleseGramTraduci.trim()); }} style={{ marginTop:"10px", width:"100%", padding:"12px", borderRadius:"12px", background:"linear-gradient(135deg,#8b5cf6,#6d28d9)", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer" }}>Conferma</button>
+                      </>
+                    ) : (
+                      <div>
+                        <div style={{ padding:"10px 14px", borderRadius:"12px", background:"rgba(16,185,129,0.1)", border:"1px solid #10b981", marginBottom:"8px" }}>
+                          <p style={{ margin:0, fontSize:"12px", fontWeight:800, color:"#10b981", fontFamily:"'Nunito'" }}>✅ Risposta modello:</p>
+                          <p style={{ margin:"4px 0 0", fontSize:"14px", fontWeight:700, color: luce ? "#0a0a20" : "white", fontFamily:"'Nunito'" }}>{esercizio.risposta_attesa}</p>
+                        </div>
+                        <p style={{ margin:0, fontSize:"12px", color: luce ? "#374151" : "rgba(255,255,255,0.5)", fontWeight:700, fontFamily:"'Nunito'" }}>La tua risposta: {ingleseGramRisposta}</p>
+                      </div>
+                    )}
+                  </>
+                )}
+                {ingleseGramRisposta !== null && esercizio.spiegazione && (
+                  <div style={{ marginTop:"14px", padding:"10px 14px", borderRadius:"12px", background:"rgba(139,92,246,0.1)", border:"1px solid rgba(139,92,246,0.25)" }}>
+                    <p style={{ margin:0, fontSize:"12px", fontWeight:700, color:"#a78bfa", fontFamily:"'Nunito'" }}>💡 {esercizio.spiegazione}</p>
+                  </div>
+                )}
+              </div>
+
+              {ingleseGramRisposta !== null && (
+                <button onClick={() => {
+                  if (ingleseGramIdx + 1 >= totale) setIngleseGramFinale(true);
+                  else { setIngleseGramIdx(prev => prev + 1); setIngleseGramRisposta(null); setIngleseGramTraduci(""); }
+                }} style={{ width:"100%", padding:"14px", borderRadius:"16px", background:"linear-gradient(135deg,#8b5cf6,#6d28d9)", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"15px", cursor:"pointer" }}>
+                  {ingleseGramIdx + 1 >= totale ? "Fine esercizi! 🎉" : "Prossimo →"}
+                </button>
+              )}
+            </>
+          ) : null}
+        </div>
+        <Nav />
+      </div>
+    );
+  }
+
+  // ── INGLESE — QUIZ ────────────────────────────────────────────
+  if (screen === "inglese_quiz") {
+    const ingKey = CLASSE_ING_KEY[figlioAttivo?.classe] || "3_elementare";
+    const ingMeseData = PROGRAMMA_INGLESE[ingKey]?.[ingleseMese] || {};
+    const meseLabel = ingleseMese ? MESI_LABEL_ING[MESI_SCUOLA_ING.indexOf(ingleseMese)] : "";
+    const domanda = ingleseQuizDomande?.[ingleseQuizIdx];
+    const risposta = ingleseQuizRisposta;
+    const corrFin = ingleseQuizRisposte.filter(Boolean).length;
+
+    const caricaQuiz = async () => {
+      if (ingleseQuizLoading || ingleseQuizDomande) return;
+      setIngleseQuizLoading(true);
+      try {
+        const token = await getAccessToken();
+        const r = await fetch("/api/inglese-quiz", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ accessToken:token, classe: CLASSI[figlioAttivo?.classe]?.label, mese: meseLabel, vocabolario: ingMeseData.vocabolario, grammatica: ingMeseData.grammatica }) });
+        const d = await r.json();
+        if (d.domande) setIngleseQuizDomande(d.domande);
+      } catch {}
+      setIngleseQuizLoading(false);
+    };
+    if (!ingleseQuizDomande && !ingleseQuizLoading) caricaQuiz();
+
+    if (ingleseQuizFinale) {
+      const perc = Math.round((corrFin / 10) * 100);
+      return (
+        <div style={{ ...S.app, background: luce ? "#F0F4FF" : "#0A0A1A" }}>
+          <div style={{ flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch", padding:"30px 24px 100px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
+            <p style={{ fontSize:"60px", margin:"0 0 16px" }}>{corrFin === 10 ? "🏆" : corrFin >= 7 ? "🎉" : "📚"}</p>
+            <p style={{ fontSize:"24px", fontWeight:900, color: luce ? "#0a0a20" : "white", marginBottom:"8px", textAlign:"center", fontFamily:"'Nunito'" }}>
+              {corrFin === 10 ? "PERFETTO!" : corrFin >= 7 ? "Ottimo lavoro!" : "Continua a studiare!"}
+            </p>
+            <p style={{ fontSize:"40px", fontWeight:900, color: corrFin === 10 ? "#f59e0b" : corrFin >= 7 ? "#10b981" : "#ef4444", margin:"8px 0 4px", fontFamily:"'Nunito'" }}>{corrFin}/10</p>
+            <p style={{ fontSize:"14px", color: luce ? "#374151" : "rgba(255,255,255,0.6)", marginBottom:"32px", fontFamily:"'Nunito'" }}>{perc}% di risposte corrette</p>
+            <div style={{ display:"flex", gap:"12px" }}>
+              <button onClick={() => goScreen("inglese")} style={{ padding:"14px 22px", borderRadius:"16px", background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)", color: luce ? "#374151" : "white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer" }}>← Torna</button>
+              <button onClick={() => goScreen("inglese_quiz")} style={{ padding:"14px 22px", borderRadius:"16px", background:"linear-gradient(135deg,#10b981,#059669)", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer" }}>Riprova 🔄</button>
+            </div>
+          </div>
+          <Nav />
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ ...S.app, background: luce ? "#F0F4FF" : "#0A0A1A" }}>
+        <div style={{ flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch", padding:"0 18px 100px" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:"12px", padding:"16px 0 20px" }}>
+            <button onClick={() => goScreen("inglese")} style={{ background:"rgba(255,255,255,0.12)", border:"none", borderRadius:"12px", width:"44px", height:"44px", fontSize:"20px", cursor:"pointer", flexShrink:0 }}>←</button>
+            <div>
+              <p style={{ margin:0, fontSize:"20px", fontWeight:900, color: luce ? "#0a0a20" : "white" }}>🎯 Quiz Inglese</p>
+              <p style={{ margin:0, fontSize:"12px", color:"#34d399", fontWeight:700 }}>{meseLabel}</p>
+            </div>
+          </div>
+
+          {ingleseQuizLoading && !ingleseQuizDomande ? (
+            <div style={{ textAlign:"center", padding:"60px 20px" }}>
+              <p style={{ fontSize:"32px", marginBottom:"12px" }}>⏳</p>
+              <p style={{ color: luce ? "#374151" : "rgba(255,255,255,0.5)", fontWeight:700, fontFamily:"'Nunito'" }}>Lex prepara il quiz...</p>
+            </div>
+          ) : domanda ? (
+            <>
+              <div style={{ display:"flex", gap:"4px", marginBottom:"8px" }}>
+                {Array.from({length:10}).map((_,i) => (
+                  <div key={i} style={{ flex:1, height:"4px", borderRadius:"4px", background: i < ingleseQuizIdx ? "#10b981" : i === ingleseQuizIdx ? "#34d399" : "rgba(255,255,255,0.15)" }} />
+                ))}
+              </div>
+              <p style={{ fontSize:"11px", fontWeight:800, color:"#34d399", marginBottom:"16px", fontFamily:"'Nunito'" }}>Domanda {ingleseQuizIdx + 1} / 10</p>
+
+              <div style={{ background: luce ? "white" : "rgba(255,255,255,0.07)", borderRadius:"20px", padding:"20px", marginBottom:"16px", boxShadow: luce ? "0 4px 16px rgba(0,0,0,0.1)" : "none", border: luce ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(255,255,255,0.08)" }}>
+                <p style={{ fontSize:"11px", fontWeight:800, color:"#34d399", textTransform:"uppercase", marginBottom:"8px", fontFamily:"'Nunito'" }}>{domanda.tipo}</p>
+                <p style={{ fontSize:"16px", fontWeight:700, color: luce ? "#0a0a20" : "white", lineHeight:1.5, margin:0, fontFamily:"'Nunito'" }}>{domanda.domanda}</p>
+              </div>
+
+              <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
+                {(domanda.opzioni || []).map((op, i) => {
+                  const isCorr = i === domanda.corretta;
+                  const mostra = risposta !== null;
+                  let bg = luce ? "rgba(16,185,129,0.06)" : "rgba(16,185,129,0.12)";
+                  let border = "1px solid rgba(16,185,129,0.2)";
+                  let color = luce ? "#065f46" : "#6ee7b7";
+                  if (mostra && isCorr) { bg = "rgba(16,185,129,0.2)"; border = "2px solid #10b981"; color = "#10b981"; }
+                  else if (mostra && risposta === i && !isCorr) { bg = "rgba(239,68,68,0.12)"; border = "2px solid #ef4444"; color = "#ef4444"; }
+                  return (
+                    <button key={i} disabled={risposta !== null} onClick={() => {
+                      setIngleseQuizRisposta(i);
+                      const corr = i === domanda.corretta;
+                      if (corr) addStelle(1);
+                      setTimeout(() => {
+                        const nuove = [...ingleseQuizRisposte, corr];
+                        setIngleseQuizRisposte(nuove);
+                        setIngleseQuizRisposta(null);
+                        if (ingleseQuizIdx + 1 >= 10) setIngleseQuizFinale(true);
+                        else setIngleseQuizIdx(prev => prev + 1);
+                      }, corr ? 1000 : 1500);
+                    }} style={{ padding:"14px 16px", borderRadius:"14px", background:bg, border, color, fontFamily:"'Nunito'", fontWeight:700, fontSize:"14px", cursor: risposta !== null ? "default" : "pointer", textAlign:"left", lineHeight:1.4, transition:"all 0.2s", minHeight:"52px" }}>
+                      {op}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {risposta !== null && risposta !== domanda.corretta && domanda.spiegazione && (
+                <div style={{ marginTop:"14px", background:"rgba(16,185,129,0.08)", borderRadius:"12px", padding:"12px 14px", border:"1px solid rgba(16,185,129,0.2)" }}>
+                  <p style={{ fontSize:"12px", color:"#34d399", fontWeight:700, margin:0, fontFamily:"'Nunito'" }}>💡 {domanda.spiegazione}</p>
+                </div>
+              )}
+            </>
+          ) : null}
+        </div>
+        <Nav />
+      </div>
+    );
+  }
+
+  // ── INGLESE — CONVERSAZIONE ───────────────────────────────────
+  if (screen === "inglese_conversazione") {
+    const ingKey = CLASSE_ING_KEY[figlioAttivo?.classe] || "3_elementare";
+    const ingMeseData = PROGRAMMA_INGLESE[ingKey]?.[ingleseMese] || {};
+    const meseLabel = ingleseMese ? MESI_LABEL_ING[MESI_SCUOLA_ING.indexOf(ingleseMese)] : "";
+    const classeLabel = CLASSI[figlioAttivo?.classe]?.label || "";
+    const hasStarted = ingleseChatMsgs.length > 0;
+
+    const inviaMessaggio = async () => {
+      const testo = ingleseChatInput.trim();
+      if (!testo || ingleseChatLoading) return;
+      const nuovi = [...ingleseChatMsgs, { ruolo:"bambino", testo }];
+      setIngleseChatMsgs(nuovi);
+      setIngleseChatInput("");
+      setIngleseChatLoading(true);
+      try {
+        const token = await getAccessToken();
+        const r = await fetch("/api/inglese-chat", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ accessToken:token, classe:classeLabel, argomento:ingMeseData.conversazione, storico:ingleseChatMsgs, messaggio:testo }) });
+        const d = await r.json();
+        if (d.risposta_inglese) {
+          setIngleseChatMsgs(prev => [...prev, { ruolo:"lex", testo:d.risposta_inglese, traduzione:d.traduzione, correzione:d.correzione }]);
+        }
+      } catch {}
+      setIngleseChatLoading(false);
+    };
+
+    return (
+      <div style={{ ...S.app, background: luce ? "#F0F4FF" : "#0A0A1A", display:"flex", flexDirection:"column" }}>
+        <div style={{ padding:"16px 18px 12px", borderBottom:`1px solid ${luce ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.06)"}`, display:"flex", alignItems:"center", gap:"12px", flexShrink:0 }}>
+          <button onClick={() => goScreen("inglese")} style={{ background:"rgba(255,255,255,0.12)", border:"none", borderRadius:"12px", width:"44px", height:"44px", fontSize:"20px", cursor:"pointer", flexShrink:0 }}>←</button>
+          <div>
+            <p style={{ margin:0, fontSize:"18px", fontWeight:900, color: luce ? "#0a0a20" : "white" }}>💬 Conversazione</p>
+            <p style={{ margin:0, fontSize:"11px", color:"#fbbf24", fontWeight:700 }}>{ingMeseData.conversazione || meseLabel}</p>
+          </div>
+        </div>
+
+        <div style={{ flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch", padding:"16px 18px", display:"flex", flexDirection:"column", gap:"12px" }}>
+          {!hasStarted && (
+            <div style={{ textAlign:"center", padding:"30px 20px" }}>
+              <p style={{ fontSize:"40px", margin:"0 0 12px" }}>🇬🇧</p>
+              <p style={{ fontSize:"15px", fontWeight:800, color: luce ? "#0a0a20" : "white", marginBottom:"8px", fontFamily:"'Nunito'" }}>Parliamo in inglese!</p>
+              <p style={{ fontSize:"13px", color: luce ? "#374151" : "rgba(255,255,255,0.5)", fontWeight:700, marginBottom:"24px", fontFamily:"'Nunito'" }}>Argomento: {ingMeseData.conversazione}</p>
+              <button onClick={() => {
+                setIngleseChatMsgs([{ ruolo:"lex", testo:`Hello! Today we're going to talk about: ${ingMeseData.conversazione}. Let's start! Can you introduce yourself in English?`, traduzione:`Ciao! Oggi parliamo di: ${ingMeseData.conversazione}. Iniziamo! Puoi presentarti in inglese?` }]);
+              }} style={{ padding:"14px 28px", borderRadius:"16px", background:"linear-gradient(135deg,#f59e0b,#d97706)", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"15px", cursor:"pointer" }}>Inizia la conversazione</button>
+            </div>
+          )}
+          {ingleseChatMsgs.map((msg, i) => (
+            <div key={i} style={{ display:"flex", flexDirection:"column", alignItems: msg.ruolo === "lex" ? "flex-start" : "flex-end", gap:"4px" }}>
+              {msg.correzione && (
+                <div style={{ background:"rgba(245,158,11,0.15)", borderRadius:"12px", padding:"8px 12px", border:"1px solid rgba(245,158,11,0.3)", maxWidth:"85%", alignSelf:"flex-start" }}>
+                  <p style={{ margin:0, fontSize:"11px", fontWeight:800, color:"#f59e0b", fontFamily:"'Nunito'" }}>✏️ Correzione: {msg.correzione}</p>
+                </div>
+              )}
+              <div style={{ maxWidth:"85%", padding:"12px 14px", borderRadius: msg.ruolo === "lex" ? "4px 18px 18px 18px" : "18px 4px 18px 18px", background: msg.ruolo === "lex" ? (luce ? "white" : "rgba(255,255,255,0.1)") : "linear-gradient(135deg,#f59e0b,#d97706)", boxShadow: luce ? "0 2px 8px rgba(0,0,0,0.08)" : "none", border: luce && msg.ruolo === "lex" ? "1px solid rgba(0,0,0,0.06)" : "none" }}>
+                {msg.ruolo === "lex" && <p style={{ margin:"0 0 2px", fontSize:"10px", fontWeight:800, color:"#f59e0b", fontFamily:"'Nunito'" }}>LEX</p>}
+                <p style={{ margin:0, fontSize:"14px", fontWeight:700, color: msg.ruolo === "lex" ? (luce ? "#0a0a20" : "white") : "white", lineHeight:1.5, fontFamily:"'Nunito'" }}>{msg.testo}</p>
+                {msg.traduzione && <p style={{ margin:"6px 0 0", fontSize:"11px", fontWeight:600, color: luce ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.5)", fontStyle:"italic", fontFamily:"'Nunito'" }}>{msg.traduzione}</p>}
+              </div>
+            </div>
+          ))}
+          {ingleseChatLoading && (
+            <div style={{ display:"flex", alignItems:"flex-start" }}>
+              <div style={{ padding:"12px 16px", borderRadius:"4px 18px 18px 18px", background: luce ? "white" : "rgba(255,255,255,0.1)", border: luce ? "1px solid rgba(0,0,0,0.06)" : "none" }}>
+                <p style={{ margin:0, fontSize:"13px", color: luce ? "#374151" : "rgba(255,255,255,0.5)", fontWeight:700, fontFamily:"'Nunito'" }}>Lex sta scrivendo...</p>
+              </div>
+            </div>
+          )}
+          <div ref={ingleseChatEndRef} />
+        </div>
+
+        {hasStarted && (
+          <div style={{ padding:"12px 18px 24px", borderTop:`1px solid ${luce ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.06)"}`, display:"flex", gap:"10px", flexShrink:0 }}>
+            <input value={ingleseChatInput} onChange={e => setIngleseChatInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") inviaMessaggio(); }} placeholder="Scrivi in inglese..." style={{ flex:1, padding:"12px 14px", borderRadius:"14px", border:`1px solid ${luce ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.12)"}`, background: luce ? "white" : "rgba(255,255,255,0.08)", color: luce ? "#0a0a20" : "white", fontFamily:"'Nunito'", fontWeight:700, fontSize:"14px", outline:"none" }} />
+            <button onClick={inviaMessaggio} disabled={ingleseChatLoading || !ingleseChatInput.trim()} style={{ width:"48px", height:"48px", borderRadius:"14px", background: ingleseChatLoading || !ingleseChatInput.trim() ? "rgba(245,158,11,0.3)" : "linear-gradient(135deg,#f59e0b,#d97706)", border:"none", fontSize:"20px", cursor: ingleseChatLoading ? "default" : "pointer", flexShrink:0 }}>→</button>
           </div>
         )}
       </div>
