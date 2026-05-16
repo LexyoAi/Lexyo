@@ -24,6 +24,7 @@ export default function Home() {
   const [newBadge, setNewBadge] = useState(null);
   const [meseAperto, setMeseAperto] = useState(null);
   const [trialGiorni, setTrialGiorni] = useState(3);
+  const [trialAvviato, setTrialAvviato] = useState(false);
   const TRIAL_FOTO_MAX = 5;
   const TRIAL_CHAT_MAX = 20;
   const TRIAL_DETTATO_MAX = 1;
@@ -247,6 +248,7 @@ export default function Home() {
     }
     setPiano("trial");
     setTrialGiorni(3);
+    setTrialAvviato(true);
     setScreen("abbonamento_confermato");
     setTrialCheckLoading(false);
   };
@@ -513,7 +515,7 @@ export default function Home() {
             const pr = await fetch("/api/get-profilo", {
               method: "POST",
               headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}` },
-              body: JSON.stringify({ email: session.user.email }),
+              body: JSON.stringify({ email: session.user.email, fingerprint: getFingerprint() }),
             });
             const pd = await pr.json();
             if (pd.profilo) profilo = pd.profilo;
@@ -527,8 +529,11 @@ export default function Home() {
             setMesiGratisGuadagnati(profilo.mesi_gratis_guadagnati || 0);
             if (profilo.referral_code) setReferralCode(profilo.referral_code);
           }
+          const giorniEffettivi = (profilo?.trial_usato === true && !isPremium) ? 0 : giorniRimasti;
+          if (profilo?.trial_usato === true && !isPremium) setTrialGiorni(0);
+          if (profilo?.trial_avviato === true) setTrialAvviato(true);
           // Trial scaduto e non premium → mostra piano
-          if (!isPremium && giorniRimasti === 0 && figliDB && figliDB.length > 0) {
+          if (!isPremium && giorniEffettivi === 0 && figliDB && figliDB.length > 0) {
             setScreen("scegli_piano");
           } else {
             setScreen("home");
@@ -731,7 +736,7 @@ export default function Home() {
             const pr2 = await fetch("/api/get-profilo", {
               method: "POST",
               headers: { "Content-Type": "application/json", "Authorization": `Bearer ${data.session?.access_token || ""}` },
-              body: JSON.stringify({ email: data.user.email }),
+              body: JSON.stringify({ email: data.user.email, fingerprint: getFingerprint() }),
             });
             const pd2 = await pr2.json();
             if (pd2.profilo) profilo2 = pd2.profilo;
@@ -746,6 +751,8 @@ export default function Home() {
             setMesiGratisGuadagnati(profilo.mesi_gratis_guadagnati || 0);
             if (profilo.referral_code) setReferralCode(profilo.referral_code);
           }
+          if (profilo?.trial_usato === true && !isPremium2) setTrialGiorni(0);
+          if (profilo?.trial_avviato === true) setTrialAvviato(true);
           if (figliDB && figliDB.length > 0) {
             const figliFormattati = figliDB.map(f => ({ ...f, badge: f.badge || [], preparazione: f.preparazione || {} }));
             setFigli(figliFormattati);
@@ -1396,7 +1403,8 @@ export default function Home() {
       <p style={{ ...S.gray, marginBottom:"28px" }}>Puoi cambiare in qualsiasi momento</p>
       <div style={{ width:"100%", maxWidth:"420px", display:"flex", flexDirection:"column", gap:"16px" }}>
 
-        {/* TRIAL */}
+        {/* TRIAL — visibile solo se il trial non è ancora stato avviato */}
+        {!trialAvviato && (
         <div style={{ ...S.card, position:"relative" }}>
           <div style={{ position:"absolute", top:"-13px", left:"50%", transform:"translateX(-50%)", background:"rgba(16,185,129,0.9)", borderRadius:"100px", padding:"5px 18px", fontSize:"11px", fontWeight:900, whiteSpace:"nowrap", color:"white" }}>
             🎁 PROVA GRATUITA
@@ -1421,6 +1429,7 @@ export default function Home() {
           </button>
           <p style={{ fontSize:"11px", color: luce ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.25)", textAlign:"center", marginTop:"10px" }}>Disdici quando vuoi. Nessun vincolo.</p>
         </div>
+        )}
 
         {/* PREMIUM */}
         <div style={{ ...S.card, background: luce ? "linear-gradient(135deg,rgba(99,102,241,0.08),rgba(139,92,246,0.06))" : "linear-gradient(135deg,rgba(99,102,241,0.18),rgba(139,92,246,0.12))", border:"2px solid rgba(99,102,241,0.5)", position:"relative" }}>
@@ -1438,6 +1447,14 @@ export default function Home() {
           <button onClick={avviaStripeCheckout} disabled={stripeLoading} style={{ ...S.btn, ...S.btnP, marginTop:"4px", opacity: stripeLoading ? 0.7 : 1 }}>
             {stripeLoading ? "Apertura pagamento…" : "Abbonati — Offerta Lancio →"}
           </button>
+          <div style={{ marginTop:"16px", marginBottom:"4px" }}>
+            <p style={{ fontSize:"12px", fontWeight:800, color:"#059669", textAlign:"center", marginBottom:"10px" }}>✓ Accesso completo a tutto Lexyo</p>
+            {["📸 Foto compiti + spiegazione guidata","💬 Chat con Lex AI 24/7","🗓️ Calendario con quiz interattivi","🚦 Semaforo preparazione per materia","📊 Dashboard genitore con statistiche","🎮 Giochi educativi e badge","🎤 Dettato AI con correzione grammaticale","🚫 Zero pubblicità"].map((f) => (
+              <div key={f} style={{ display:"flex", gap:"8px", marginBottom:"6px", fontSize:"13px", fontWeight:600, color: luce ? "#0a0a20" : "white" }}>
+                <span style={{ color:"#6366f1", flexShrink:0 }}>✓</span>{f}
+              </div>
+            ))}
+          </div>
           <div style={{ marginTop:"14px", background: luce ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)", border: `1px solid ${luce ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)"}`, borderRadius:"12px", padding:"14px 16px" }}>
             <p style={{ fontSize:"13px", fontWeight:800, color: luce ? "#0a0a20" : "white", textAlign:"center", marginBottom:"5px" }}>
               🔒 Prezzo bloccato per sempre a 12,90€/mese

@@ -34,7 +34,6 @@ export default async function handler(req, res) {
       mode: "subscription",
       ...customerParam,
       line_items: [{ price: priceId, quantity: 1 }],
-      subscription_data: { trial_period_days: 3 },
       success_url: "https://app.lexyo.it?pagamento=successo",
       cancel_url: "https://app.lexyo.it?pagamento=annullato",
       locale: "it",

@@ -20,5 +20,11 @@ export default async function handler(req, res) {
     console.error("registra-trial error:", e.message);
   }
 
+  if (email) {
+    try {
+      await supabase.from("profili").update({ trial_avviato: true }).ilike("email", email.trim().toLowerCase());
+    } catch (_) {}
+  }
+
   res.json({ ok: true });
 }

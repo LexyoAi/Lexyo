@@ -3,6 +3,23 @@ import { createClient } from "@supabase/supabase-js";
 const getSupabase = () =>
   createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
+async function checkTrialGiaUsato(sb, fingerprint, ip) {
+  try {
+    let query = sb.from("trial_fingerprints").select("id").limit(1);
+    if (fingerprint && ip && ip !== "unknown") {
+      query = query.or(`fingerprint.eq.${fingerprint},ip.eq.${ip}`);
+    } else if (fingerprint) {
+      query = query.eq("fingerprint", fingerprint);
+    } else if (ip && ip !== "unknown") {
+      query = query.eq("ip", ip);
+    } else {
+      return false;
+    }
+    const { data } = await query;
+    return data && data.length > 0;
+  } catch { return false; }
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
 
@@ -15,11 +32,13 @@ export default async function handler(req, res) {
   if (authError || !user) return res.status(401).json({ errore: "Non autorizzato" });
 
   const emailNorm = user.email.trim().toLowerCase();
+  const fp = req.body?.fingerprint || null;
+  const ip = (req.headers["x-forwarded-for"]?.split(",")[0]?.trim()) || req.socket?.remoteAddress || "unknown";
 
   try {
     const { data: profilo, error } = await sb
       .from("profili")
-      .select("email,abbonamento_attivo,abbonamento_disdetto,abbonamento_scadenza,is_admin,pagamento_fallito,referral_code,referral_count,mesi_gratis_guadagnati")
+      .select("email,abbonamento_attivo,abbonamento_disdetto,abbonamento_scadenza,is_admin,pagamento_fallito,referral_code,referral_count,mesi_gratis_guadagnati,trial_usato,trial_avviato")
       .ilike("email", emailNorm)
       .maybeSingle();
 
@@ -41,9 +60,10 @@ export default async function handler(req, res) {
 
     try {
       const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const trialGiaUsato = await checkTrialGiaUsato(sb, fp, ip);
       const { data: nuovo } = await sb
         .from("profili")
-        .insert({ email: emailNorm, referral_code: code })
+        .insert({ email: emailNorm, referral_code: code, ...(trialGiaUsato ? { trial_usato: true } : {}) })
         .select()
         .single();
       return res.json({ profilo: nuovo || null });
