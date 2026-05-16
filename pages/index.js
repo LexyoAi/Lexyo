@@ -227,9 +227,10 @@ export default function Home() {
     setTrialBlockMsg("");
     try {
       const fp = getFingerprint();
+      const token = await getAccessToken();
       const check = await fetch("/api/verifica-trial", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({ fingerprint: fp }),
       });
       const esito = await check.json();
@@ -244,7 +245,7 @@ export default function Home() {
       }
       await fetch("/api/registra-trial", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({ fingerprint: fp, email }),
       });
     } catch {

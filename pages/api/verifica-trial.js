@@ -8,6 +8,12 @@ const supabase = createClient(
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
 
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) return res.status(401).json({ consentito: false });
+  const token = authHeader.slice(7);
+  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+  if (authError || !user) return res.status(401).json({ consentito: false });
+
   const { fingerprint } = req.body;
 
   try {
@@ -25,6 +31,6 @@ export default async function handler(req, res) {
     return res.json({ consentito: true });
   } catch (e) {
     console.error("verifica-trial error:", e.message);
-    return res.json({ consentito: true });
+    return res.json({ consentito: false });
   }
 }

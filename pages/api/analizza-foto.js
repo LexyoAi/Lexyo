@@ -41,8 +41,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    const base64 = photo.split(",")[1];
-    const mediaType = photo.split(";")[0].split(":")[1];
+    const match = photo.match(/^data:(image\/(?:jpeg|png|gif|webp));base64,(.+)$/);
+    if (!match) return res.status(400).json({ risposta: "Formato immagine non supportato. Usa JPG, PNG o WebP." });
+    const mediaType = match[1];
+    const base64 = match[2];
     const MEDIA_TYPES_VALIDI = ["image/jpeg", "image/png", "image/gif", "image/webp"];
     if (!MEDIA_TYPES_VALIDI.includes(mediaType)) {
       return res.status(400).json({ risposta: "Formato immagine non supportato. Usa JPG, PNG o WebP." });

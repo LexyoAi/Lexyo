@@ -174,10 +174,9 @@ export default function Landing({ onEntra }) {
         .lcard:active{transform:translateY(2px) scale(0.98);}
         .lcard::before{content:'';position:absolute;top:-30%;left:-20%;width:70%;height:70%;border-radius:50%;background:rgba(255,255,255,0.18);filter:blur(18px);pointer-events:none;z-index:0;}
         .lcard::after{content:'';position:absolute;inset:0;border-radius:22px;padding:1.5px;background:var(--card-border);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;z-index:2;}
-        .lcard-shine{position:absolute;top:0;left:0;right:0;height:40%;background:linear-gradient(180deg,rgba(255,255,255,0.20),transparent);border-radius:22px 22px 0 0;pointer-events:none;z-index:1;}
-        .lcard-depth{position:absolute;bottom:0;left:0;right:0;height:35%;background:linear-gradient(0deg,rgba(0,0,0,0.25),transparent);border-radius:0 0 22px 22px;pointer-events:none;z-index:1;}
+        .lcard-shine{position:absolute;top:0;left:0;right:0;height:30%;background:linear-gradient(180deg,rgba(255,255,255,0.10),transparent);border-radius:22px 22px 0 0;pointer-events:none;z-index:1;}
+        .lcard-depth{position:absolute;inset:0;background:linear-gradient(0deg,rgba(255,255,255,0.88) 0%,rgba(255,255,255,0.45) 45%,rgba(255,255,255,0) 100%);border-radius:22px;pointer-events:none;z-index:1;}
         .lcard-content{position:relative;z-index:3;}
-        .lcard-content p, .lcard-content span { text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
         .marquee-inner { animation:marquee 22s linear infinite; }
         .marquee-inner:hover { animation-play-state:paused; }
         .spot-grid { display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:center; }
@@ -408,9 +407,9 @@ export default function Landing({ onEntra }) {
               <div className="lcard-depth" />
               <div className="lcard-content">
                 <div style={{ fontSize:"32px", marginBottom:"10px" }}>{c.emoji}</div>
-                <p style={{ fontSize:"13px", fontWeight:900, color:"white", lineHeight:1.2, marginBottom:"4px" }}>{c.label}</p>
-                <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.9)", fontWeight:700, marginBottom:"10px" }}>{c.sub}</p>
-                <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.95)", lineHeight:1.65, fontWeight:500 }}>{c.desc}</p>
+                <p style={{ fontSize:"13px", fontWeight:900, color:"rgba(0,0,0,0.85)", lineHeight:1.2, marginBottom:"4px" }}>{c.label}</p>
+                <p style={{ fontSize:"11px", color:"rgba(0,0,0,0.55)", fontWeight:700, marginBottom:"10px" }}>{c.sub}</p>
+                <p style={{ fontSize:"12px", color:"rgba(0,0,0,0.70)", lineHeight:1.65, fontWeight:500 }}>{c.desc}</p>
               </div>
             </div>
           ))}
@@ -534,9 +533,9 @@ export default function Landing({ onEntra }) {
                 <div className="lcard-depth" />
                 <div className="lcard-content">
                   <div style={{ fontSize:"32px", marginBottom:"10px" }}>{g.emoji}</div>
-                  <p style={{ fontSize:"13px", fontWeight:900, color:"white", lineHeight:1.2, marginBottom:"4px" }}>{g.titolo}</p>
-                  <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.9)", fontWeight:700, marginBottom:"10px" }}>{g.sub}</p>
-                  <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.95)", lineHeight:1.65, fontWeight:500 }}>{g.desc}</p>
+                  <p style={{ fontSize:"13px", fontWeight:900, color:"rgba(0,0,0,0.85)", lineHeight:1.2, marginBottom:"4px" }}>{g.titolo}</p>
+                  <p style={{ fontSize:"11px", color:"rgba(0,0,0,0.55)", fontWeight:700, marginBottom:"10px" }}>{g.sub}</p>
+                  <p style={{ fontSize:"12px", color:"rgba(0,0,0,0.70)", lineHeight:1.65, fontWeight:500 }}>{g.desc}</p>
                 </div>
               </div>
             ))}
