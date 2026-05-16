@@ -483,8 +483,9 @@ export default function Home() {
     const nuovaEnergia = isBonus ? trasformaData.energia : Math.min(100, trasformaData.energia + 1);
     const nuovoQuizCount = isBonus ? trasformaData.quiz_completati_oggi : (trasformaData.quiz_completati_oggi || 0) + 1;
     const bonusSbloccato = nuovoQuizCount >= 3;
-    const nuovoStelle = isBonus ? (trasformaData.stelle_conversione || 0) + 20 : (trasformaData.stelle_conversione || 0);
-    if (isBonus) setTrasformaCoriandoli(true);
+    const stelleExtra = isBonus ? 20 : punteggio === 8 ? 2 : 0;
+    const nuovoStelle = (trasformaData.stelle_conversione || 0) + stelleExtra;
+    if (isBonus || punteggio === 8) setTrasformaCoriandoli(true);
 
     // Controlla evoluzione
     const vecchiaForma = FORME_LEX.filter(f => f.soglia <= trasformaData.energia).length - 1;
@@ -7015,9 +7016,38 @@ export default function Home() {
 
     if (trasformaQuizFinale) {
       const corrette = trasformaQuizRisposte.filter(Boolean).length;
-      const emoji = corrette < 4 ? "😔" : corrette < 7 ? "😊" : "🌟";
+      const completato = corrette >= 8;
+      const perfetto = corrette === 8 && !isBonus;
+
+      if (!completato) {
+        return (
+          <div style={{ ...S.app, background:"#FFF7ED", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"32px 20px", textAlign:"center" }}>
+            <Head><title>Riprova!</title></Head>
+            <div style={{ fontSize:"64px", marginBottom:"12px" }}>😤</div>
+            <p style={{ fontSize:"26px", fontWeight:900, color:"#92400E", marginBottom:"8px" }}>Quasi!</p>
+            <p style={{ fontSize:"16px", color:"rgba(0,0,0,0.65)", marginBottom:"4px" }}>Hai risposto a <strong>{corrette}/8</strong> domande corrette.</p>
+            <p style={{ fontSize:"14px", color:"rgba(0,0,0,0.5)", marginBottom:"8px" }}>Servono tutte e 8 per completare il quiz.</p>
+            <p style={{ fontSize:"13px", color:"#D97706", fontWeight:700, marginBottom:"28px" }}>Non ti preoccupare — riprova!</p>
+            <div style={{ display:"flex", flexDirection:"column", gap:"10px", width:"100%", maxWidth:"280px" }}>
+              <button
+                onClick={() => avviaTrasformaQuiz(trasformaQuizLivello)}
+                style={{ padding:"16px", borderRadius:"14px", background:"linear-gradient(135deg,#F59E0B,#D97706)", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"16px", cursor:"pointer", minHeight:"52px" }}
+              >
+                🔄 Riprova
+              </button>
+              <button
+                onClick={() => { setScreen("trasforma_lex"); setTrasformaCoriandoli(false); }}
+                style={{ padding:"14px", borderRadius:"14px", background:"rgba(0,0,0,0.07)", border:"none", color:"rgba(0,0,0,0.55)", fontFamily:"'Nunito'", fontWeight:700, fontSize:"14px", cursor:"pointer", minHeight:"48px" }}
+              >
+                Torna indietro
+              </button>
+            </div>
+          </div>
+        );
+      }
+
       return (
-        <div style={{ ...S.app, background:"#F5F3FF", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"32px 20px", textAlign:"center" }}>
+        <div style={{ ...S.app, background:"#F0FFF4", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"32px 20px", textAlign:"center" }}>
           <Head><title>Risultato Quiz</title></Head>
           {trasformaCoriandoli && (
             <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:999 }}>
@@ -7027,23 +7057,33 @@ export default function Home() {
             </div>
           )}
           <style>{`@keyframes fall{from{transform:translateY(0) rotate(0deg);opacity:1}to{transform:translateY(100vh) rotate(360deg);opacity:0}}`}</style>
-          <div style={{ fontSize:"64px", marginBottom:"8px" }}>{emoji}</div>
-          <p style={{ fontSize:"32px", fontWeight:900, color:"#1a0a30" }}>{corrette}/8</p>
-          <p style={{ fontSize:"15px", color:"rgba(0,0,0,0.5)", marginBottom:"20px" }}>{corrette < 4 ? "Riprova domani!" : corrette < 7 ? "Buon lavoro!" : "Eccellente!"}</p>
+          <div style={{ fontSize:"64px", marginBottom:"8px" }}>{perfetto ? "🌟" : isBonus ? "🎁" : "⭐"}</div>
+          <p style={{ fontSize:"28px", fontWeight:900, color:"#1a0a30", marginBottom:"4px" }}>
+            {perfetto ? "PERFETTO!" : isBonus ? "BONUS COMPLETO!" : "OTTIMO!"}
+          </p>
+          <p style={{ fontSize:"32px", fontWeight:900, color:"#00AA55", marginBottom:"16px" }}>{corrette}/8</p>
           {!isBonus && (
-            <div style={{ background:"linear-gradient(135deg,#6C47FF,#A855F7)", borderRadius:"16px", padding:"14px 28px", marginBottom:"12px" }}>
-              <p style={{ color:"white", fontWeight:900, fontSize:"18px" }}>+1% energia a Lex ⚡</p>
+            <div style={{ background:"linear-gradient(135deg,#6C47FF,#A855F7)", borderRadius:"16px", padding:"14px 28px", marginBottom:"10px" }}>
+              <p style={{ color:"white", fontWeight:900, fontSize:"18px", margin:0 }}>+1% energia a Lex ⚡</p>
+            </div>
+          )}
+          {perfetto && (
+            <div style={{ background:"linear-gradient(135deg,#FFB800,#FF8C00)", borderRadius:"16px", padding:"12px 28px", marginBottom:"10px" }}>
+              <p style={{ color:"white", fontWeight:900, fontSize:"16px", margin:0 }}>+2 stelle bonus ⭐⭐</p>
             </div>
           )}
           {isBonus && (
-            <div style={{ background:"linear-gradient(135deg,#FFB800,#FF8C00)", borderRadius:"16px", padding:"14px 28px", marginBottom:"12px" }}>
-              <p style={{ color:"white", fontWeight:900, fontSize:"18px" }}>+20 stelle guadagnate! ⭐</p>
+            <div style={{ background:"linear-gradient(135deg,#FFB800,#FF8C00)", borderRadius:"16px", padding:"14px 28px", marginBottom:"10px" }}>
+              <p style={{ color:"white", fontWeight:900, fontSize:"18px", margin:0 }}>+20 stelle guadagnate! ⭐</p>
             </div>
           )}
-          {!isBonus && trasformaData?.quiz_completati_oggi >= 2 && (
+          {!isBonus && (trasformaData?.quiz_completati_oggi || 0) + 1 >= 3 && (
             <p style={{ fontSize:"13px", color:"#6C47FF", fontWeight:700, marginBottom:"12px" }}>Quiz Bonus sbloccato! 🎁</p>
           )}
-          <button onClick={async () => { await completaTrasformaQuiz(corrette, isBonus); setScreen("trasforma_lex"); setTrasformaCoriandoli(false); }} style={{ padding:"14px 32px", borderRadius:"14px", background:"linear-gradient(135deg,#6C47FF,#A855F7)", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"16px", cursor:"pointer" }}>
+          <button
+            onClick={async () => { await completaTrasformaQuiz(corrette, isBonus); setScreen("trasforma_lex"); setTrasformaCoriandoli(false); }}
+            style={{ padding:"16px 36px", borderRadius:"14px", background:"linear-gradient(135deg,#6C47FF,#A855F7)", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"16px", cursor:"pointer", minHeight:"52px", marginTop:"8px" }}
+          >
             Continua →
           </button>
         </div>
@@ -7071,6 +7111,20 @@ export default function Home() {
         <div style={{ height:"4px", background:"rgba(108,71,255,0.15)" }}>
           <div style={{ height:"100%", width:`${((trasformaQuizIdx)/8)*100}%`, background:"linear-gradient(90deg,#6C47FF,#A855F7)", transition:"width 0.3s" }} />
         </div>
+        {/* STATS CORRETTE */}
+        {(() => {
+          const corrFin = trasformaQuizRisposte.filter(Boolean).length;
+          const mancano = Math.max(0, 8 - corrFin);
+          return (
+            <div style={{ display:"flex", alignItems:"center", gap:"10px", padding:"7px 16px", background:"white", borderBottom:"1px solid rgba(108,71,255,0.08)" }}>
+              <span style={{ fontSize:"12px", fontWeight:800, color:"#00AA55" }}>✅ {corrFin} corrette</span>
+              <span style={{ fontSize:"11px", color:"rgba(0,0,0,0.25)" }}>·</span>
+              <span style={{ fontSize:"12px", fontWeight:700, color: mancano === 0 ? "#00AA55" : "#D97706" }}>
+                {mancano === 0 ? "Sei sulla buona strada! 🎯" : `Servono ancora ${mancano} per completare`}
+              </span>
+            </div>
+          );
+        })()}
 
         {/* DOMANDA */}
         {domanda && (
