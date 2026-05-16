@@ -11,26 +11,26 @@ export default function Cookie() {
       <style>{`
         *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
         html, body { overflow-y: auto !important; overflow-x: hidden; }
-        body { background:#0F1028; color:#f0f0ff; font-family:'Plus Jakarta Sans',system-ui,sans-serif; }
-        h2 { font-size:18px; font-weight:800; margin:32px 0 10px; color:#a78bfa; }
-        p { font-size:15px; line-height:1.78; color:rgba(255,255,255,0.65); margin-bottom:12px; }
+        body { background:#ffffff; color:#0D0F2B; font-family:'Plus Jakarta Sans',system-ui,sans-serif; }
+        h2 { font-size:18px; font-weight:800; margin:32px 0 10px; color:#6366f1; }
+        p { font-size:15px; line-height:1.78; color:#44476A; margin-bottom:12px; }
         ul { padding-left:22px; margin-bottom:12px; }
-        li { font-size:15px; line-height:1.78; color:rgba(255,255,255,0.65); margin-bottom:6px; }
-        a { color:#a78bfa; text-decoration:none; }
+        li { font-size:15px; line-height:1.78; color:#44476A; margin-bottom:6px; }
+        a { color:#6366f1; text-decoration:none; }
         a:hover { text-decoration:underline; }
-        strong { color:rgba(255,255,255,0.88); font-weight:700; }
+        strong { color:#0D0F2B; font-weight:700; }
         table { width:100%; border-collapse:collapse; margin-bottom:16px; }
-        th { text-align:left; font-size:12px; font-weight:800; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:1px; padding:10px 14px; border-bottom:1px solid rgba(255,255,255,0.07); }
-        td { font-size:13px; color:rgba(255,255,255,0.6); padding:10px 14px; border-bottom:1px solid rgba(255,255,255,0.04); vertical-align:top; }
+        th { text-align:left; font-size:12px; font-weight:800; color:#8892AE; text-transform:uppercase; letter-spacing:1px; padding:10px 14px; border-bottom:1px solid rgba(0,0,0,0.08); }
+        td { font-size:13px; color:#44476A; padding:10px 14px; border-bottom:1px solid rgba(0,0,0,0.05); vertical-align:top; }
         tr:last-child td { border-bottom:none; }
       `}</style>
       <div style={{ maxWidth:"780px", margin:"0 auto", padding:"40px 24px 80px" }}>
-        <a href="/" style={{ display:"inline-flex", alignItems:"center", gap:"8px", color:"rgba(255,255,255,0.4)", fontSize:"14px", fontWeight:700 }}>← Torna a Lexyo</a>
+        <a href="/" style={{ display:"inline-flex", alignItems:"center", gap:"8px", color:"#8892AE", fontSize:"14px", fontWeight:700 }}>← Torna a Lexyo</a>
 
-        <div style={{ background:"rgba(167,139,250,0.08)", border:"1px solid rgba(167,139,250,0.2)", borderRadius:"24px", padding:"36px", marginTop:"28px", marginBottom:"36px" }}>
-          <p style={{ fontSize:"12px", fontWeight:800, color:"#a78bfa", textTransform:"uppercase", letterSpacing:"2px", marginBottom:"10px" }}>Documento legale</p>
-          <h1 style={{ fontSize:"clamp(28px,5vw,42px)", fontWeight:900, letterSpacing:"-1px", marginBottom:"8px" }}>Cookie Policy</h1>
-          <p style={{ color:"rgba(255,255,255,0.35)", fontSize:"13px", margin:0 }}>Ultimo aggiornamento: Maggio 2026 — versione 1.1</p>
+        <div style={{ background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.15)", borderRadius:"24px", padding:"36px", marginTop:"28px", marginBottom:"36px" }}>
+          <p style={{ fontSize:"12px", fontWeight:800, color:"#6366f1", textTransform:"uppercase", letterSpacing:"2px", marginBottom:"10px" }}>Documento legale</p>
+          <h1 style={{ fontSize:"clamp(28px,5vw,42px)", fontWeight:900, letterSpacing:"-1px", marginBottom:"8px", color:"#0D0F2B" }}>Cookie Policy</h1>
+          <p style={{ color:"#8892AE", fontSize:"13px", margin:0 }}>Ultimo aggiornamento: Maggio 2026 — versione 1.1</p>
         </div>
 
         <h2>1. Cosa sono i cookie</h2>
@@ -39,7 +39,7 @@ export default function Cookie() {
         <h2>2. Cosa usa Lexyo</h2>
         <p><strong>Lexyo utilizza esclusivamente tecnologie strettamente necessarie al funzionamento del servizio.</strong> Non utilizziamo cookie pubblicitari, cookie di profilazione, cookie di tracciamento di terze parti o pixel di retargeting.</p>
 
-        <div style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:"16px", overflow:"hidden", marginBottom:"16px" }}>
+        <div style={{ background:"rgba(0,0,0,0.02)", border:"1px solid rgba(0,0,0,0.08)", borderRadius:"16px", overflow:"hidden", marginBottom:"16px" }}>
           <table>
             <thead>
               <tr>
@@ -117,11 +117,11 @@ export default function Cookie() {
         <h2>7. Modifiche alla Cookie Policy</h2>
         <p>In caso di modifiche sostanziali all'uso dei cookie, aggiorneremo questa pagina e informeremo gli utenti tramite banner o email.</p>
 
-        <div style={{ marginTop:"40px", padding:"20px 24px", background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:"16px", display:"flex", flexWrap:"wrap", gap:"16px", justifyContent:"space-between", alignItems:"center" }}>
-          <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.4)", margin:0 }}>Domande: <a href="mailto:info@lexyo.it">info@lexyo.it</a></p>
+        <div style={{ marginTop:"40px", padding:"20px 24px", background:"rgba(0,0,0,0.02)", border:"1px solid rgba(0,0,0,0.08)", borderRadius:"16px", display:"flex", flexWrap:"wrap", gap:"16px", justifyContent:"space-between", alignItems:"center" }}>
+          <p style={{ fontSize:"13px", color:"#8892AE", margin:0 }}>Domande: <a href="mailto:info@lexyo.it">info@lexyo.it</a></p>
           <div style={{ display:"flex", gap:"16px" }}>
-            <a href="/privacy" style={{ fontSize:"13px", color:"rgba(255,255,255,0.35)", fontWeight:600 }}>Privacy Policy</a>
-            <a href="/termini" style={{ fontSize:"13px", color:"rgba(255,255,255,0.35)", fontWeight:600 }}>Termini di Servizio</a>
+            <a href="/privacy" style={{ fontSize:"13px", color:"#8892AE", fontWeight:600 }}>Privacy Policy</a>
+            <a href="/termini" style={{ fontSize:"13px", color:"#8892AE", fontWeight:600 }}>Termini di Servizio</a>
           </div>
         </div>
       </div>

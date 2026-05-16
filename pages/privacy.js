@@ -11,22 +11,22 @@ export default function Privacy() {
       <style>{`
         *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
         html, body { overflow-y: auto !important; overflow-x: hidden; }
-        body { background:#0F1028; color:#f0f0ff; font-family:'Plus Jakarta Sans',system-ui,sans-serif; }
-        h2 { font-size:18px; font-weight:800; margin:32px 0 10px; color:#a78bfa; }
-        p { font-size:15px; line-height:1.78; color:rgba(255,255,255,0.65); margin-bottom:12px; }
+        body { background:#ffffff; color:#0D0F2B; font-family:'Plus Jakarta Sans',system-ui,sans-serif; }
+        h2 { font-size:18px; font-weight:800; margin:32px 0 10px; color:#6366f1; }
+        p { font-size:15px; line-height:1.78; color:#44476A; margin-bottom:12px; }
         ul { padding-left:22px; margin-bottom:12px; }
-        li { font-size:15px; line-height:1.78; color:rgba(255,255,255,0.65); margin-bottom:6px; }
-        a { color:#a78bfa; text-decoration:none; }
+        li { font-size:15px; line-height:1.78; color:#44476A; margin-bottom:6px; }
+        a { color:#6366f1; text-decoration:none; }
         a:hover { text-decoration:underline; }
-        strong { color:rgba(255,255,255,0.88); font-weight:700; }
+        strong { color:#0D0F2B; font-weight:700; }
       `}</style>
       <div style={{ maxWidth:"780px", margin:"0 auto", padding:"40px 24px 80px" }}>
-        <a href="/" style={{ display:"inline-flex", alignItems:"center", gap:"8px", color:"rgba(255,255,255,0.4)", fontSize:"14px", fontWeight:700 }}>← Torna a Lexyo</a>
+        <a href="/" style={{ display:"inline-flex", alignItems:"center", gap:"8px", color:"#8892AE", fontSize:"14px", fontWeight:700 }}>← Torna a Lexyo</a>
 
-        <div style={{ background:"rgba(167,139,250,0.08)", border:"1px solid rgba(167,139,250,0.2)", borderRadius:"24px", padding:"36px", marginTop:"28px", marginBottom:"36px" }}>
-          <p style={{ fontSize:"12px", fontWeight:800, color:"#a78bfa", textTransform:"uppercase", letterSpacing:"2px", marginBottom:"10px" }}>Documento legale</p>
-          <h1 style={{ fontSize:"clamp(28px,5vw,42px)", fontWeight:900, letterSpacing:"-1px", marginBottom:"8px" }}>Privacy Policy</h1>
-          <p style={{ color:"rgba(255,255,255,0.35)", fontSize:"13px", margin:0 }}>Ultimo aggiornamento: Maggio 2026 — versione 1.1</p>
+        <div style={{ background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.15)", borderRadius:"24px", padding:"36px", marginTop:"28px", marginBottom:"36px" }}>
+          <p style={{ fontSize:"12px", fontWeight:800, color:"#6366f1", textTransform:"uppercase", letterSpacing:"2px", marginBottom:"10px" }}>Documento legale</p>
+          <h1 style={{ fontSize:"clamp(28px,5vw,42px)", fontWeight:900, letterSpacing:"-1px", marginBottom:"8px", color:"#0D0F2B" }}>Privacy Policy</h1>
+          <p style={{ color:"#8892AE", fontSize:"13px", margin:0 }}>Ultimo aggiornamento: Maggio 2026 — versione 1.1</p>
         </div>
 
         <h2>1. Titolare del trattamento</h2>
@@ -89,11 +89,11 @@ export default function Privacy() {
         <h2>11. Modifiche alla Privacy Policy</h2>
         <p>Ci riserviamo il diritto di aggiornare questa Policy. Gli utenti registrati saranno informati via email in caso di modifiche sostanziali. La versione aggiornata sarà sempre disponibile su questa pagina.</p>
 
-        <div style={{ marginTop:"40px", padding:"20px 24px", background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:"16px", display:"flex", flexWrap:"wrap", gap:"16px", justifyContent:"space-between", alignItems:"center" }}>
-          <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.4)", margin:0 }}>Per domande sulla privacy: <a href="mailto:info@lexyo.it">info@lexyo.it</a></p>
+        <div style={{ marginTop:"40px", padding:"20px 24px", background:"rgba(0,0,0,0.02)", border:"1px solid rgba(0,0,0,0.08)", borderRadius:"16px", display:"flex", flexWrap:"wrap", gap:"16px", justifyContent:"space-between", alignItems:"center" }}>
+          <p style={{ fontSize:"13px", color:"#8892AE", margin:0 }}>Per domande sulla privacy: <a href="mailto:info@lexyo.it">info@lexyo.it</a></p>
           <div style={{ display:"flex", gap:"16px" }}>
-            <a href="/termini" style={{ fontSize:"13px", color:"rgba(255,255,255,0.35)", fontWeight:600 }}>Termini di Servizio</a>
-            <a href="/cookie" style={{ fontSize:"13px", color:"rgba(255,255,255,0.35)", fontWeight:600 }}>Cookie Policy</a>
+            <a href="/termini" style={{ fontSize:"13px", color:"#8892AE", fontWeight:600 }}>Termini di Servizio</a>
+            <a href="/cookie" style={{ fontSize:"13px", color:"#8892AE", fontWeight:600 }}>Cookie Policy</a>
           </div>
         </div>
       </div>

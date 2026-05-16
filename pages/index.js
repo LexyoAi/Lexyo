@@ -1455,7 +1455,7 @@ export default function Home() {
   );
 
   if (screen === "abbonamento_confermato") return (
-    <div style={{ ...S.app, padding:"24px 20px", display:"flex", flexDirection:"column", alignItems:"center", overflowY:"auto", background: luce ? "#f0f4ff" : "#06060f", color:"white" }}>
+    <div style={{ ...S.app, padding:"24px 20px", display:"flex", flexDirection:"column", alignItems:"center", overflowY:"auto", background:"#ffffff", color:"#0D0F2B" }}>
       <Head><title>Lexyo Premium — Attivo!</title></Head>
       <style>{`@keyframes confettiFall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(80px) rotate(360deg);opacity:0}} @keyframes premiumPop{0%{transform:scale(0.5);opacity:0}70%{transform:scale(1.08);opacity:1}100%{transform:scale(1);opacity:1}}`}</style>
 
@@ -1483,23 +1483,23 @@ export default function Home() {
         )}
       </div>
 
-      <p style={{ fontSize:"15px", color:"rgba(255,255,255,0.5)", textAlign:"center", maxWidth:"320px", lineHeight:1.7, marginBottom:"32px" }}>
+      <p style={{ fontSize:"15px", color:"#44476A", textAlign:"center", maxWidth:"320px", lineHeight:1.7, marginBottom:"32px" }}>
         {piano === "premium" ? "Grazie! Hai accesso completo a tutte le funzioni di Lexyo." : "Benvenuto! Hai 3 giorni per esplorare tutto Lexyo gratuitamente."}{" "}
         Adesso installa l'app sul tuo telefonino — è gratuita.
       </p>
 
       {/* SEZIONE INSTALLA */}
-      <div style={{ width:"100%", maxWidth:"420px", background:"linear-gradient(135deg,rgba(168,85,247,0.18),rgba(99,102,241,0.12))", border:"1px solid rgba(168,85,247,0.4)", borderRadius:"24px", padding:"28px 24px", marginBottom:"20px" }}>
+      <div style={{ width:"100%", maxWidth:"420px", background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.2)", borderRadius:"24px", padding:"28px 24px", marginBottom:"20px" }}>
         <div style={{ textAlign:"center", marginBottom:"20px" }}>
           <p style={{ fontSize:"28px", margin:"0 0 8px" }}>📱</p>
-          <p style={{ fontWeight:900, fontSize:"18px", margin:"0 0 6px" }}>Scarica l'App sul Telefonino</p>
-          <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.45)", margin:0 }}>Sempre a portata di mano · Nessun App Store</p>
+          <p style={{ fontWeight:900, fontSize:"18px", margin:"0 0 6px", color:"#0D0F2B" }}>Scarica l'App sul Telefonino</p>
+          <p style={{ fontSize:"13px", color:"#8892AE", margin:0 }}>Sempre a portata di mano · Nessun App Store</p>
         </div>
 
         {/* Feature chips */}
         <div style={{ display:"flex", flexWrap:"wrap", gap:"8px", justifyContent:"center", marginBottom:"20px" }}>
           {["Funziona offline","Icona sulla home","Aggiornamenti auto","Gratuita"].map((t,i) => (
-            <span key={i} style={{ background:"rgba(168,85,247,0.12)", border:"1px solid rgba(168,85,247,0.25)", borderRadius:"20px", padding:"4px 12px", fontSize:"11px", fontWeight:700, color:"rgba(255,255,255,0.6)" }}>{t}</span>
+            <span key={i} style={{ background:"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.2)", borderRadius:"20px", padding:"4px 12px", fontSize:"11px", fontWeight:700, color:"#6366f1" }}>{t}</span>
           ))}
         </div>
 
@@ -1518,28 +1518,28 @@ export default function Home() {
               <p style={{ fontSize:"16px", fontWeight:900, margin:0 }}>Android</p>
             </div>
           </button>
-          <button onClick={() => setShowAppIosModal("ios")} style={{ width:"100%", display:"flex", alignItems:"center", gap:"14px", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:"14px", padding:"14px 20px", color:"white", fontFamily:"'Plus Jakarta Sans',sans-serif", cursor:"pointer" }}>
-            <img src="https://cdn.simpleicons.org/apple/ffffff" width="28" height="28" alt="Apple" style={{ objectFit:"contain", flexShrink:0 }} />
+          <button onClick={() => setShowAppIosModal("ios")} style={{ width:"100%", display:"flex", alignItems:"center", gap:"14px", background:"white", border:"1px solid rgba(0,0,0,0.12)", borderRadius:"14px", padding:"14px 20px", color:"#0D0F2B", fontFamily:"'Plus Jakarta Sans',sans-serif", cursor:"pointer" }}>
+            <img src="https://cdn.simpleicons.org/apple/000000" width="28" height="28" alt="Apple" style={{ objectFit:"contain", flexShrink:0 }} />
             <div style={{ textAlign:"left" }}>
-              <p style={{ fontSize:"11px", fontWeight:600, color:"rgba(255,255,255,0.75)", margin:0 }}>Istruzioni per</p>
+              <p style={{ fontSize:"11px", fontWeight:600, color:"rgba(0,0,0,0.5)", margin:0 }}>Istruzioni per</p>
               <p style={{ fontSize:"16px", fontWeight:900, margin:0 }}>iPhone / iPad</p>
             </div>
           </button>
         </div>
       </div>
 
-      <button onClick={() => setScreen(figlioAttivo ? "home" : "aggiungi_figlio")} style={{ ...S.btn, background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", color:"rgba(255,255,255,0.6)", marginBottom:"24px" }}>
+      <button onClick={() => setScreen(figlioAttivo ? "home" : "aggiungi_figlio")} style={{ ...S.btn, background:"rgba(0,0,0,0.06)", border:"1px solid rgba(0,0,0,0.1)", color:"#44476A", marginBottom:"24px" }}>
         Continua senza installare →
       </button>
 
       {/* Modale istruzioni */}
       {showAppIosModal && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.85)", backdropFilter:"blur(12px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:2000, padding:"24px" }} onClick={() => setShowAppIosModal(false)}>
-          <div style={{ background:"#12121f", border:"1px solid rgba(168,85,247,0.35)", borderRadius:"24px", padding:"36px 28px", maxWidth:"380px", width:"100%", position:"relative" }} onClick={e => e.stopPropagation()}>
-            <button onClick={() => setShowAppIosModal(false)} style={{ position:"absolute", top:"14px", right:"14px", background:"rgba(255,255,255,0.08)", border:"none", borderRadius:"50%", width:"30px", height:"30px", color:"rgba(255,255,255,0.6)", cursor:"pointer", fontSize:"15px" }}>✕</button>
+        <div style={{ position:"fixed", top:0, right:0, bottom:0, left:0, background:"rgba(0,0,0,0.5)", backdropFilter:"blur(12px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:2000, padding:"24px" }} onClick={() => setShowAppIosModal(false)}>
+          <div style={{ background:"#ffffff", border:"1px solid rgba(99,102,241,0.15)", borderRadius:"24px", padding:"36px 28px", maxWidth:"380px", width:"100%", position:"relative", boxShadow:"0 16px 64px rgba(0,0,0,0.12)" }} onClick={e => e.stopPropagation()}>
+            <button onClick={() => setShowAppIosModal(false)} style={{ position:"absolute", top:"14px", right:"14px", background:"rgba(0,0,0,0.06)", border:"none", borderRadius:"50%", width:"30px", height:"30px", color:"rgba(0,0,0,0.4)", cursor:"pointer", fontSize:"15px" }}>✕</button>
             <div style={{ fontSize:"36px", textAlign:"center", marginBottom:"12px" }}>{showAppIosModal === "ios" ? "🍎" : "🤖"}</div>
-            <h3 style={{ fontSize:"20px", fontWeight:900, textAlign:"center", marginBottom:"6px" }}>{showAppIosModal === "ios" ? "Installa su iPhone" : "Installa su Android"}</h3>
-            <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.38)", textAlign:"center", marginBottom:"24px" }}>{showAppIosModal === "ios" ? "Usa Safari — altri browser non supportano l'installazione" : "Apri questa pagina in Chrome"}</p>
+            <h3 style={{ fontSize:"20px", fontWeight:900, textAlign:"center", marginBottom:"6px", color:"#0D0F2B" }}>{showAppIosModal === "ios" ? "Installa su iPhone" : "Installa su Android"}</h3>
+            <p style={{ fontSize:"12px", color:"#8892AE", textAlign:"center", marginBottom:"24px" }}>{showAppIosModal === "ios" ? "Usa Safari — altri browser non supportano l'installazione" : "Apri questa pagina in Chrome"}</p>
             <div style={{ display:"flex", flexDirection:"column", gap:"14px" }}>
               {(showAppIosModal === "ios" ? [
                 { n:"1", icon:"🌐", t:"Apri in Safari", d:"Assicurati di usare Safari, non Chrome." },
@@ -1553,13 +1553,13 @@ export default function Home() {
                 { n:"4", icon:"✅", t:"Conferma", d:"L'icona di Lexyo apparirà nella home!" },
               ]).map((s, i) => (
                 <div key={i} style={{ display:"flex", gap:"12px", alignItems:"flex-start" }}>
-                  <div style={{ width:"28px", height:"28px", borderRadius:"50%", background:"rgba(168,85,247,0.2)", border:"1px solid rgba(168,85,247,0.3)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"10px", fontWeight:900, color:"#c084fc", flexShrink:0 }}>{s.n}</div>
+                  <div style={{ width:"28px", height:"28px", borderRadius:"50%", background:"rgba(99,102,241,0.1)", border:"1px solid rgba(99,102,241,0.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"10px", fontWeight:900, color:"#6366f1", flexShrink:0 }}>{s.n}</div>
                   <div>
                     <div style={{ display:"flex", alignItems:"center", gap:"5px", marginBottom:"2px" }}>
                       <span style={{ fontSize:"14px" }}>{s.icon}</span>
-                      <p style={{ fontWeight:800, fontSize:"13px", margin:0 }}>{s.t}</p>
+                      <p style={{ fontWeight:800, fontSize:"13px", margin:0, color:"#0D0F2B" }}>{s.t}</p>
                     </div>
-                    <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.38)", lineHeight:1.5, margin:0 }}>{s.d}</p>
+                    <p style={{ fontSize:"11px", color:"#8892AE", lineHeight:1.5, margin:0 }}>{s.d}</p>
                   </div>
                 </div>
               ))}

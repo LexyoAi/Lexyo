@@ -247,12 +247,11 @@ export default function Landing({ onEntra }) {
           .lex-main-img { animation: lexProfIdle 5s ease-in-out infinite !important; filter: none !important; }
         }
 
-        /* Gradient text: compatibilità WebKit esplicita */
+        /* Gradient text: utility class WebKit — background va sempre in inline style */
         .hero-gradient-text {
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
-          color: transparent;
         }
       `}</style>
 
@@ -295,7 +294,7 @@ export default function Landing({ onEntra }) {
 
           <h1 style={{ fontSize:"clamp(32px, 5vw, 58px)", fontWeight:900, letterSpacing:"-2px", lineHeight:1.1, color:"#0D0F2B", marginBottom:"16px" }}>
             Il professore AI<br/>
-            <span className="hero-gradient-text" style={{ background:"linear-gradient(135deg,#6366f1,#8b5cf6,#a78bfa)" }}>di tuo figlio.</span>
+            <span style={{ background:"linear-gradient(135deg,#6366f1,#8b5cf6,#a78bfa)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text" }}>di tuo figlio.</span>
           </h1>
 
           <div style={{ marginBottom:"32px", display:"flex", flexDirection:"column", gap:"6px" }}>
@@ -391,16 +390,16 @@ export default function Landing({ onEntra }) {
 
       {/* ── MERITA DI IMPARARE ── */}
       <section style={{ padding:"0 24px 60px", maxWidth:"880px", margin:"0 auto" }}>
-        <div id="merita" data-animate className={V("merita")} style={{ background:"linear-gradient(135deg,#0D0F2B,#1a1040)", border:"1px solid rgba(99,102,241,0.35)", borderRadius:"28px", padding:"56px 40px", textAlign:"center", position:"relative", overflow:"hidden", boxShadow:"0 12px 56px rgba(13,15,43,0.22)" }}>
-          <div style={{ position:"absolute", top:0, right:0, bottom:0, left:0, background:"radial-gradient(ellipse 80% 60% at 50% 50%, rgba(99,102,241,0.2) 0%, transparent 70%)", pointerEvents:"none" }} />
+        <div id="merita" data-animate className={V("merita")} style={{ background:"#ffffff", border:"2px solid rgba(99,102,241,0.15)", borderRadius:"28px", padding:"56px 40px", textAlign:"center", position:"relative", overflow:"hidden", boxShadow:"0 8px 40px rgba(99,102,241,0.1)" }}>
+          <div style={{ position:"absolute", top:0, right:0, bottom:0, left:0, background:"radial-gradient(ellipse 80% 60% at 50% 50%, rgba(99,102,241,0.06) 0%, transparent 70%)", pointerEvents:"none" }} />
           <img src="/Lex-prof.png" alt="Lex" style={{ width:"clamp(90px,14vw,130px)", objectFit:"contain", margin:"0 auto 20px", display:"block", animation:"lexProfIdle 5s ease-in-out infinite", transformOrigin:"bottom center", position:"relative", zIndex:1 }} />
-          <h2 style={{ fontSize:"clamp(28px, 5vw, 52px)", fontWeight:900, letterSpacing:"-2px", lineHeight:1.12, color:"white", marginBottom:"16px", position:"relative", zIndex:1 }}>
+          <h2 style={{ fontSize:"clamp(28px, 5vw, 52px)", fontWeight:900, letterSpacing:"-2px", lineHeight:1.12, color:"#0D0F2B", marginBottom:"16px", position:"relative", zIndex:1 }}>
             Tuo figlio merita di imparare,<br/>
-            <span className="hero-gradient-text" style={{ background:"linear-gradient(135deg,#a78bfa,#6366f1)" }}>non di copiare.</span>
+            <span style={{ background:"linear-gradient(135deg,#a78bfa,#6366f1)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text" }}>non di copiare.</span>
           </h2>
-          <p style={{ fontSize:"clamp(15px, 2vw, 18px)", color:"rgba(255,255,255,0.6)", lineHeight:1.75, maxWidth:"520px", margin:"0 auto 28px", position:"relative", zIndex:1 }}>
+          <p style={{ fontSize:"clamp(15px, 2vw, 18px)", color:"#44476A", lineHeight:1.75, maxWidth:"520px", margin:"0 auto 28px", position:"relative", zIndex:1 }}>
             Le altre app gli danno la risposta. Lex gli insegna come trovarla.<br/>
-            <strong style={{ color:"rgba(255,255,255,0.9)" }}>Perché capire vale più di copiare.</strong>
+            <strong style={{ color:"#0D0F2B" }}>Perché capire vale più di copiare.</strong>
           </p>
           <button onClick={onEntra} className="btn-cta" style={{ padding:"16px 40px", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", border:"none", borderRadius:"14px", color:"white", fontFamily:"'Plus Jakarta Sans'", fontWeight:800, fontSize:"16px", boxShadow:"0 8px 32px rgba(99,102,241,0.4)", position:"relative", zIndex:1 }}>
             Prova gratis 3 giorni →
@@ -839,12 +838,12 @@ export default function Landing({ onEntra }) {
 
       {/* STICKY BAR — resta dark per contrasto */}
       {scrollY > 500 && (
-        <div className="sticky-bar-el" style={{ position:"fixed", bottom:0, left:0, right:0, background:"rgba(13,15,43,0.97)", backdropFilter:"blur(24px)", borderTop:"1px solid rgba(99,102,241,0.3)", padding:"12px 20px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", zIndex:300, gap:"12px", boxShadow:"0 -8px 40px rgba(0,0,0,0.2)" }}>
+        <div className="sticky-bar-el" style={{ position:"fixed", bottom:0, left:0, right:0, background:"rgba(255,255,255,0.97)", backdropFilter:"blur(24px)", borderTop:"1px solid rgba(99,102,241,0.15)", padding:"12px 20px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", zIndex:300, gap:"12px", boxShadow:"0 -4px 24px rgba(99,102,241,0.1)" }}>
           <div style={{ display:"flex", alignItems:"center", gap:"10px", minWidth:0 }}>
             <img src="/Lex-prof.png" alt="Lexyo" style={{ width:"36px", height:"36px", objectFit:"contain", flexShrink:0 }} />
             <div>
-              <p style={{ fontWeight:900, fontSize:"14px", margin:0, color:"white" }}>📱 Installa Lexyo — è gratis</p>
-              <p className="sticky-sub" style={{ fontSize:"11px", color:"rgba(255,255,255,0.4)", margin:0 }}>Nessun App Store · Funziona offline</p>
+              <p style={{ fontWeight:900, fontSize:"14px", margin:0, color:"#0D0F2B" }}>📱 Installa Lexyo — è gratis</p>
+              <p className="sticky-sub" style={{ fontSize:"11px", color:"#8892AE", margin:0 }}>Nessun App Store · Funziona offline</p>
             </div>
           </div>
           <div style={{ display:"flex", gap:"8px", flexShrink:0 }}>
@@ -852,8 +851,8 @@ export default function Landing({ onEntra }) {
               <img src="https://cdn.simpleicons.org/android/ffffff" width="18" height="18" alt="" style={{ objectFit:"contain" }} />
               Android
             </button>
-            <button onClick={() => setShowIosModal("ios")} style={{ display:"flex", alignItems:"center", gap:"7px", background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:"10px", padding:"9px 16px", color:"white", fontFamily:"'Plus Jakarta Sans'", fontWeight:800, fontSize:"13px", cursor:"pointer" }}>
-              <img src="https://cdn.simpleicons.org/apple/ffffff" width="16" height="16" alt="" style={{ objectFit:"contain" }} />
+            <button onClick={() => setShowIosModal("ios")} style={{ display:"flex", alignItems:"center", gap:"7px", background:"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.2)", borderRadius:"10px", padding:"9px 16px", color:"#6366f1", fontFamily:"'Plus Jakarta Sans'", fontWeight:800, fontSize:"13px", cursor:"pointer" }}>
+              <img src="https://cdn.simpleicons.org/apple/6366f1" width="16" height="16" alt="" style={{ objectFit:"contain" }} />
               iPhone
             </button>
           </div>
@@ -877,11 +876,11 @@ export default function Landing({ onEntra }) {
 
       {/* COOKIE BANNER */}
       {!cookieAccepted && (
-        <div className="cookie-el" style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:600, background:"rgba(13,15,43,0.97)", backdropFilter:"blur(20px)", borderTop:"1px solid rgba(99,102,241,0.3)", padding:"14px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:"12px" }}>
-          <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.65)", flex:1, lineHeight:1.55, fontWeight:500, minWidth:"220px" }}>
+        <div className="cookie-el" style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:600, background:"rgba(255,255,255,0.97)", backdropFilter:"blur(20px)", borderTop:"1px solid rgba(99,102,241,0.15)", padding:"14px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:"12px", boxShadow:"0 -4px 24px rgba(99,102,241,0.08)" }}>
+          <p style={{ fontSize:"13px", color:"#44476A", flex:1, lineHeight:1.55, fontWeight:500, minWidth:"220px" }}>
             🍪 Usiamo solo cookie tecnici essenziali. Nessun cookie pubblicitario, nessun tracciamento.{" "}
-            <a href="/cookie" style={{ color:"#a78bfa", fontWeight:700 }}>Cookie Policy</a>{" · "}
-            <a href="/privacy" style={{ color:"#a78bfa", fontWeight:700 }}>Privacy Policy</a>
+            <a href="/cookie" style={{ color:"#6366f1", fontWeight:700, textDecoration:"none" }}>Cookie Policy</a>{" · "}
+            <a href="/privacy" style={{ color:"#6366f1", fontWeight:700, textDecoration:"none" }}>Privacy Policy</a>
           </p>
           <button onClick={() => { localStorage.setItem("lexyo_cookie_accepted","true"); setCookieAccepted(true); }} style={{ background:"linear-gradient(135deg,#6366f1,#8b5cf6)", border:"none", borderRadius:"10px", padding:"11px 24px", color:"white", fontFamily:"'Plus Jakarta Sans'", fontWeight:800, fontSize:"14px", cursor:"pointer", flexShrink:0 }}>
             Accetto
