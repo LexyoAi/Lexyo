@@ -1403,8 +1403,8 @@ export default function Home() {
       <p style={{ ...S.gray, marginBottom:"28px" }}>Puoi cambiare in qualsiasi momento</p>
       <div style={{ width:"100%", maxWidth:"420px", display:"flex", flexDirection:"column", gap:"16px" }}>
 
-        {/* TRIAL — visibile solo se il trial non è ancora stato avviato */}
-        {!trialAvviato && (
+        {/* TRIAL — visibile solo se il trial non è ancora stato avviato e ha ancora giorni */}
+        {!trialAvviato && trialGiorni > 0 && (
         <div style={{ ...S.card, position:"relative" }}>
           <div style={{ position:"absolute", top:"-13px", left:"50%", transform:"translateX(-50%)", background:"rgba(16,185,129,0.9)", borderRadius:"100px", padding:"5px 18px", fontSize:"11px", fontWeight:900, whiteSpace:"nowrap", color:"white" }}>
             🎁 PROVA GRATUITA

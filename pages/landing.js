@@ -170,6 +170,13 @@ export default function Landing({ onEntra }) {
         .feature-card:hover { transform:translateY(-4px); box-shadow:0 12px 32px rgba(0,0,0,0.1) !important; }
         .btn-cta { transition:all 0.22s ease; cursor:pointer; }
         .btn-cta:hover { transform:translateY(-2px); box-shadow:0 12px 36px rgba(99,102,241,0.35); }
+        .lcard{transition:transform 0.15s ease,box-shadow 0.15s ease;position:relative;overflow:hidden;}
+        .lcard:active{transform:translateY(2px) scale(0.98);}
+        .lcard::before{content:'';position:absolute;top:-30%;left:-20%;width:70%;height:70%;border-radius:50%;background:rgba(255,255,255,0.18);filter:blur(18px);pointer-events:none;z-index:0;}
+        .lcard::after{content:'';position:absolute;inset:0;border-radius:22px;padding:1.5px;background:var(--card-border);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;z-index:2;}
+        .lcard-shine{position:absolute;top:0;left:0;right:0;height:40%;background:linear-gradient(180deg,rgba(255,255,255,0.20),transparent);border-radius:22px 22px 0 0;pointer-events:none;z-index:1;}
+        .lcard-depth{position:absolute;bottom:0;left:0;right:0;height:35%;background:linear-gradient(0deg,rgba(0,0,0,0.25),transparent);border-radius:0 0 22px 22px;pointer-events:none;z-index:1;}
+        .lcard-content{position:relative;z-index:3;}
         .marquee-inner { animation:marquee 22s linear infinite; }
         .marquee-inner:hover { animation-play-state:paused; }
         .spot-grid { display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:center; }
@@ -260,7 +267,6 @@ export default function Landing({ onEntra }) {
         <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
           <img src="/Lex-prof.png" alt="Lex" style={{ width:"40px", height:"40px", objectFit:"contain" }} />
           <span style={{ fontWeight:900, fontSize:"22px", letterSpacing:"-0.5px", color:"#0D0F2B" }}>Lexyo</span>
-          <span className="nav-logo-badge" style={{ background:"rgba(99,102,241,0.1)", border:"1px solid rgba(99,102,241,0.2)", borderRadius:"20px", padding:"2px 10px", fontSize:"11px", fontWeight:700, color:"#6366f1" }}>🇮🇹 Made in Italy</span>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
           <button className="nav-install-btn" onClick={() => document.getElementById("install-app")?.scrollIntoView({ behavior:"smooth" })} style={{ background:"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.2)", borderRadius:"10px", padding:"10px 20px", color:"#6366f1", fontFamily:"'Plus Jakarta Sans'", fontWeight:800, fontSize:"14px", cursor:"pointer" }}>
@@ -298,10 +304,9 @@ export default function Landing({ onEntra }) {
           </h1>
 
           <div style={{ marginBottom:"32px", display:"flex", flexDirection:"column", gap:"6px" }}>
-            <p style={{ fontSize:"clamp(14px, 2vw, 17px)", color:"#44476A", fontWeight:500 }}>Sempre paziente. Disponibile 24/7.</p>
-            <p style={{ fontSize:"clamp(14px, 2vw, 17px)", color:"#44476A", fontWeight:500 }}>Non dà mai le risposte.</p>
-            <p style={{ fontSize:"clamp(20px, 3vw, 26px)", color:"#0D0F2B", fontWeight:900, letterSpacing:"-0.5px" }}>Insegna a trovarle.</p>
-            <p style={{ fontSize:"clamp(12px, 1.5vw, 14px)", color:"#8892AE", fontWeight:500, marginTop:"4px" }}>Programma MIUR · Zero pubblicità. Mai.</p>
+            <p style={{ fontSize:"clamp(18px, 2.5vw, 24px)", color:"#0D0F2B", fontWeight:800 }}>Amato dai Bambini.</p>
+            <p style={{ fontSize:"clamp(18px, 2.5vw, 24px)", color:"#0D0F2B", fontWeight:800 }}>Approvato dai Genitori.</p>
+            <p style={{ fontSize:"clamp(12px, 1.5vw, 14px)", color:"#8892AE", fontWeight:500, marginTop:"4px" }}>Sincronizzato con Programma Ministeriale Scolastico</p>
           </div>
 
           {/* Leone */}
@@ -323,13 +328,27 @@ export default function Landing({ onEntra }) {
             </div>
           </div>
 
-          <div style={{ display:"flex", flexWrap:"wrap", gap:"8px", justifyContent:"center" }}>
-            {classi.map((c,i) => (
-              <div key={i} style={{ display:"flex", alignItems:"center", gap:"6px", background:`${c.colore}0f`, border:`1px solid ${c.colore}28`, borderRadius:"20px", padding:"5px 12px" }}>
-                <span style={{ fontSize:"10px", fontWeight:900, color:c.colore }}>{c.emoji}</span>
-                <span style={{ fontSize:"12px", fontWeight:700, color:"#44476A" }}>{c.nome}</span>
-              </div>
-            ))}
+          <div style={{ display:"flex", flexDirection:"column", gap:"8px", alignItems:"center" }}>
+            <div style={{ display:"flex", gap:"8px" }}>
+              {classi.slice(0,3).map((c,i) => (
+                <div key={i} className="lcard" style={{ borderRadius:"20px", padding:"6px 18px", background:`linear-gradient(135deg,${c.colore}55,${c.colore}33)`, boxShadow:`0 4px 14px ${c.colore}30`, "--card-border":`linear-gradient(135deg,${c.colore}80,${c.colore}40)` }}>
+                  <div className="lcard-shine" />
+                  <div className="lcard-content">
+                    <span style={{ fontSize:"12px", fontWeight:800, color:"white", letterSpacing:"0.2px" }}>{c.nome}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ display:"flex", gap:"8px" }}>
+              {classi.slice(3,6).map((c,i) => (
+                <div key={i} className="lcard" style={{ borderRadius:"20px", padding:"6px 18px", background:`linear-gradient(135deg,${c.colore}55,${c.colore}33)`, boxShadow:`0 4px 14px ${c.colore}30`, "--card-border":`linear-gradient(135deg,${c.colore}80,${c.colore}40)` }}>
+                  <div className="lcard-shine" />
+                  <div className="lcard-content">
+                    <span style={{ fontSize:"12px", fontWeight:800, color:"white", letterSpacing:"0.2px" }}>{c.nome}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
         </div>
@@ -346,47 +365,6 @@ export default function Landing({ onEntra }) {
         </div>
       </div>
 
-      {/* ── IL PROBLEMA ── */}
-      <section style={{ padding:"60px 24px 32px", maxWidth:"880px", margin:"0 auto" }}>
-        <div id="problema" data-animate className={V("problema")} style={{ background:"linear-gradient(135deg,rgba(239,68,68,0.18),rgba(220,38,38,0.10))", border:"2px solid rgba(239,68,68,0.55)", borderRadius:"28px", padding:"52px 40px", position:"relative", overflow:"hidden", textAlign:"center", boxShadow:"0 8px 48px rgba(239,68,68,0.18)" }}>
-          <div style={{ position:"absolute", top:0, right:0, bottom:0, left:0, background:"radial-gradient(ellipse 70% 60% at 50% 40%, rgba(239,68,68,0.14) 0%, transparent 70%)", pointerEvents:"none" }} />
-          <div style={{ maxWidth:"580px", margin:"0 auto", position:"relative", zIndex:1 }}>
-            <div style={{ display:"inline-flex", alignItems:"center", gap:"10px", background:"rgba(239,68,68,0.18)", border:"2px solid rgba(239,68,68,0.5)", borderRadius:"100px", padding:"8px 22px", marginBottom:"22px" }}>
-              <span style={{ fontSize:"18px" }}>⚠️</span>
-              <span style={{ fontSize:"16px", fontWeight:900, color:"#ef4444", textTransform:"uppercase", letterSpacing:"2.5px", animation:"blink 1.4s ease-in-out infinite" }}>Il problema</span>
-            </div>
-            <h2 style={{ fontSize:"clamp(28px, 5vw, 46px)", fontWeight:900, letterSpacing:"-1.5px", marginBottom:"18px", lineHeight:1.15, color:"#0D0F2B" }}>
-              Le altre app danno le risposte.<br/>
-              <span style={{ color:"#ef4444" }}>I tuoi figli le copiano.</span>
-            </h2>
-            <p style={{ fontSize:"clamp(16px, 2.5vw, 20px)", fontWeight:700, color:"#0D0F2B", marginBottom:"14px", letterSpacing:"-0.3px" }}>
-              Lex insegna a trovarle.
-            </p>
-            <p style={{ fontSize:"16px", color:"#44476A", lineHeight:1.75 }}>
-              ChatGPT, Nerd AI, Google — danno subito la soluzione senza spiegartela.<br/>
-              <strong style={{ color:"#0D0F2B" }}>Copiare non è imparare. Lex fa la differenza.</strong>
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ── ZERO PUBBLICITÀ ── */}
-      <section style={{ padding:"32px 24px 60px", maxWidth:"880px", margin:"0 auto" }}>
-        <div style={{ background:"linear-gradient(135deg,rgba(239,68,68,0.06),rgba(239,68,68,0.03))", border:"2px solid rgba(239,68,68,0.18)", borderRadius:"28px", padding:"48px 40px", textAlign:"center", position:"relative", overflow:"hidden" }}>
-          <div style={{ position:"absolute", top:0, right:0, bottom:0, left:0, background:"radial-gradient(circle at 50% 50%, rgba(239,68,68,0.06) 0%, transparent 70%)", pointerEvents:"none" }} />
-          <div style={{ fontSize:"48px", fontWeight:900, marginBottom:"16px", color:"#ef4444", letterSpacing:"-2px" }}>∅</div>
-          <h2 style={{ fontSize:"clamp(28px, 5vw, 48px)", fontWeight:900, letterSpacing:"-1.5px", marginBottom:"12px", color:"#0D0F2B" }}>
-            Zero Pubblicità.
-          </h2>
-          <p style={{ fontSize:"clamp(18px, 3vw, 26px)", fontWeight:800, color:"#ef4444", marginBottom:"20px", letterSpacing:"-0.5px" }}>
-            Zero Distrazioni.
-          </p>
-          <p style={{ fontSize:"16px", color:"#44476A", maxWidth:"500px", margin:"0 auto", lineHeight:1.75 }}>
-            Nessun banner. Nessuna notifica commerciale. Nessun video suggerito.<br/>
-            Con Lexyo si studia. <strong style={{ color:"#0D0F2B" }}></strong>
-          </p>
-        </div>
-      </section>
 
       {/* ── MERITA DI IMPARARE ── */}
       <section style={{ padding:"0 24px 60px", maxWidth:"880px", margin:"0 auto" }}>
@@ -398,8 +376,8 @@ export default function Landing({ onEntra }) {
             <span style={{ background:"linear-gradient(135deg,#a78bfa,#6366f1)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text" }}>non di copiare.</span>
           </h2>
           <p style={{ fontSize:"clamp(15px, 2vw, 18px)", color:"#44476A", lineHeight:1.75, maxWidth:"520px", margin:"0 auto 28px", position:"relative", zIndex:1 }}>
-            Le altre app gli danno la risposta. Lex gli insegna come trovarla.<br/>
-            <strong style={{ color:"#0D0F2B" }}>Perché capire vale più di copiare.</strong>
+            Le altre app danno le risposte.<br/>
+            <strong style={{ fontSize:"clamp(20px, 3vw, 26px)", color:"#0D0F2B", letterSpacing:"-0.5px" }}>Lex insegna a trovarle.</strong>
           </p>
           <button onClick={onEntra} className="btn-cta" style={{ padding:"16px 40px", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", border:"none", borderRadius:"14px", color:"white", fontFamily:"'Plus Jakarta Sans'", fontWeight:800, fontSize:"16px", boxShadow:"0 8px 32px rgba(99,102,241,0.4)", position:"relative", zIndex:1 }}>
             Prova gratis 3 giorni →
@@ -416,25 +394,42 @@ export default function Landing({ onEntra }) {
             <span style={{ color:"#8892AE" }}>Niente che distrae.</span>
           </h2>
         </div>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(280px, 1fr))", gap:"18px" }}>
-          {features.map((f,i) => (
-            <div key={i} id={`f${i}`} data-animate className={`feature-card ${V(`f${i}`)}`} style={{ background:`linear-gradient(145deg,${f.colore}1c,${f.colore}0b)`, border:`1.5px solid ${f.colore}50`, borderRadius:"22px", padding:"28px", position:"relative", overflow:"hidden", transitionDelay:`${i*0.04}s`, boxShadow:`0 6px 32px ${f.colore}20` }}>
-              {/* glow angolo */}
-              <div style={{ position:"absolute", top:0, right:0, width:"100px", height:"100px", background:`radial-gradient(circle at top right,${f.colore}28,transparent 65%)`, pointerEvents:"none" }} />
-              <div style={{ position:"absolute", bottom:0, left:0, width:"80px", height:"80px", background:`radial-gradient(circle at bottom left,${f.colore}12,transparent 70%)`, pointerEvents:"none" }} />
-              {/* header */}
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"18px" }}>
-                <div style={{ width:"56px", height:"56px", borderRadius:"16px", background:`linear-gradient(135deg,${f.colore}30,${f.colore}1a)`, display:"flex", alignItems:"center", justifyContent:"center", border:`1.5px solid ${f.colore}50`, boxShadow:`0 4px 16px ${f.colore}28` }}>
-                  <f.Icon size={26} color={f.colore} strokeWidth={2.2} />
-                </div>
-                <span style={{ background:f.colore, borderRadius:"20px", padding:"4px 12px", fontSize:"11px", fontWeight:800, color:"white", letterSpacing:"0.3px" }}>{f.tag}</span>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(260px, 1fr))", gap:"13px" }}>
+          {[
+            { label:"Studia con Lex",             sub:"Foto, chat e dettato",              desc:"Scatta una foto al compito, fai una domanda su qualsiasi materia o esercitati con il dettato. Lex guida passo per passo senza mai dare la risposta.", emoji:"📚", bg:"linear-gradient(145deg,#00CFFF,#0088FF,#0044DD)", border:"linear-gradient(135deg,#0022CC,#0099FF)" },
+            { label:"Verifiche e Interrogazioni", sub:"Quiz e orale",                       desc:"Quiz a scelta multipla e interrogazione orale simulata basata sul programma MIUR. Voto automatico con feedback dettagliato su ogni risposta.", emoji:"✏️", bg:"linear-gradient(145deg,#FF44BB,#FF0099,#CC0066)", border:"linear-gradient(135deg,#AA0055,#FF44BB)" },
+            { label:"Estate con Lex",             sub:"Compiti e ripasso",                  desc:"Piano di ripasso estivo personalizzato con letture consigliate, quiz e anteprima degli argomenti dell'anno prossimo. Nessuna lacuna a settembre.", emoji:"🌊", bg:"linear-gradient(145deg,#FFE500,#FFC200,#FF9900)", border:"linear-gradient(135deg,#FF7700,#FFE500)" },
+            { label:"Dashboard Genitore",         sub:"Controllo totale",                   desc:"Area protetta da PIN con statistiche complete: sessioni, argomenti capiti, semaforo preparazione, badge conquistati e streak giornaliero.", emoji:"👨‍👩‍👧", bg:"linear-gradient(145deg,#6C47FF,#9B3FD4,#7B2FBE)", border:"linear-gradient(135deg,#4400AA,#9B3FD4)" },
+            { label:"Preparazione Esame",         sub:"Solo 3ª Media",                      desc:"Tema italiano, matematica, storia, geografia, inglese e colloquio orale simulato. Tutto quello che serve per superare l'esame di Stato.", emoji:"🎓", bg:"linear-gradient(145deg,#AA33FF,#8800EE,#6600BB)", border:"linear-gradient(135deg,#4400AA,#CC55FF)" },
+          ].map((c,i) => (
+            <div key={i} className="lcard" style={{ padding:"22px 16px", borderRadius:"22px", background:c.bg, boxShadow:"0 6px 18px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", "--card-border":c.border }}>
+              <div className="lcard-shine" />
+              <div className="lcard-depth" />
+              <div className="lcard-content">
+                <div style={{ fontSize:"32px", marginBottom:"10px" }}>{c.emoji}</div>
+                <p style={{ fontSize:"13px", fontWeight:900, color:"white", lineHeight:1.2, marginBottom:"4px" }}>{c.label}</p>
+                <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.6)", fontWeight:700, marginBottom:"10px" }}>{c.sub}</p>
+                <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.78)", lineHeight:1.65, fontWeight:500 }}>{c.desc}</p>
               </div>
-              <h3 style={{ fontWeight:900, fontSize:"17px", marginBottom:"10px", letterSpacing:"-0.4px", color:"#0D0F2B" }}>{f.titolo}</h3>
-              <p style={{ fontSize:"14px", color:"#44476A", lineHeight:1.7 }}>{f.desc}</p>
-              {/* linea colorata bottom */}
-              <div style={{ position:"absolute", bottom:0, left:0, right:0, height:"3px", background:`linear-gradient(90deg,${f.colore}60,${f.colore}20)`, borderRadius:"0 0 22px 22px" }} />
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ── ZERO PUBBLICITÀ ── */}
+      <section style={{ padding:"0 24px 32px", maxWidth:"880px", margin:"0 auto" }}>
+        <div style={{ background:"linear-gradient(135deg,rgba(239,68,68,0.18),rgba(220,38,38,0.10))", border:"2px solid rgba(239,68,68,0.45)", borderRadius:"24px", padding:"32px 36px", textAlign:"center", position:"relative", overflow:"hidden", boxShadow:"0 8px 32px rgba(239,68,68,0.15)" }}>
+          <div style={{ position:"absolute", top:0, right:0, bottom:0, left:0, background:"radial-gradient(circle at 50% 50%, rgba(239,68,68,0.12) 0%, transparent 70%)", pointerEvents:"none" }} />
+          <h2 style={{ fontSize:"clamp(22px,4vw,34px)", fontWeight:900, letterSpacing:"-1px", marginBottom:"8px", color:"#0D0F2B" }}>
+            Zero Pubblicità.
+          </h2>
+          <p style={{ fontSize:"clamp(16px,2.5vw,22px)", fontWeight:800, color:"#ef4444", marginBottom:"14px", letterSpacing:"-0.3px" }}>
+            Zero Distrazioni.
+          </p>
+          <p style={{ fontSize:"15px", color:"#44476A", maxWidth:"480px", margin:"0 auto", lineHeight:1.75 }}>
+            Nessun banner. Nessuna notifica commerciale. Nessun video suggerito.<br/>
+            Con Lexyo si studia.
+          </p>
         </div>
       </section>
 
@@ -451,6 +446,101 @@ export default function Landing({ onEntra }) {
           <span style={{ color:"#8892AE" }}>per imparare davvero.</span>
         </h2>
       </div>
+      </section>
+
+      {/* ── ESTATE CON LEX ── */}
+      <section style={{ padding:"0 24px 48px", maxWidth:"960px", margin:"0 auto" }}>
+        <div className="lcard" style={{ borderRadius:"28px", background:"linear-gradient(145deg,#FFE500,#FFC200,#FF9900)", boxShadow:"0 8px 40px rgba(255,180,0,0.35), inset 0 -4px 0 rgba(0,0,0,0.15)", "--card-border":"linear-gradient(135deg,#FF7700,#FFE500)", overflow:"hidden", position:"relative" }}>
+          <div className="lcard-shine" />
+          <div className="lcard-depth" />
+          <div className="lcard-content" style={{ padding:"48px 40px" }}>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:"40px", alignItems:"center" }}>
+              <div style={{ flex:"1", minWidth:"260px" }}>
+                <div style={{ display:"inline-flex", alignItems:"center", gap:"10px", background:"rgba(0,0,0,0.12)", borderRadius:"100px", padding:"6px 18px", marginBottom:"20px" }}>
+                  <span style={{ fontSize:"16px" }}>🌊</span>
+                  <span style={{ fontSize:"12px", fontWeight:900, color:"rgba(0,0,0,0.7)", textTransform:"uppercase", letterSpacing:"2px" }}>Estate con Lex</span>
+                </div>
+                <h2 style={{ fontSize:"clamp(26px,4vw,42px)", fontWeight:900, letterSpacing:"-1.5px", lineHeight:1.1, color:"#1a0a00", marginBottom:"14px" }}>
+                  Nessuna lacuna<br/>a settembre.
+                </h2>
+                <p style={{ fontSize:"16px", color:"rgba(0,0,0,0.6)", lineHeight:1.75, marginBottom:"28px", fontWeight:500 }}>
+                  Lex accompagna tuo figlio per tutta l'estate con un piano di ripasso personalizzato, letture consigliate e una preview degli argomenti dell'anno prossimo.
+                </p>
+                <div style={{ display:"flex", flexDirection:"column", gap:"12px", marginBottom:"28px" }}>
+                  {[
+                    { e:"📚", t:"Piano di ripasso personalizzato",      d:"Basato sugli argomenti del programma della classe appena terminata." },
+                    { e:"🎯", t:"Quiz di consolidamento",               d:"Verifica le conoscenze con quiz mirati prima che settembre arrivi." },
+                    { e:"📖", t:"Letture estive consigliate",           d:"Libri selezionati da Lex in base alla classe e agli interessi del figlio." },
+                    { e:"🚀", t:"Anteprima anno prossimo",             d:"Un assaggio degli argomenti nuovi per arrivare preparato dal primo giorno." },
+                  ].map((item,i) => (
+                    <div key={i} style={{ display:"flex", gap:"12px", alignItems:"flex-start" }}>
+                      <div style={{ width:"36px", height:"36px", borderRadius:"10px", background:"rgba(0,0,0,0.1)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"18px", flexShrink:0 }}>{item.e}</div>
+                      <div>
+                        <p style={{ fontWeight:800, fontSize:"13px", color:"#1a0a00", marginBottom:"2px" }}>{item.t}</p>
+                        <p style={{ fontSize:"12px", color:"rgba(0,0,0,0.55)", lineHeight:1.5 }}>{item.d}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={onEntra} className="btn-cta" style={{ display:"inline-flex", alignItems:"center", gap:"8px", padding:"14px 28px", background:"rgba(0,0,0,0.18)", border:"2px solid rgba(0,0,0,0.2)", borderRadius:"14px", color:"#1a0a00", fontFamily:"'Plus Jakarta Sans'", fontWeight:900, fontSize:"15px", cursor:"pointer" }}>
+                  Prova gratis adesso →
+                </button>
+              </div>
+              <div style={{ display:"flex", flexDirection:"column", gap:"12px", minWidth:"200px" }}>
+                {[
+                  { emoji:"☀️", label:"Luglio", desc:"Ripasso argomenti chiave" },
+                  { emoji:"🏖️", label:"Agosto", desc:"Letture e quiz leggeri" },
+                  { emoji:"🎒", label:"Settembre", desc:"Pronto per il nuovo anno" },
+                ].map((m,i) => (
+                  <div key={i} style={{ background:"rgba(255,255,255,0.35)", border:"1px solid rgba(255,255,255,0.5)", borderRadius:"16px", padding:"14px 18px", backdropFilter:"blur(8px)" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+                      <span style={{ fontSize:"24px" }}>{m.emoji}</span>
+                      <div>
+                        <p style={{ fontWeight:900, fontSize:"13px", color:"#1a0a00" }}>{m.label}</p>
+                        <p style={{ fontSize:"11px", color:"rgba(0,0,0,0.55)", fontWeight:600 }}>{m.desc}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── GIOCHI ── */}
+      <section style={{ padding:"0 24px 48px", maxWidth:"960px", margin:"0 auto" }}>
+        <div style={{ background:"linear-gradient(135deg,rgba(99,102,241,0.06),rgba(139,92,246,0.04))", border:"1px solid rgba(99,102,241,0.15)", borderRadius:"28px", padding:"40px 32px" }}>
+          <div style={{ textAlign:"center", marginBottom:"32px" }}>
+            <h2 style={{ fontSize:"clamp(24px,4vw,38px)", fontWeight:900, letterSpacing:"-1.2px", lineHeight:1.15, color:"#0D0F2B", marginBottom:"12px" }}>
+              Il programma scolastico<br/>
+              <span style={{ background:"linear-gradient(135deg,#6366f1,#8b5cf6)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text" }}>trasformato in gioco.</span>
+            </h2>
+            <p style={{ fontSize:"15px", color:"#44476A", lineHeight:1.75, maxWidth:"520px", margin:"0 auto" }}>
+              Quiz, sfide veloci, giochi. Tutto basato sul programma ministeriale MIUR della classe di tuo figlio.
+            </p>
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))", gap:"13px" }}>
+            {[
+              { emoji:"🎮", titolo:"Imparare è un Gioco",  sub:"Gioca, Impara, Diventa Leggendario!", desc:"Parole crociate AI, Sfida Velocità in 60 secondi e Chi Sono? Ogni gioco costruito sul programma scolastico ufficiale.",          bg:"linear-gradient(145deg,#FF4444,#FF0000,#CC0000)", border:"linear-gradient(135deg,#990000,#FF4444)" },
+              { emoji:"🧠", titolo:"Quiz Domande",         sub:"Stelle e lacune",                    desc:"Rispondi a domande sul programma MIUR della tua classe. Guadagna stelle e scopri le tue lacune prima dell'interrogazione.",        bg:"linear-gradient(145deg,#00CFFF,#0088FF,#0044DD)", border:"linear-gradient(135deg,#0022CC,#0099FF)" },
+              { emoji:"📝", titolo:"Parole Crociate AI",   sub:"Gioca + Impara",                     desc:"Lex genera uno schema di parole crociate su qualsiasi argomento studiato. Ortografia e vocabolario in modo divertente.",            bg:"linear-gradient(145deg,#00E87A,#00C853,#009933)", border:"linear-gradient(135deg,#007722,#00E87A)" },
+              { emoji:"⚡", titolo:"Sfida Velocità",        sub:"60 secondi di fuoco",                desc:"20 domande in 60 secondi. Ogni secondo conta. Batti il tuo record personale e dimostra quanto hai studiato.",                       bg:"linear-gradient(145deg,#FFE500,#FFB300,#FF9900)", border:"linear-gradient(135deg,#FF7700,#FFE500)" },
+              { emoji:"🎭", titolo:"Chi Sono?",             sub:"Deduzione",                          desc:"Un personaggio storico, un autore, un pianeta. Indovina con il minor numero di indizi possibile. Record personale salvato.",          bg:"linear-gradient(145deg,#FF44BB,#FF0099,#CC0066)", border:"linear-gradient(135deg,#AA0055,#FF44BB)" },
+            ].map((g,i) => (
+              <div key={i} className="lcard" style={{ padding:"22px 16px", borderRadius:"22px", background:g.bg, boxShadow:"0 6px 18px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", "--card-border":g.border }}>
+                <div className="lcard-shine" />
+                <div className="lcard-depth" />
+                <div className="lcard-content">
+                  <div style={{ fontSize:"32px", marginBottom:"10px" }}>{g.emoji}</div>
+                  <p style={{ fontSize:"13px", fontWeight:900, color:"white", lineHeight:1.2, marginBottom:"4px" }}>{g.titolo}</p>
+                  <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.6)", fontWeight:700, marginBottom:"10px" }}>{g.sub}</p>
+                  <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.78)", lineHeight:1.65, fontWeight:500 }}>{g.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* ── DETTATO AI ── */}
@@ -486,7 +576,7 @@ export default function Landing({ onEntra }) {
           </div>
           {/* Phone mockup — resta dark */}
           <div style={{ display:"flex", justifyContent:"center" }}>
-            <div style={{ width:"258px", background:"#0a0a1a", borderRadius:"36px", padding:"20px 16px 24px", border:"2px solid rgba(236,72,153,0.3)", boxShadow:"0 40px 80px rgba(0,0,0,0.15), 0 8px 32px rgba(236,72,153,0.12)" }}>
+            <div style={{ width:"258px", background:"#0a0a1a", borderRadius:"36px", padding:"20px 16px 24px", border:"2px solid rgba(236,72,153,0.3)", boxShadow:"0 40px 80px rgba(0,0,0,0.15), 0 8px 32px rgba(236,72,153,0.12)", color:"rgba(255,255,255,0.8)" }}>
               <div style={{ width:"56px", height:"4px", background:"rgba(255,255,255,0.12)", borderRadius:"4px", margin:"0 auto 16px" }} />
               <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"14px" }}>
                 <div style={{ width:"30px", height:"30px", borderRadius:"9px", background:"rgba(236,72,153,0.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"14px" }}>✍️</div>
@@ -525,7 +615,7 @@ export default function Landing({ onEntra }) {
         <div style={{ background:"#F7F8FF", borderRadius:"32px", padding:"48px 32px" }}>
         <div id="spot-interroga" data-animate className={`spot-grid ${V("spot-interroga")}`}>
           <div style={{ display:"flex", justifyContent:"center" }}>
-            <div style={{ width:"258px", background:"#0a0a1a", borderRadius:"36px", padding:"20px 16px 24px", border:"2px solid rgba(14,165,233,0.3)", boxShadow:"0 40px 80px rgba(0,0,0,0.15), 0 8px 32px rgba(14,165,233,0.12)" }}>
+            <div style={{ width:"258px", background:"#0a0a1a", borderRadius:"36px", padding:"20px 16px 24px", border:"2px solid rgba(14,165,233,0.3)", boxShadow:"0 40px 80px rgba(0,0,0,0.15), 0 8px 32px rgba(14,165,233,0.12)", color:"rgba(255,255,255,0.8)" }}>
               <div style={{ width:"56px", height:"4px", background:"rgba(255,255,255,0.12)", borderRadius:"4px", margin:"0 auto 16px" }} />
               <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"14px" }}>
                 <div style={{ width:"30px", height:"30px", borderRadius:"9px", background:"rgba(14,165,233,0.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"14px" }}>🎓</div>
@@ -586,82 +676,14 @@ export default function Landing({ onEntra }) {
         </div>
       </section>
 
-      {/* ── GIOCA STUDIANDO ── */}
-      <section style={{ padding:"48px 24px", maxWidth:"960px", margin:"0 auto" }}>
-        <div id="spot-gioca" data-animate className={V("spot-gioca")}>
-          <div className="gioca-header">
-            <div style={{ position:"relative", flexShrink:0 }}>
-              <div style={{ position:"absolute", top:"-16px", right:"-16px", bottom:"-16px", left:"-16px", borderRadius:"50%", background:"radial-gradient(circle,rgba(99,102,241,0.12) 0%,transparent 70%)", pointerEvents:"none" }} />
-              <img src="/Lex-prof.png" alt="Lex" style={{ width:"clamp(90px,13vw,120px)", objectFit:"contain", display:"block", animation:"lexProfIdle 5s ease-in-out infinite 0.5s", transformOrigin:"bottom center", position:"relative", zIndex:1 }} />
-            </div>
-            <div className="gioca-header-text">
-              <div style={{ display:"inline-flex", alignItems:"center", gap:"8px", background:"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.18)", borderRadius:"20px", padding:"6px 16px", marginBottom:"16px" }}>
-                <Gamepad2 size={18} color="#6366f1" strokeWidth={2.5} />
-                <span style={{ fontSize:"12px", fontWeight:800, color:"#6366f1", textTransform:"uppercase", letterSpacing:"1.5px" }}>Imparare è un Gioco</span>
-              </div>
-              <h2 style={{ fontSize:"clamp(26px,4vw,40px)", fontWeight:900, letterSpacing:"-1px", lineHeight:1.15, marginBottom:"14px", color:"#0D0F2B" }}>
-                Il programma scolastico<br/>
-                <span style={{ color:"#6366f1" }}>trasformato in gioco.</span>
-              </h2>
-              <p style={{ fontSize:"15px", color:"#44476A", lineHeight:1.8 }}>
-                Quiz, sfide veloci, giochi. Tutto basato sul programma ministeriale MIUR della classe di tuo figlio.
-              </p>
-            </div>
-          </div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))", gap:"18px", marginBottom:"32px" }}>
-            {[
-              { emoji:"🧠", t:"Quiz Domande",    d:"Rispondi a domande sul programma MIUR della tua classe. Guadagna stelle e scopri le tue lacune prima dell'interrogazione.", c:"#6366f1" },
-              { emoji:"📝", t:"Parole Crociate AI", d:"Lex genera uno schema di parole crociate su qualsiasi argomento studiato. Ortografia e vocabolario in modo divertente.", c:"#ec4899" },
-              { emoji:"⚡", t:"Sfida Velocità",   d:"20 domande in 60 secondi. Ogni secondo conta. Batti il tuo record personale e dimostra quanto hai studiato.", c:"#f59e0b" },
-              { emoji:"🎭", t:"Chi Sono?",        d:"Un personaggio storico, un autore, un pianeta. Indovina con il minor numero di indizi possibile. Record personale salvato.", c:"#10b981" },
-            ].map((card,i) => (
-              <div key={i} style={{ background:`linear-gradient(145deg,${card.c}1c,${card.c}0b)`, border:`1.5px solid ${card.c}50`, borderRadius:"22px", padding:"26px 20px", position:"relative", overflow:"hidden", boxShadow:`0 6px 28px ${card.c}1e` }}>
-                <div style={{ position:"absolute", top:0, right:0, width:"80px", height:"80px", background:`radial-gradient(circle at top right,${card.c}28,transparent 65%)`, pointerEvents:"none" }} />
-                <div style={{ fontSize:"40px", marginBottom:"14px", lineHeight:1 }}>{card.emoji}</div>
-                <h3 style={{ fontWeight:900, fontSize:"16px", marginBottom:"8px", color:"#0D0F2B", letterSpacing:"-0.3px" }}>{card.t}</h3>
-                <p style={{ fontSize:"13px", color:"#44476A", lineHeight:1.7 }}>{card.d}</p>
-                <div style={{ position:"absolute", bottom:0, left:0, right:0, height:"3px", background:`linear-gradient(90deg,${card.c}60,${card.c}15)`, borderRadius:"0 0 22px 22px" }} />
-              </div>
-            ))}
-          </div>
-          <div className="spot-grid" style={{ background:"linear-gradient(135deg,rgba(99,102,241,0.08),rgba(139,92,246,0.05))", border:"1px solid rgba(99,102,241,0.15)", borderRadius:"24px", padding:"40px", gap:"48px", boxShadow:"0 4px 24px rgba(99,102,241,0.08)" }}>
-            <div>
-              <div style={{ fontSize:"11px", fontWeight:800, color:"#6366f1", textTransform:"uppercase", letterSpacing:"2px", marginBottom:"12px" }}>Dashboard Genitore</div>
-              <h3 style={{ fontSize:"clamp(20px,3vw,28px)", fontWeight:900, letterSpacing:"-0.8px", marginBottom:"14px", lineHeight:1.3, color:"#0D0F2B" }}>
-                Il semaforo della preparazione.<br/>
-                <span style={{ color:"#8892AE" }}>Chiaro, a colpo d'occhio.</span>
-              </h3>
-              <p style={{ fontSize:"14px", color:"#44476A", lineHeight:1.75 }}>
-                Verde: pronto. Giallo: qualche lacuna. Rosso: da rivedere. I genitori accedono con PIN e hanno la situazione completa per ogni argomento.
-              </p>
-            </div>
-            <div style={{ display:"flex", flexDirection:"column", gap:"9px" }}>
-              {[
-                { c:"#10b981", l:"Frazioni",            s:"Pronto per l'interrogazione", dot:"🟢" },
-                { c:"#f59e0b", l:"Analisi grammaticale", s:"Qualche lacuna da ripassare",  dot:"🟡" },
-                { c:"#ef4444", l:"Le equazioni",         s:"Argomento da rivedere con Lex", dot:"🔴" },
-              ].map((item,i) => (
-                <div key={i} style={{ display:"flex", alignItems:"center", gap:"12px", background:`${item.c}0a`, border:`1px solid ${item.c}20`, borderRadius:"12px", padding:"12px 14px" }}>
-                  <span style={{ fontSize:"16px" }}>{item.dot}</span>
-                  <div>
-                    <p style={{ fontWeight:700, fontSize:"13px", color:"#0D0F2B" }}>{item.l}</p>
-                    <p style={{ fontSize:"11px", color:"#44476A" }}>{item.s}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* ── CONFRONTO ── */}
       <section style={{ padding:"40px 24px 80px", maxWidth:"880px", margin:"0 auto", background:"#F7F8FF", borderRadius:"32px" }}>
         <div id="confronto" data-animate className={V("confronto")}>
           <div style={{ textAlign:"center", marginBottom:"36px" }}>
-            <p style={{ fontSize:"12px", fontWeight:800, color:"#6366f1", textTransform:"uppercase", letterSpacing:"2px", marginBottom:"12px" }}>Perché Lexyo</p>
+            <p style={{ fontSize:"12px", fontWeight:800, color:"#6366f1", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"12px" }}>Perché Lexyo è diverso</p>
             <h2 style={{ fontSize:"clamp(24px, 4vw, 38px)", fontWeight:900, letterSpacing:"-1.2px", color:"#0D0F2B" }}>
-              Non è come le altre app.<br/>
-              <span style={{ color:"#8892AE" }}>Il supporto scolastico che i genitori italiani aspettavano.</span>
+              Il supporto scolastico che i genitori aspettavano.<br/>
+              <span style={{ color:"#8892AE" }}>Non è come le altre app.</span>
             </h2>
           </div>
           <div className="confronto-scroll">
@@ -773,11 +795,8 @@ export default function Landing({ onEntra }) {
             Installa Lexyo<br/>
             <span style={{ color:"#8892AE" }}>sul tuo telefono.</span>
           </h2>
-          <p style={{ fontSize:"16px", color:"#44476A", maxWidth:"460px", margin:"0 auto 32px", lineHeight:1.7 }}>
-            Aprila dalla schermata Home come una vera app. Nessun App Store, nessun download pesante.
-          </p>
           <div style={{ display:"flex", flexWrap:"wrap", gap:"10px", justifyContent:"center", marginBottom:"36px" }}>
-            {["Nessun App Store","Aggiornamenti automatici","Funziona offline","100% gratuita"].map((t,i) => (
+            {["Aggiornamenti automatici"].map((t,i) => (
               <span key={i} style={{ background:"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.15)", borderRadius:"20px", padding:"5px 14px", fontSize:"12px", fontWeight:700, color:"#6366f1" }}>{t}</span>
             ))}
           </div>
