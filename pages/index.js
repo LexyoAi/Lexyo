@@ -130,6 +130,10 @@ export default function Home() {
   const [stripeLoading, setStripeLoading] = useState(false);
   const [pagamentoFlash, setPagamentoFlash] = useState(null); // "successo" | "annullato" | null
   const [profiloUtente, setProfiloUtente] = useState(null);
+  const [nuovaPassword, setNuovaPassword] = useState("");
+  const [nuovaPasswordError, setNuovaPasswordError] = useState("");
+  const [nuovaPasswordSuccess, setNuovaPasswordSuccess] = useState(false);
+  const [nuovaPasswordLoading, setNuovaPasswordLoading] = useState(false);
   // ── Compiti estivi gestiti dal bambino ──
   const [compitiEstivi, setCompitiEstivi] = useState([]);
   const [compitiLoading, setCompitiLoading] = useState(false);
@@ -546,7 +550,8 @@ export default function Home() {
       }
     };
     init();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") { setScreen("reset_password"); return; }
       if (session) { setUtente(session.user); setEmail(session.user.email); }
       else { setUtente(null); }
     });
@@ -701,10 +706,11 @@ export default function Home() {
     setAuthLoading(true); setAuthError(""); setAuthSuccess("");
     try {
       if (authMode === "register") {
-        const { error } = await supabase.auth.signUp({ email: email.trim(), password: password.trim() });
+        const { data: signUpData, error } = await supabase.auth.signUp({ email: email.trim(), password: password.trim() });
         if (error) { setAuthError(error.message === "User already registered" ? "Email già registrata. Accedi." : error.message); }
         else {
-          setAuthSuccess("Account creato! Controlla l'email per confermare."); setAuthMode("login");
+          if (signUpData?.session) { setUtente(signUpData.user); }
+          else { setAuthMode("login"); }
           // Associa referral: aggiorna contatore del referente
           const refCode = typeof window !== "undefined" ? localStorage.getItem("lexyo_referral_code") : null;
           if (refCode) {
@@ -1198,6 +1204,54 @@ export default function Home() {
     ][s];
   };
 
+  if (screen === "reset_password") return (
+    <div style={{ ...S.app, ...S.center, padding:"24px" }}>
+      <Head><title>Nuova Password — Lexyo</title></Head>
+      <div style={{ width:"100%", maxWidth:"400px", background:"rgba(255,255,255,0.04)", borderRadius:"20px", padding:"32px 24px", border:"1px solid rgba(255,255,255,0.08)" }}>
+        <h2 style={{ ...S.title, fontSize:"24px", marginBottom:"8px", textAlign:"center" }}>Nuova password</h2>
+        <p style={{ ...S.gray, fontSize:"14px", textAlign:"center", marginBottom:"24px" }}>Scegli una nuova password per il tuo account.</p>
+        {nuovaPasswordSuccess ? (
+          <div style={{ textAlign:"center" }}>
+            <p style={{ color:"#4ade80", fontWeight:700, fontSize:"16px", marginBottom:"20px" }}>Password aggiornata con successo!</p>
+            <button onClick={() => { setScreen("login"); setNuovaPassword(""); setNuovaPasswordSuccess(false); }} style={{ ...S.btn, ...S.btnP }}>Accedi →</button>
+          </div>
+        ) : (
+          <>
+            <input
+              value={nuovaPassword}
+              onChange={(e) => setNuovaPassword(e.target.value)}
+              type="password"
+              placeholder="Nuova password (min. 6 caratteri)"
+              style={{ ...S.inp, marginBottom:"12px" }}
+              onKeyDown={(e) => e.key === "Enter" && !nuovaPasswordLoading && nuovaPassword.length >= 6 && (async () => {
+                setNuovaPasswordLoading(true); setNuovaPasswordError("");
+                const { error } = await supabase.auth.updateUser({ password: nuovaPassword });
+                setNuovaPasswordLoading(false);
+                if (error) setNuovaPasswordError(error.message);
+                else setNuovaPasswordSuccess(true);
+              })()}
+            />
+            {nuovaPasswordError && <p style={{ color:"#f87171", fontSize:"13px", marginBottom:"12px" }}>{nuovaPasswordError}</p>}
+            <button
+              onClick={async () => {
+                if (nuovaPassword.length < 6) { setNuovaPasswordError("La password deve essere di almeno 6 caratteri."); return; }
+                setNuovaPasswordLoading(true); setNuovaPasswordError("");
+                const { error } = await supabase.auth.updateUser({ password: nuovaPassword });
+                setNuovaPasswordLoading(false);
+                if (error) setNuovaPasswordError(error.message);
+                else setNuovaPasswordSuccess(true);
+              }}
+              disabled={nuovaPasswordLoading || nuovaPassword.length < 6}
+              style={{ ...S.btn, ...S.btnP, opacity: nuovaPassword.length >= 6 ? 1 : 0.4 }}
+            >
+              {nuovaPasswordLoading ? "⏳ Salvataggio..." : "Salva nuova password →"}
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+
   if (screen === "landing") return <Landing onEntra={() => setScreen("login")} />;
 
   if (screen === "splash") return (
@@ -1365,9 +1419,9 @@ export default function Home() {
         {authMode==="login" && (
           <button onClick={async () => {
             if (!email.trim()) { setAuthError("Inserisci prima la tua email"); return; }
-            const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
+            const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: "https://app.lexyo.it" });
             if (error) setAuthError(error.message);
-            else setAuthSuccess("Email inviata! Controlla la tua casella.");
+            else setAuthSuccess("Email inviata! Controlla la tua casella di posta.");
           }} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.35)", fontSize:"13px", fontWeight:600, cursor:"pointer", fontFamily:"'Nunito'" }}>
             Password dimenticata?
           </button>
