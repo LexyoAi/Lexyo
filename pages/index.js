@@ -3753,13 +3753,20 @@ export default function Home() {
       });
     };
 
-    const avviaRicognizione = () => {
+    const avviaRicognizione = async () => {
       if (window._interrogAudio) { try { window._interrogAudio.pause(); } catch {} }
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SR) {
+      if (!SR) { setInterrogFase("risposta_testo"); return; }
+
+      // Richiede permesso microfono esplicitamente — necessario su iOS Safari e Android
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(t => t.stop());
+      } catch {
         setInterrogFase("risposta_testo");
         return;
       }
+
       const r = new SR();
       r.lang = "it-IT";
       r.continuous = false;
@@ -3773,11 +3780,7 @@ export default function Home() {
       r.onend = () => setInterrogFase("conferma");
       r.onerror = (ev) => {
         setInterrogFase("risposta_testo");
-        if (ev.error === "not-allowed" || ev.error === "service-not-allowed") {
-          setInterrogTrascrizione("");
-        } else if (ev.error !== "aborted") {
-          setInterrogTrascrizione("");
-        }
+        if (ev.error !== "aborted") setInterrogTrascrizione("");
       };
       try { r.start(); window._interrogSR = r; }
       catch { setInterrogFase("risposta_testo"); }
