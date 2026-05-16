@@ -203,8 +203,47 @@ export default function Home() {
     if (typeof window !== "undefined") { try { return JSON.parse(localStorage.getItem("lexyo_record_giochi") || "{}"); } catch {} }
     return {};
   });
+  // ── Trasforma Lex ──
+  const [trasformaData, setTrasformaData] = useState(null);
+  const [trasformaLoading, setTrasformaLoading] = useState(false);
+  const [trasformaQuizLivello, setTrasformaQuizLivello] = useState(null);
+  const [trasformaQuizDomande, setTrasformaQuizDomande] = useState([]);
+  const [trasformaQuizIdx, setTrasformaQuizIdx] = useState(0);
+  const [trasformaQuizRisposte, setTrasformaQuizRisposte] = useState([]);
+  const [trasformaQuizRisposta, setTrasformaQuizRisposta] = useState(null);
+  const [trasformaQuizFinale, setTrasformaQuizFinale] = useState(false);
+  const [trasformaEvoluzioneAnim, setTrasformaEvoluzioneAnim] = useState(null);
+  const [trasformaCoriandoli, setTrasformaCoriandoli] = useState(false);
+  const [trasformaConversioneMsg, setTrasformaConversioneMsg] = useState("");
   const isAdmin = profiloUtente?.is_admin === true;
   const trialScaduto = isTrial && !isAdmin && trialGiorni === 0;
+
+  // ── Trasforma Lex — costanti ──
+  const ENERGIE_SOGLIE = [0, 20, 40, 70, 100];
+  const FORME_LEX = [
+    { emoji:"🦁", nome:"Professore", soglia:0 },
+    { emoji:"📚", nome:"Studioso", soglia:20 },
+    { emoji:"🏅", nome:"Esperto", soglia:40 },
+    { emoji:"🔥", nome:"Maestro", soglia:70 },
+    { emoji:"⚡", nome:"Super Lex", soglia:100 },
+  ];
+  const STELLE_PER_ENERGIA = 50;
+  const MAX_CONVERSIONE_GIORNO = 2;
+  const TRASFORMA_EV_PARTICLES = [[5,10],[15,45],[25,80],[35,15],[45,60],[55,30],[65,75],[75,20],[85,55],[95,40],[10,90],[20,25],[30,65],[40,5],[50,85],[60,35],[70,50],[80,10],[90,70],[100,30]];
+  const TRASFORMA_CORI_PARTICLES = [[2,12],[8,48],[14,82],[20,6],[26,55],[32,28],[38,72],[44,18],[50,63],[56,37],[62,80],[68,9],[74,44],[80,70],[86,22],[92,58],[98,35],[5,90],[11,33],[17,67],[23,15],[29,78],[35,42],[41,60],[47,25],[53,88],[59,50],[65,14],[71,72],[77,38],[83,5],[89,62],[95,20],[3,50],[9,76],[15,30],[21,94],[27,45],[33,68],[39,10]];
+  const playTrasformaSound = (freq, duration, type = "sine") => {
+    if (typeof window === "undefined") return;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = freq; osc.type = type;
+      gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+      osc.start(); osc.stop(ctx.currentTime + duration);
+    } catch {}
+  };
 
   const getFingerprint = () => {
     if (typeof window === "undefined") return "ssr";
@@ -369,6 +408,119 @@ export default function Home() {
       alert("Errore di connessione. Riprova.");
       setStripeLoading(false);
     }
+  };
+
+  // ── Trasforma Lex — funzioni ──────────────────────────────────────────────
+  const caricaTrasforma = async () => {
+    if (!figlioAttivo) return;
+    setTrasformaLoading(true);
+    try {
+      const oggi = new Date().toISOString().split("T")[0];
+      const { data } = await supabase
+        .from("trasforma_lex")
+        .select("*")
+        .eq("figlio_id", figlioAttivo.id)
+        .maybeSingle();
+
+      let record = data;
+
+      if (!record) {
+        const { data: nuovo } = await supabase
+          .from("trasforma_lex")
+          .insert({ figlio_id: figlioAttivo.id, energia: 0, ultimo_accesso: oggi })
+          .select().single();
+        record = nuovo;
+      } else {
+        // Penalità assenza
+        if (record.ultimo_accesso && record.ultimo_accesso !== oggi) {
+          const diffMs = new Date(oggi) - new Date(record.ultimo_accesso);
+          const diffGiorni = Math.floor(diffMs / 86400000);
+          let nuovaEnergia = record.energia;
+          if (diffGiorni >= 5) {
+            const penalita = nuovaEnergia > 30 ? 2 : nuovaEnergia >= 5 ? 1 : 0;
+            nuovaEnergia = Math.max(0, nuovaEnergia - penalita * diffGiorni);
+          }
+          const isNuovoGiorno = record.ultimo_accesso !== oggi;
+          await supabase.from("trasforma_lex").update({
+            energia: nuovaEnergia,
+            ultimo_accesso: oggi,
+            giorni_assenza: diffGiorni,
+            ...(isNuovoGiorno ? { quiz_completati_oggi: 0, bonus_sbloccato_oggi: false } : {}),
+          }).eq("id", record.id);
+          record = { ...record, energia: nuovaEnergia, quiz_completati_oggi: isNuovoGiorno ? 0 : record.quiz_completati_oggi, bonus_sbloccato_oggi: isNuovoGiorno ? false : record.bonus_sbloccato_oggi };
+        }
+      }
+      setTrasformaData(record);
+    } catch (e) { console.error("caricaTrasforma error:", e); }
+    setTrasformaLoading(false);
+  };
+
+  const avviaTrasformaQuiz = async (livello) => {
+    if (!figlioAttivo) return;
+    setTrasformaQuizLivello(livello);
+    setTrasformaQuizDomande([]);
+    setTrasformaQuizIdx(0);
+    setTrasformaQuizRisposte([]);
+    setTrasformaQuizRisposta(null);
+    setTrasformaQuizFinale(false);
+    setScreen("trasforma_quiz");
+    try {
+      const token = await getAccessToken();
+      const classeLabel = CLASSI[figlioAttivo?.classe]?.label || figlioAttivo?.classe;
+      const res = await fetch("/api/trasforma-quiz", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accessToken: token, classe: classeLabel, livello }),
+      });
+      const d = await res.json();
+      if (d.domande) setTrasformaQuizDomande(d.domande);
+      else { alert("Errore caricamento quiz"); setScreen("trasforma_lex"); }
+    } catch { alert("Errore di rete"); setScreen("trasforma_lex"); }
+  };
+
+  const completaTrasformaQuiz = async (punteggio, isBonus) => {
+    if (!figlioAttivo || !trasformaData) return;
+    const nuovaEnergia = isBonus ? trasformaData.energia : Math.min(100, trasformaData.energia + 1);
+    const nuovoQuizCount = isBonus ? trasformaData.quiz_completati_oggi : (trasformaData.quiz_completati_oggi || 0) + 1;
+    const bonusSbloccato = nuovoQuizCount >= 3;
+    const nuovoStelle = isBonus ? (trasformaData.stelle_conversione || 0) + 20 : (trasformaData.stelle_conversione || 0);
+    if (isBonus) setTrasformaCoriandoli(true);
+
+    // Controlla evoluzione
+    const vecchiaForma = FORME_LEX.filter(f => f.soglia <= trasformaData.energia).length - 1;
+    const nuovaForma = FORME_LEX.filter(f => f.soglia <= nuovaEnergia).length - 1;
+    const evolutionShown = trasformaData.evolution_shown || 0;
+
+    const updates = {
+      energia: nuovaEnergia,
+      quiz_completati_oggi: nuovoQuizCount,
+      bonus_sbloccato_oggi: bonusSbloccato,
+      stelle_conversione: nuovoStelle,
+      ultimo_accesso: new Date().toISOString().split("T")[0],
+    };
+
+    if (nuovaForma > vecchiaForma && !(evolutionShown & (1 << nuovaForma))) {
+      updates.evolution_shown = evolutionShown | (1 << nuovaForma);
+      setTrasformaData(prev => ({ ...prev, ...updates }));
+      await supabase.from("trasforma_lex").update(updates).eq("id", trasformaData.id);
+      setTimeout(() => setTrasformaEvoluzioneAnim(nuovaForma), 500);
+    } else {
+      setTrasformaData(prev => ({ ...prev, ...updates }));
+      await supabase.from("trasforma_lex").update(updates).eq("id", trasformaData.id);
+    }
+  };
+
+  const convertiStelle = async () => {
+    if (!trasformaData || (trasformaData.stelle_conversione || 0) < STELLE_PER_ENERGIA) return;
+    if ((trasformaData.conversioni_oggi || 0) >= MAX_CONVERSIONE_GIORNO) return;
+    const nuovaEnergia = Math.min(100, trasformaData.energia + 1);
+    const nuovoStelle = trasformaData.stelle_conversione - STELLE_PER_ENERGIA;
+    const nuoveConversioni = (trasformaData.conversioni_oggi || 0) + 1;
+    const updates = { energia: nuovaEnergia, stelle_conversione: nuovoStelle, conversioni_oggi: nuoveConversioni };
+    setTrasformaData(prev => ({ ...prev, ...updates }));
+    setTrasformaConversioneMsg("+1% energia convertita! ⚡");
+    setTimeout(() => setTrasformaConversioneMsg(""), 2500);
+    await supabase.from("trasforma_lex").update(updates).eq("id", trasformaData.id);
   };
 
   // ── Helpers compiti estivi ──────────────────────────────────────────────
@@ -685,6 +837,17 @@ export default function Home() {
   useEffect(() => {
     if (screen === "home" && !figlioAttivo) setScreen("aggiungi_figlio");
   }, [screen, figlioAttivo]);
+
+  useEffect(() => {
+    if (screen === "trasforma_lex") caricaTrasforma();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen, figlioAttivo?.id]);
+
+  useEffect(() => {
+    if (trasformaEvoluzioneAnim === null) return;
+    [523,659,784].forEach((freq,i) => setTimeout(() => playTrasformaSound(freq, 0.3), i * 150));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trasformaEvoluzioneAnim]);
 
   const aggiornaStreak = () => {
     if (typeof window === "undefined" || !figlioAttivo) return;
@@ -2009,7 +2172,7 @@ export default function Home() {
         )}
 
         {/* ── SFIDA LEGGENDA LEX ── */}
-        <button onClick={() => {}} className="hcard" style={{ width:"100%", marginBottom:"12px", padding:"0", borderRadius:"22px", background:"linear-gradient(145deg,#00F090,#00CC70,#00A855)", boxShadow:"0 6px 18px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", cursor:"pointer", textAlign:"left", fontFamily:"'Nunito'", "--card-border":"linear-gradient(135deg,#00BFA5,#007A3D)" }}>
+        <button onClick={() => setScreen("trasforma_lex")} className="hcard" style={{ width:"100%", marginBottom:"12px", padding:"0", borderRadius:"22px", background:"linear-gradient(145deg,#00F090,#00CC70,#00A855)", boxShadow:"0 6px 18px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", cursor:"pointer", textAlign:"left", fontFamily:"'Nunito'", "--card-border":"linear-gradient(135deg,#00BFA5,#007A3D)" }}>
           <div className="card-shine" />
           <div className="card-content" style={{ padding:"20px 18px", display:"flex", alignItems:"center", gap:"14px" }}>
             <div style={{ fontSize:"46px", lineHeight:1, flexShrink:0 }}>🔥</div>
@@ -6666,6 +6829,294 @@ export default function Home() {
     );
   }
 
+  if (screen === "trasforma_lex") {
+    const energia = trasformaData?.energia ?? 0;
+    const formaIdx = FORME_LEX.filter(f => f.soglia <= energia).length - 1;
+    const forma = FORME_LEX[formaIdx];
+    const quizFatti = trasformaData?.quiz_completati_oggi ?? 0;
+    const bonusSbloccato = trasformaData?.bonus_sbloccato_oggi ?? false;
+    const stelle = trasformaData?.stelle_conversione ?? 0;
+    const conversioniOggi = trasformaData?.conversioni_oggi ?? 0;
+    const imgLex = formaIdx >= 3 ? "/Lex.png" : "/Lex-prof.png";
+
+    if (trasformaEvoluzioneAnim !== null) {
+      const f = FORME_LEX[trasformaEvoluzioneAnim];
+      const imgEv = trasformaEvoluzioneAnim >= 3 ? "/Lex.png" : "/Lex-prof.png";
+      return (
+        <div style={{ ...S.app, background:"#0a0030", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", position:"relative", overflow:"hidden" }}>
+          <Head><title>Lex si evolve!</title></Head>
+          {TRASFORMA_EV_PARTICLES.map((p,i) => (
+            <div key={i} style={{ position:"absolute", width:"8px", height:"8px", borderRadius:"50%", background:["#FFB800","#6C47FF","#FF4B8B","#00F090","#29C9FF"][i%5], top:`${p[0]}%`, left:`${p[1]}%`, animation:`fall ${1.5+(i%4)*0.3}s ease-out`, opacity:0.8 }} />
+          ))}
+          <p style={{ color:"#FFB800", fontSize:"13px", fontWeight:900, textTransform:"uppercase", letterSpacing:"2px", marginBottom:"16px" }}>⚡ Lex si sta evolvendo!</p>
+          <img src={imgEv} alt="Lex" style={{ width:"clamp(120px,30vw,160px)", height:"clamp(150px,38vw,200px)", objectFit:"contain", filter:"drop-shadow(0 0 40px rgba(108,71,255,0.9))", animation:"lexEvolve 1s ease-out" }} />
+          <p style={{ fontSize:"clamp(24px,7vw,32px)", fontWeight:900, color:"white", marginTop:"20px" }}>{f.emoji} {f.nome}</p>
+          <p style={{ fontSize:"14px", color:"rgba(255,255,255,0.7)", margin:"12px 20px", textAlign:"center", lineHeight:1.6 }}>Sei tra i pochi studenti al mondo ad aver raggiunto questa forma!</p>
+          <button onClick={() => setTrasformaEvoluzioneAnim(null)} style={{ marginTop:"20px", background:"linear-gradient(135deg,#6C47FF,#A855F7)", border:"none", borderRadius:"16px", padding:"16px 36px", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"16px", cursor:"pointer", minHeight:"52px", minWidth:"180px" }}>Incredibile! →</button>
+          <style>{`@keyframes lexEvolve{from{transform:scale(0.3);filter:drop-shadow(0 0 40px rgba(108,71,255,0.9)) blur(20px);opacity:0}to{transform:scale(1);filter:drop-shadow(0 0 40px rgba(108,71,255,0.9)) blur(0);opacity:1}} @keyframes fall{from{transform:translateY(-20px);opacity:1}to{transform:translateY(100vh);opacity:0}}`}</style>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ ...S.app, background:"#F5F3FF", overflowY:"auto", WebkitOverflowScrolling:"touch" }}>
+        <Head><title>Trasforma Lex — Lexyo</title></Head>
+        {/* HEADER */}
+        <div style={{ display:"flex", alignItems:"center", gap:"12px", padding:"16px 20px 8px", background:"white", borderBottom:"1px solid rgba(108,71,255,0.1)" }}>
+          <button onClick={() => { setScreen("home"); }} style={{ background:"rgba(108,71,255,0.08)", border:"none", borderRadius:"10px", width:"44px", height:"44px", color:"#6C47FF", fontSize:"18px", cursor:"pointer" }}>←</button>
+          <div style={{ flex:1 }}>
+            <p style={{ fontWeight:900, fontSize:"18px", color:"#1a0a30", margin:0 }}>⚡ Trasforma Lex</p>
+            <p style={{ fontSize:"11px", color:"rgba(0,0,0,0.4)", margin:0 }}>Nessuno ci è mai riuscito...</p>
+          </div>
+          <div style={{ background:"rgba(255,165,0,0.12)", border:"1px solid rgba(255,165,0,0.35)", borderRadius:"100px", padding:"4px 12px" }}>
+            <span style={{ fontSize:"12px", fontWeight:800, color:"#D97706" }}>🔥 {quizFatti}/3 quiz oggi</span>
+          </div>
+        </div>
+
+        {trasformaLoading ? (
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:"60px" }}>
+            <p style={{ color:"#6C47FF", fontWeight:700 }}>Caricamento...</p>
+          </div>
+        ) : (
+          <>
+            {/* HERO */}
+            <div style={{ background:"linear-gradient(160deg,#EDE9FF,#F5F3FF)", padding:"28px 20px 32px", textAlign:"center", borderBottom:"1px solid rgba(108,71,255,0.1)" }}>
+              <div style={{ display:"inline-flex", alignItems:"center", gap:"8px", background:"rgba(108,71,255,0.1)", border:"1px solid rgba(108,71,255,0.2)", borderRadius:"100px", padding:"5px 16px", marginBottom:"16px" }}>
+                <span style={{ fontSize:"12px", fontWeight:900, color:"#6C47FF" }}>✨ Forma {formaIdx+1} di 5 — {forma.nome}</span>
+              </div>
+              <div style={{ position:"relative", display:"inline-block", marginBottom:"12px" }}>
+                <img src={imgLex} alt="Lex" style={{ width:"clamp(110px,28vw,140px)", height:"clamp(140px,35vw,175px)", objectFit:"contain", filter:"drop-shadow(0 12px 30px rgba(108,71,255,0.35))", position:"relative", zIndex:1 }} />
+                <div style={{ position:"absolute", bottom:"-6px", left:"50%", transform:"translateX(-50%)", width:"100px", height:"20px", background:"rgba(108,71,255,0.2)", borderRadius:"50%", filter:"blur(8px)" }} />
+              </div>
+              <p style={{ fontWeight:900, fontSize:"18px", color:"#1a0a30", marginBottom:"8px" }}>{forma.emoji} {forma.nome}</p>
+              <div style={{ display:"flex", justifyContent:"center", gap:"4px", marginBottom:"20px" }}>
+                {FORME_LEX.map((_,i) => <span key={i} style={{ fontSize:"16px", opacity: i <= formaIdx ? 1 : 0.2 }}>⭐</span>)}
+              </div>
+              {/* BARRA ENERGIA */}
+              <div style={{ background:"white", borderRadius:"16px", padding:"14px 16px", textAlign:"left", boxShadow:"0 2px 8px rgba(108,71,255,0.1)" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"10px" }}>
+                  <span style={{ fontSize:"13px", fontWeight:700, color:"rgba(0,0,0,0.6)" }}>⚡ Energia di Lex</span>
+                  <span style={{ fontSize:"22px", fontWeight:900, color:"#D97706" }}>{energia}%</span>
+                </div>
+                <div style={{ background:"rgba(108,71,255,0.1)", borderRadius:"20px", height:"18px", overflow:"hidden", position:"relative" }}>
+                  <div style={{ width:`${energia}%`, height:"100%", background:"linear-gradient(90deg,#6C47FF,#A855F7,#FFB800)", borderRadius:"20px", transition:"width 0.8s ease", position:"relative" }}>
+                    <div style={{ position:"absolute", top:"3px", left:"4px", right:"4px", height:"7px", background:"rgba(255,255,255,0.35)", borderRadius:"10px" }} />
+                  </div>
+                </div>
+                <div style={{ display:"flex", justifyContent:"space-between", marginTop:"6px" }}>
+                  {[0,20,40,70,100].map(m => (
+                    <span key={m} style={{ fontSize:"10px", fontWeight:700, color: energia >= m ? "#6C47FF" : "rgba(0,0,0,0.25)" }}>{m}%</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* CONTENUTO */}
+            <div style={{ padding:"16px", display:"flex", flexDirection:"column", gap:"12px", paddingBottom:"32px" }}>
+              {/* 5 FORME */}
+              <div style={{ background:"white", borderRadius:"16px", padding:"16px", boxShadow:"0 2px 8px rgba(108,71,255,0.08)" }}>
+                <p style={{ fontSize:"12px", fontWeight:800, color:"#6C47FF", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"12px" }}>Le 5 Forme di Lex</p>
+                <div style={{ display:"flex", gap:"6px" }}>
+                  {FORME_LEX.map((f,i) => {
+                    const completata = energia >= f.soglia && i < formaIdx + 1;
+                    const prossima = i === formaIdx + 1;
+                    const bloccata = !completata && !prossima && i > formaIdx + 1;
+                    return (
+                      <div key={i} style={{ flex:1, padding:"8px 4px", borderRadius:"12px", textAlign:"center", border: completata ? "2px solid #00CC70" : prossima ? "2px solid #6C47FF" : "2px solid rgba(0,0,0,0.08)", background: completata ? "#F0FFF9" : prossima ? "#F5F0FF" : "white", boxShadow: prossima ? "0 4px 12px rgba(108,71,255,0.2)" : "none", opacity: bloccata ? 0.4 : 1 }}>
+                        <div style={{ fontSize:"20px" }}>{f.emoji}</div>
+                        <p style={{ fontSize:"9px", fontWeight:800, color: completata ? "#00AA55" : prossima ? "#6C47FF" : "#999", marginTop:"2px" }}>{f.nome}</p>
+                        <p style={{ fontSize:"8px", color:"rgba(0,0,0,0.4)", fontWeight:600 }}>{f.soglia}%</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* QUIZ */}
+              <div style={{ background:"white", borderRadius:"16px", padding:"16px", boxShadow:"0 2px 8px rgba(108,71,255,0.08)" }}>
+                <p style={{ fontSize:"12px", fontWeight:800, color:"#6C47FF", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"12px" }}>Quiz Giornalieri</p>
+                <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
+                  {[{l:"facile",label:"Quiz 1",sub:"Facile",emoji:"🟢",n:1},{l:"medio",label:"Quiz 2",sub:"Medio",emoji:"🟡",n:2},{l:"difficile",label:"Quiz 3",sub:"Difficile",emoji:"🔴",n:3}].map(q => {
+                    const completato = quizFatti >= q.n;
+                    const disponibile = quizFatti === q.n - 1;
+                    return (
+                      <div key={q.l} onClick={() => disponibile && avviaTrasformaQuiz(q.l)} style={{ display:"flex", alignItems:"center", gap:"12px", padding:"12px", borderRadius:"12px", border: completato ? "2px solid #00CC70" : disponibile ? "2px solid #6C47FF" : "2px solid rgba(0,0,0,0.06)", background: completato ? "#F0FFF9" : disponibile ? "#F5F0FF" : "#FAFAFA", cursor: disponibile ? "pointer" : "default", opacity: !completato && !disponibile ? 0.5 : 1 }}>
+                        <span style={{ fontSize:"22px" }}>{completato ? "✅" : disponibile ? "🎯" : "🔒"}</span>
+                        <div style={{ flex:1 }}>
+                          <p style={{ fontWeight:800, fontSize:"14px", color:"#1a0a30", margin:0 }}>{q.label} — {q.sub}</p>
+                          <p style={{ fontSize:"11px", color:"rgba(0,0,0,0.45)", margin:0 }}>8 domande · +1% energia</p>
+                        </div>
+                        <span style={{ fontSize:"20px" }}>{q.emoji}</span>
+                      </div>
+                    );
+                  })}
+                  {bonusSbloccato && (
+                    <div onClick={() => avviaTrasformaQuiz("bonus")} style={{ display:"flex", alignItems:"center", gap:"12px", padding:"12px", borderRadius:"12px", border:"2px solid #FFB800", background:"#FFFBF0", cursor:"pointer" }}>
+                      <span style={{ fontSize:"22px" }}>🎁</span>
+                      <div style={{ flex:1 }}>
+                        <p style={{ fontWeight:800, fontSize:"14px", color:"#1a0a30", margin:0 }}>Quiz Bonus</p>
+                        <p style={{ fontSize:"11px", color:"rgba(0,0,0,0.45)", margin:0 }}>+20 ⭐ stelle bonus!</p>
+                      </div>
+                      <span style={{ fontSize:"20px" }}>⭐</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* CONVERSIONE STELLE */}
+              <div style={{ background:"white", borderRadius:"16px", padding:"16px", boxShadow:"0 2px 8px rgba(108,71,255,0.08)" }}>
+                <p style={{ fontSize:"12px", fontWeight:800, color:"#6C47FF", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"8px" }}>Stelle Conversione</p>
+                <p style={{ fontSize:"22px", fontWeight:900, color:"#FFB800", marginBottom:"4px" }}>⭐ {stelle} stelle</p>
+                <p style={{ fontSize:"12px", color:"rgba(0,0,0,0.5)", marginBottom:"12px" }}>50 ⭐ = +1% energia (max 2%/giorno) · Usate oggi: {conversioniOggi}/{MAX_CONVERSIONE_GIORNO}</p>
+                {trasformaConversioneMsg && <p style={{ fontSize:"13px", fontWeight:800, color:"#6C47FF", marginBottom:"8px" }}>{trasformaConversioneMsg}</p>}
+                <button onClick={convertiStelle} disabled={stelle < STELLE_PER_ENERGIA || conversioniOggi >= MAX_CONVERSIONE_GIORNO || energia >= 100} style={{ width:"100%", padding:"12px", borderRadius:"12px", background: stelle >= STELLE_PER_ENERGIA && conversioniOggi < MAX_CONVERSIONE_GIORNO && energia < 100 ? "linear-gradient(135deg,#FF8C00,#FFB800)" : "rgba(0,0,0,0.08)", border:"none", color: stelle >= STELLE_PER_ENERGIA && conversioniOggi < MAX_CONVERSIONE_GIORNO && energia < 100 ? "white" : "rgba(0,0,0,0.3)", fontFamily:"'Nunito'", fontWeight:900, fontSize:"14px", cursor: stelle >= STELLE_PER_ENERGIA && conversioniOggi < MAX_CONVERSIONE_GIORNO && energia < 100 ? "pointer" : "default" }}>
+                  Converti ⚡
+                </button>
+              </div>
+
+              {/* REGOLE */}
+              <div style={{ background:"white", borderRadius:"16px", padding:"16px", boxShadow:"0 2px 8px rgba(108,71,255,0.08)" }}>
+                <p style={{ fontSize:"12px", fontWeight:800, color:"#6C47FF", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px" }}>Come Funziona</p>
+                {["+1% energia per ogni quiz completato","50 stelle = 1% energia (max 2%/giorno)","Dal 5° giorno senza studiare: -1%/giorno","Oltre 30% energia senza studiare: -2%/giorno"].map((r,i) => (
+                  <p key={i} style={{ fontSize:"12px", color:"rgba(0,0,0,0.6)", marginBottom:"6px", paddingLeft:"12px", borderLeft:"3px solid #6C47FF" }}>{r}</p>
+                ))}
+              </div>
+
+              {/* CTA */}
+              <button
+                onClick={() => {
+                  if (bonusSbloccato && quizFatti >= 3) avviaTrasformaQuiz("bonus");
+                  else if (quizFatti < 3) avviaTrasformaQuiz(["facile","medio","difficile"][quizFatti]);
+                }}
+                disabled={quizFatti >= 3 && !bonusSbloccato}
+                style={{ padding:"16px", borderRadius:"16px", background: quizFatti >= 3 && !bonusSbloccato ? "rgba(0,0,0,0.08)" : "linear-gradient(135deg,#6C47FF,#A855F7)", border:"none", color: quizFatti >= 3 && !bonusSbloccato ? "rgba(0,0,0,0.35)" : "white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"16px", cursor: quizFatti >= 3 && !bonusSbloccato ? "default" : "pointer" }}
+              >
+                {bonusSbloccato && quizFatti >= 3 ? "🎁 Ritira il bonus!" : quizFatti >= 3 ? "✅ Torna domani per nuovi quiz!" : `⚡ Inizia Quiz ${quizFatti+1}!`}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  if (screen === "trasforma_quiz") {
+    const isBonus = trasformaQuizLivello === "bonus";
+    const domanda = trasformaQuizDomande[trasformaQuizIdx];
+    const MATERIA_COLORI = { matematica:"#6366f1", italiano:"#ec4899", scienze:"#10b981", storia:"#f59e0b", geografia:"#0ea5e9", jolly:"#a855f7" };
+
+    if (trasformaQuizDomande.length === 0) return (
+      <div style={{ ...S.app, ...S.center }}>
+        <Head><title>Quiz in caricamento...</title></Head>
+        <img src="/Lex-prof.png" alt="Lex" style={{ width:"100px", marginBottom:"16px", opacity:0.7 }} />
+        <p style={{ color:"#6C47FF", fontWeight:700 }}>Lex sta preparando le domande...</p>
+      </div>
+    );
+
+    if (trasformaQuizFinale) {
+      const corrette = trasformaQuizRisposte.filter(Boolean).length;
+      const emoji = corrette < 4 ? "😔" : corrette < 7 ? "😊" : "🌟";
+      return (
+        <div style={{ ...S.app, background:"#F5F3FF", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"32px 20px", textAlign:"center" }}>
+          <Head><title>Risultato Quiz</title></Head>
+          {trasformaCoriandoli && (
+            <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:999 }}>
+              {TRASFORMA_CORI_PARTICLES.map((p,i) => (
+                <div key={i} style={{ position:"absolute", width:"8px", height:"8px", borderRadius:"2px", background:["#FFB800","#6C47FF","#FF4B8B","#00F090","#29C9FF"][i%5], top:"-10px", left:`${p[1]}%`, animation:`fall ${1.5+(i%4)*0.25}s ${(i%5)*0.1}s ease-out forwards` }} />
+              ))}
+            </div>
+          )}
+          <style>{`@keyframes fall{from{transform:translateY(0) rotate(0deg);opacity:1}to{transform:translateY(100vh) rotate(360deg);opacity:0}}`}</style>
+          <div style={{ fontSize:"64px", marginBottom:"8px" }}>{emoji}</div>
+          <p style={{ fontSize:"32px", fontWeight:900, color:"#1a0a30" }}>{corrette}/8</p>
+          <p style={{ fontSize:"15px", color:"rgba(0,0,0,0.5)", marginBottom:"20px" }}>{corrette < 4 ? "Riprova domani!" : corrette < 7 ? "Buon lavoro!" : "Eccellente!"}</p>
+          {!isBonus && (
+            <div style={{ background:"linear-gradient(135deg,#6C47FF,#A855F7)", borderRadius:"16px", padding:"14px 28px", marginBottom:"12px" }}>
+              <p style={{ color:"white", fontWeight:900, fontSize:"18px" }}>+1% energia a Lex ⚡</p>
+            </div>
+          )}
+          {isBonus && (
+            <div style={{ background:"linear-gradient(135deg,#FFB800,#FF8C00)", borderRadius:"16px", padding:"14px 28px", marginBottom:"12px" }}>
+              <p style={{ color:"white", fontWeight:900, fontSize:"18px" }}>+20 stelle guadagnate! ⭐</p>
+            </div>
+          )}
+          {!isBonus && trasformaData?.quiz_completati_oggi >= 2 && (
+            <p style={{ fontSize:"13px", color:"#6C47FF", fontWeight:700, marginBottom:"12px" }}>Quiz Bonus sbloccato! 🎁</p>
+          )}
+          <button onClick={async () => { await completaTrasformaQuiz(corrette, isBonus); setScreen("trasforma_lex"); setTrasformaCoriandoli(false); }} style={{ padding:"14px 32px", borderRadius:"14px", background:"linear-gradient(135deg,#6C47FF,#A855F7)", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"16px", cursor:"pointer" }}>
+            Continua →
+          </button>
+        </div>
+      );
+    }
+
+    const risposta = trasformaQuizRisposta;
+    const materiaColor = MATERIA_COLORI[domanda?.materia?.toLowerCase()] || "#6C47FF";
+
+    return (
+      <div style={{ ...S.app, background:"#F5F3FF", display:"flex", flexDirection:"column" }}>
+        <Head><title>Quiz {trasformaQuizLivello}</title></Head>
+        {/* HEADER */}
+        <div style={{ display:"flex", alignItems:"center", gap:"12px", padding:"16px 20px", background:"linear-gradient(135deg,#6C47FF,#A855F7)" }}>
+          <button onClick={() => setScreen("trasforma_lex")} style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:"10px", width:"44px", height:"44px", color:"white", fontSize:"18px", cursor:"pointer" }}>←</button>
+          <div style={{ flex:1 }}>
+            <p style={{ fontWeight:900, fontSize:"16px", color:"white", margin:0 }}>Quiz {trasformaQuizLivello?.charAt(0).toUpperCase()+trasformaQuizLivello?.slice(1)}</p>
+            <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.7)", margin:0 }}>Domanda {trasformaQuizIdx+1} / 8</p>
+          </div>
+          <div style={{ background:"rgba(255,184,0,0.2)", borderRadius:"100px", padding:"4px 10px" }}>
+            <span style={{ fontSize:"11px", fontWeight:800, color:"#FFB800" }}>⚡ {trasformaData?.energia ?? 0}%</span>
+          </div>
+        </div>
+        {/* PROGRESS */}
+        <div style={{ height:"4px", background:"rgba(108,71,255,0.15)" }}>
+          <div style={{ height:"100%", width:`${((trasformaQuizIdx)/8)*100}%`, background:"linear-gradient(90deg,#6C47FF,#A855F7)", transition:"width 0.3s" }} />
+        </div>
+
+        {/* DOMANDA */}
+        {domanda && (
+          <div style={{ flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch", padding:"20px 16px" }}>
+            <div style={{ display:"inline-block", background:`${materiaColor}20`, borderRadius:"100px", padding:"4px 14px", marginBottom:"14px" }}>
+              <span style={{ fontSize:"11px", fontWeight:800, color:materiaColor, textTransform:"capitalize" }}>{domanda.materia}</span>
+            </div>
+            <p style={{ fontSize:"17px", fontWeight:800, color:"#1a0a30", lineHeight:1.5, marginBottom:"20px" }}>{domanda.domanda}</p>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", marginBottom:"16px" }}>
+              {domanda.opzioni.map((op,i) => {
+                let bg = "white", border = "2px solid rgba(108,71,255,0.12)", color = "#1a0a30";
+                if (risposta !== null) {
+                  if (i === domanda.corretta) { bg="#F0FFF9"; border="2px solid #00CC70"; color="#007744"; }
+                  else if (i === risposta && risposta !== domanda.corretta) { bg="#FFF0F0"; border="2px solid #FF4444"; color="#AA0000"; }
+                  else { bg="rgba(0,0,0,0.03)"; color="rgba(0,0,0,0.35)"; }
+                }
+                return (
+                  <button key={i} onClick={() => {
+                    if (risposta !== null) return;
+                    setTrasformaQuizRisposta(i);
+                    const corretta = i === domanda.corretta;
+                    if (corretta) { playTrasformaSound(523,0.15); setTimeout(()=>playTrasformaSound(659,0.15),150); }
+                    else { playTrasformaSound(220,0.3,"sawtooth"); }
+                    setTimeout(() => {
+                      const nuoveRisposte = [...trasformaQuizRisposte, corretta];
+                      setTrasformaQuizRisposte(nuoveRisposte);
+                      setTrasformaQuizRisposta(null);
+                      if (trasformaQuizIdx + 1 >= 8) setTrasformaQuizFinale(true);
+                      else setTrasformaQuizIdx(prev => prev + 1);
+                    }, corretta ? 1000 : 1500);
+                  }} style={{ padding:"14px 10px", borderRadius:"14px", background:bg, border, color, fontFamily:"'Nunito'", fontWeight:700, fontSize:"13px", cursor: risposta !== null ? "default" : "pointer", textAlign:"center", lineHeight:1.4, transition:"all 0.2s", minHeight:"64px" }}>
+                    {op}
+                  </button>
+                );
+              })}
+            </div>
+            {risposta !== null && risposta !== domanda.corretta && (
+              <div style={{ background:"rgba(108,71,255,0.08)", borderRadius:"12px", padding:"12px 14px", border:"1px solid rgba(108,71,255,0.2)" }}>
+                <p style={{ fontSize:"12px", color:"#6C47FF", fontWeight:700, margin:0 }}>💡 {domanda.spiegazione}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return null;
 }
