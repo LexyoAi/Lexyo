@@ -2368,7 +2368,7 @@ export default function Home() {
                   {verificheModalita==="quiz" && <div style={{ position:"absolute", top:"10px", right:"10px", width:"22px", height:"22px", borderRadius:"50%", background:"rgba(255,255,255,0.25)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"13px", fontWeight:900 }}>✓</div>}
                   <div style={{ fontSize:"34px", marginBottom:"10px" }}>📝</div>
                   <p style={{ fontSize:"15px", fontWeight:900, lineHeight:1.2 }}>Quiz Scritto</p>
-                  <p style={{ fontSize:"11px", color: verificheModalita==="quiz"?"rgba(255,255,255,0.75)": luce?"rgba(0,0,30,0.45)":"rgba(255,255,255,0.45)", marginTop:"5px", fontWeight:700 }}>5 domande · 10 ⭐</p>
+                  <p style={{ fontSize:"11px", color: verificheModalita==="quiz"?"rgba(255,255,255,0.75)": luce?"rgba(0,0,30,0.45)":"rgba(255,255,255,0.45)", marginTop:"5px", fontWeight:700 }}>8 domande · 16 ⭐</p>
                 </div>
               </button>
 
@@ -3104,7 +3104,7 @@ export default function Home() {
       settimaneConf[swIdx].flatMap(m => programmaMateria[m]?.temi || []).slice(0, 8);
     const GIORNI = ["Lunedì","Martedì","Mercoledì","Giovedì","Venerdì"];
     const ATTIVITA_CYCLE = [
-      { tipo:"quiz",      emoji:"🧠", label:"Quiz a Risposta Multipla",        tempo:"15 min", color:"#6366f1", desc:"5 domande su questo argomento per testare la tua preparazione" },
+      { tipo:"quiz",      emoji:"🧠", label:"Quiz a Risposta Multipla",        tempo:"15 min", color:"#6366f1", desc:"8 domande su questo argomento per testare la tua preparazione" },
       { tipo:"esercizi",  emoji:"✏️", label:"Esercizi sul Quaderno",             tempo:"20 min", color:"#f59e0b", desc:"Risolvi gli esercizi indicati — scrivi tutto sul quaderno" },
       { tipo:"domande",   emoji:"💬", label:"Domande Aperte con Lex",            tempo:"15 min", color:"#ec4899", desc:"Chiedi a Lex di spiegarti i concetti che non hai capito" },
       { tipo:"quaderno",  emoji:"📓", label:"Scheda Riassuntiva sul Quaderno",   tempo:"25 min", color:"#10b981", desc:"Fai un riassunto scritto e poi fotografa per la correzione" },
@@ -3630,7 +3630,7 @@ export default function Home() {
 
   // ── INTERROGAZIONE ORALE ─────────────────────────────────────────────────
   if (screen === "interrogazione") {
-    const maxDomande = prog?.label?.toLowerCase().includes("media") ? 5 : 4;
+    const maxDomande = 7;
 
     const leggiBrowserTTS = (testo) => {
       if (!("speechSynthesis" in window)) return;
@@ -4828,7 +4828,7 @@ export default function Home() {
         const quizFatti = parseInt(localStorage.getItem("lexyo_quiz_mc") || "0", 10) + 1;
         localStorage.setItem("lexyo_quiz_mc", String(quizFatti));
         if (quizFatti >= 5) addBadge("quiz_maestro");
-        if (corrette === 5) addBadge("quiz_perfetto");
+        if (corrette === mcQuiz.length) addBadge("quiz_perfetto");
       }
     };
 
@@ -4845,8 +4845,8 @@ export default function Home() {
             <LexChar stato="happy" size={150} />
             <div style={{ textAlign:"center" }}>
               <p style={{ fontSize:"22px", fontWeight:900, marginBottom:"8px" }}>Pront{figlioAttivo?.sesso === "F" ? "a" : "o"} per il quiz? 🎯</p>
-              <p style={{ color: luce?"rgba(0,0,30,0.55)":"rgba(255,255,255,0.5)", fontSize:"14px", fontWeight:600 }}>5 domande su: <strong style={{ color: luce?"#0a0a20":"white" }}>{giocaArgomento}</strong></p>
-              <p style={{ color:"#fbbf24", fontSize:"13px", fontWeight:700, marginTop:"4px" }}>Ogni risposta giusta = 2 ⭐</p>
+              <p style={{ color: luce?"rgba(0,0,30,0.55)":"rgba(255,255,255,0.5)", fontSize:"14px", fontWeight:600 }}>8 domande su: <strong style={{ color: luce?"#0a0a20":"white" }}>{giocaArgomento}</strong></p>
+              <p style={{ color:"#fbbf24", fontSize:"13px", fontWeight:700, marginTop:"4px" }}>Ogni risposta giusta = 2 ⭐ · Max 16 ⭐</p>
             </div>
             <button onClick={() => avviaQuizMC()} style={{ ...S.btn, ...S.btnP, maxWidth:"300px" }}>Inizia il Quiz! →</button>
           </div>
@@ -4879,7 +4879,7 @@ export default function Home() {
           <button onClick={() => goScreen(quizCaller)} style={S.back}>←</button>
           <div style={{ width:"44px", height:"44px", borderRadius:"14px", background:t.gradiente, boxShadow:`0 4px 16px ${t.glow}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", flexShrink:0 }}>🧠</div>
           <div><p style={{ fontWeight:900, fontSize:"17px" }}>Quiz</p><p style={{ fontSize:"11px", color:t.primario, fontWeight:600 }}>{giocaArgomento}</p></div>
-          {mcFine && <div style={{ marginLeft:"auto", background:"rgba(16,185,129,0.2)", border:"1px solid rgba(16,185,129,0.4)", borderRadius:"10px", padding:"6px 12px" }}><p style={{ fontWeight:900, color:"#34d399", fontSize:"14px" }}>{corrette}/5 ✓</p></div>}
+          {mcFine && <div style={{ marginLeft:"auto", background:"rgba(16,185,129,0.2)", border:"1px solid rgba(16,185,129,0.4)", borderRadius:"10px", padding:"6px 12px" }}><p style={{ fontWeight:900, color:"#34d399", fontSize:"14px" }}>{corrette}/{mcQuiz.length} ✓</p></div>}
         </div>
         <div style={{ flex:1, overflowY:"auto", padding:"18px", display:"flex", flexDirection:"column", gap:"16px" }}>
           {mcQuiz.map((dom, di) => (
@@ -4916,10 +4916,10 @@ export default function Home() {
             </div>
           ))}
           {mcFine && (
-            <div style={{ ...S.card, background:corrette>=4?"rgba(16,185,129,0.15)":corrette>=2?"rgba(245,158,11,0.12)":"rgba(239,68,68,0.12)", border:`1px solid ${corrette>=4?"rgba(16,185,129,0.4)":corrette>=2?"rgba(245,158,11,0.35)":"rgba(239,68,68,0.3)"}`, textAlign:"center" }}>
-              <LexChar stato={corrette>=4?"happy":"idle"} size={110} style={{ margin:"0 auto 12px" }} />
-              <p style={{ fontSize:"24px", fontWeight:900, marginBottom:"6px" }}>{corrette>=4?"Fantastico! 🎉":corrette>=2?"Bravo! 💪":"Riprova! 🔄"}</p>
-              <p style={{ color:"rgba(255,255,255,0.6)", fontSize:"14px", fontWeight:600, marginBottom:"12px" }}>{corrette} risposte giuste su 5 — +{corrette*2} ⭐</p>
+            <div style={{ ...S.card, background:corrette>=6?"rgba(16,185,129,0.15)":corrette>=4?"rgba(245,158,11,0.12)":"rgba(239,68,68,0.12)", border:`1px solid ${corrette>=6?"rgba(16,185,129,0.4)":corrette>=4?"rgba(245,158,11,0.35)":"rgba(239,68,68,0.3)"}`, textAlign:"center" }}>
+              <LexChar stato={corrette>=6?"happy":"idle"} size={110} style={{ margin:"0 auto 12px" }} />
+              <p style={{ fontSize:"24px", fontWeight:900, marginBottom:"6px" }}>{corrette>=6?"Fantastico! 🎉":corrette>=4?"Bravo! 💪":"Riprova! 🔄"}</p>
+              <p style={{ color:"rgba(255,255,255,0.6)", fontSize:"14px", fontWeight:600, marginBottom:"12px" }}>{corrette} risposte giuste su {mcQuiz.length} — +{corrette*2} ⭐</p>
               <div style={{ display:"flex", gap:"8px", marginBottom:"8px" }}>
                 <button onClick={() => { setMcRisposte([]); setMcFine(false); }} style={{ ...S.btn, ...S.btnS, flex:1 }}>🔄 Rigioca</button>
                 <button onClick={() => { setMcQuiz(null); setMcRisposte([]); setMcFine(false); avviaQuizMC(true); }} style={{ ...S.btn, ...S.btnP, flex:1 }}>🆕 Nuovo Gioco</button>
@@ -6514,7 +6514,7 @@ export default function Home() {
               <LexChar stato="talk" size={110} />
               <div style={{ textAlign:"center", maxWidth:"320px" }}>
                 <p style={{ fontSize:"18px", fontWeight:900, marginBottom:"8px" }}>Interrogazione di {matNome}</p>
-                <p style={{ fontSize:"13px", color: luce?"rgba(0,0,30,0.55)":"rgba(255,255,255,0.55)", fontWeight:600, lineHeight:1.5 }}>Ti farò 5 domande su {matNome} per {classe}. Rispondi con parole tue, come se fosse una vera interrogazione! 💪</p>
+                <p style={{ fontSize:"13px", color: luce?"rgba(0,0,30,0.55)":"rgba(255,255,255,0.55)", fontWeight:600, lineHeight:1.5 }}>Ti farò 7 domande su {matNome} per {classe}. Rispondi con parole tue, come se fosse una vera interrogazione! 💪</p>
               </div>
               <button onClick={generaDomande} disabled={esameLoading} style={{ ...S.btn, background:matBg, fontSize:"15px", padding:"14px 36px", opacity:esameLoading?0.6:1 }}>
                 {esameLoading ? "Preparo le domande…" : `Inizia interrogazione ${matEmoji}`}

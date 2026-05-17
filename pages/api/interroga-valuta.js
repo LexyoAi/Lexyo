@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   if (!Array.isArray(conversazione)) return res.status(400).json({ errore: "conversazione non valida" });
   const adattivita = getAdattivita(classe);
   const domandeFatte = conversazione.length;
-  const maxDomande = (classe || "").toLowerCase().includes("media") ? 5 : 4;
+  const maxDomande = 7;
   const fine = domandeFatte >= maxDomande;
 
   try {

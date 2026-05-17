@@ -44,9 +44,9 @@ export default async function handler(req, res) {
   const genera = async () => {
     const r = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 1100,
+      max_tokens: 2000,
       system: [{ type: "text", text: `Sei un creatore di quiz scolastici per la ${classe} italiana.
-Genera ESATTAMENTE 5 domande a risposta multipla su "${argomento}" di ${materia}.
+Genera ESATTAMENTE 8 domande a risposta multipla su "${argomento}" di ${materia}.
 ${difficolta ? `\n${difficolta}\n` : ""}
 PROCESSO OBBLIGATORIO PER OGNI DOMANDA (specialmente matematica):
 1. Calcola la risposta corretta e VERIFICA il calcolo passo-passo.
@@ -57,13 +57,14 @@ PROCESSO OBBLIGATORIO PER OGNI DOMANDA (specialmente matematica):
 
 REGOLE:
 - Domande SFIDANTI per uno studente della ${classe}: ragionamento, applicazione, analisi.
-- Risposte sbagliate plausibili, non assurde. Varia tipologia.
+- Varia la tipologia: nozione, comprensione, applicazione, analisi.
+- Risposte sbagliate plausibili, non assurde.
 Stile linguistico: ${adattivita}
 
 Rispondi SOLO con JSON valido (niente testo fuori, niente markdown):
 {"domande":[{"testo":"testo domanda?","opzioni":["Op0","Op1","Op2","Op3"],"corretta":0,"risposta_corretta":"Op0"}]}
 IMPORTANTE: opzioni[corretta] deve essere identico a risposta_corretta.`, cache_control: { type: "ephemeral" } }],
-      messages: [{ role: "user", content: `Crea 5 domande su "${argomento}" di ${materia} per ${classe}.` }],
+      messages: [{ role: "user", content: `Crea 8 domande su "${argomento}" di ${materia} per ${classe}.` }],
     });
     const testo = r.content[0].text.trim();
     const parsed = parseJSON(testo);
