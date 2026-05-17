@@ -146,6 +146,8 @@ export default function Home() {
   const [mesiGratisGuadagnati, setMesiGratisGuadagnati] = useState(0);
   const [referralCopiato, setReferralCopiato] = useState("");
   const [toastReferral, setToastReferral] = useState("");
+  const [referralInput, setReferralInput] = useState("");
+  const [referralDaUrl, setReferralDaUrl] = useState(false);
   const [materiaRipasso, setMateriaRipasso] = useState("matematica");
   const [fotoMeseChip, setFotoMeseChip] = useState(null);
   const [fotoArgomento, setFotoArgomento] = useState("");
@@ -362,13 +364,19 @@ export default function Home() {
     return code;
   };
 
-  // Legge ?ref=CODICE e lo salva in localStorage
+  // Legge ?ref=CODICE e lo salva in localStorage + popola l'input di registrazione
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const ref = params.get("ref");
     if (ref) {
-      localStorage.setItem("lexyo_referral_code", ref.toUpperCase());
+      const code = ref.toUpperCase();
+      localStorage.setItem("lexyo_referral_code", code);
+      setReferralInput(code);
+      setReferralDaUrl(true);
+    } else {
+      const stored = localStorage.getItem("lexyo_referral_code");
+      if (stored) { setReferralInput(stored); setReferralDaUrl(true); }
     }
   }, []);
 
@@ -909,16 +917,19 @@ export default function Home() {
         else {
           if (signUpData?.session) { setUtente(signUpData.user); }
           else { setAuthMode("login"); }
-          // Associa referral: aggiorna contatore del referente
-          const refCode = typeof window !== "undefined" ? localStorage.getItem("lexyo_referral_code") : null;
-          if (refCode) {
-            const { data: referente } = await supabase.from("profili").select("referral_count,mesi_gratis_guadagnati").eq("referral_code", refCode).maybeSingle();
-            if (referente) {
+          // Associa referral: usa l'input manuale o il codice salvato da URL
+          const refCode = referralInput.trim().toUpperCase() ||
+            (typeof window !== "undefined" ? localStorage.getItem("lexyo_referral_code") : null);
+          if (refCode && signUpData?.user?.id) {
+            const { data: referente } = await supabase.from("profili").select("id,referral_count,mesi_gratis_guadagnati").eq("referral_code", refCode).maybeSingle();
+            if (referente && referente.id !== signUpData.user.id) {
               const nuovoCount = (referente.referral_count || 0) + 1;
               const nuoviMesi = Math.floor(nuovoCount / 5);
               await supabase.from("profili").update({ referral_count: nuovoCount, mesi_gratis_guadagnati: nuoviMesi }).eq("referral_code", refCode);
             }
             localStorage.removeItem("lexyo_referral_code");
+            setReferralInput("");
+            setReferralDaUrl(false);
           }
         }
       } else {
@@ -1598,6 +1609,33 @@ export default function Home() {
         </div>
         <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="La tua email" type="email" style={S.inp} />
         <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder={authMode==="register"?"Scegli una password (min. 6 caratteri)":"La tua password"} type="password" style={S.inp} onKeyDown={(e) => e.key==="Enter" && handleAuth()} />
+        {authMode === "register" && (
+          <div style={{ position:"relative" }}>
+            <span style={{ position:"absolute", left:"14px", top:"50%", transform:"translateY(-50%)", fontSize:"18px", zIndex:1, pointerEvents:"none" }}>🎁</span>
+            <input
+              value={referralInput}
+              onChange={(e) => { setReferralInput(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g,"")); setReferralDaUrl(false); }}
+              placeholder="Codice referral amico (opzionale)"
+              style={{ ...S.inp, paddingLeft:"44px", paddingRight: referralInput ? "80px" : "16px", letterSpacing:"1px", fontFamily:"monospace", fontWeight:800 }}
+              maxLength={12}
+            />
+            {referralInput && (
+              <div style={{ position:"absolute", right:"12px", top:"50%", transform:"translateY(-50%)", display:"flex", alignItems:"center", gap:"4px" }}>
+                {referralDaUrl && <span style={{ fontSize:"10px", color:"#a78bfa", fontWeight:800, background:"rgba(167,139,250,0.15)", padding:"2px 6px", borderRadius:"6px", whiteSpace:"nowrap" }}>da link</span>}
+                <span style={{ fontSize:"16px", color:"#10b981" }}>✓</span>
+              </div>
+            )}
+          </div>
+        )}
+        {authMode === "register" && referralInput && (
+          <div style={{ background:"rgba(16,185,129,0.1)", border:"1px solid rgba(16,185,129,0.3)", borderRadius:"12px", padding:"10px 14px", display:"flex", alignItems:"center", gap:"10px" }}>
+            <span style={{ fontSize:"20px" }}>🎁</span>
+            <div>
+              <p style={{ fontSize:"13px", fontWeight:800, color:"#10b981", marginBottom:"2px" }}>Codice amico attivo!</p>
+              <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.55)", fontWeight:600 }}>Il tuo amico riceverà un mese gratis ogni 5 iscrizioni</p>
+            </div>
+          </div>
+        )}
         {authError && <p style={{ color:"#ef4444", fontSize:"13px", fontWeight:700, textAlign:"center" }}>{authError}</p>}
         {authSuccess && <p style={{ color:"#10b981", fontSize:"13px", fontWeight:700, textAlign:"center" }}>{authSuccess}</p>}
         {authMode === "register" && (
