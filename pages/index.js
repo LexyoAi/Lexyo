@@ -753,6 +753,12 @@ export default function Home() {
   }, []);
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMsgs]);
+  useEffect(() => {
+    if (screen === "chat" && chatContesto?.tipo && chatMsgs.length === 0 && !chatLoading) {
+      const materiaLabel = MATERIE[chatContesto.materia]?.label || mat.label;
+      avviaLexEstivo(chatContesto, materiaLabel, prog?.label);
+    }
+  }, [screen, chatContesto?.tipo]);
   useEffect(() => { ingleseChatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [ingleseChatMsgs]);
   useEffect(() => { fotoEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [fotoMsgs]);
   useEffect(() => { quizEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [quizState?.msgs]);
@@ -1189,11 +1195,48 @@ export default function Home() {
     setScreen(s);
   };
 
-  const apriChatConArgomento = (argomento, materiaN) => {
+  const apriChatConArgomento = (argomento, materiaN, tipo = null) => {
     setChatMsgs([]);
-    setChatContesto({ argomento, materia: materiaN });
+    setChatContesto({ argomento, materia: materiaN, tipo });
     setMateria(materiaN);
     setScreen("chat");
+  };
+
+  const avviaLexEstivo = async (contesto, materiaLabel, classeLabel) => {
+    setChatLoading(true);
+    try {
+      const token = await getAccessToken();
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: "Inizia." }],
+          materia: materiaLabel,
+          classe: classeLabel,
+          sesso: figlioAttivo?.sesso || "M",
+          contesto,
+          fingerprint: getFingerprint(),
+          accessToken: token,
+        }),
+      });
+      const d = await res.json();
+      if (d.trial_esaurito) {
+        localStorage.setItem("lexyo_trial_chat", String(TRIAL_CHAT_MAX));
+        setTrialChatUsate(TRIAL_CHAT_MAX);
+        setChatMsgs([{ role: "user", text: "Inizia.", hidden: true }, { role: "assistant", text: "Hai esaurito i messaggi chat per oggi. Torna domani oppure abbonati per chat illimitata! 🔒" }]);
+      } else {
+        if (isTrial && !isAdmin) {
+          const nu = trialChatUsate + 1;
+          localStorage.setItem("lexyo_trial_chat", String(nu));
+          setTrialChatUsate(nu);
+        }
+        setChatMsgs([{ role: "user", text: "Inizia.", hidden: true }, { role: "assistant", text: d.risposta }]);
+        addStelle(1);
+      }
+    } catch {
+      setChatMsgs([{ role: "assistant", text: "Connessione persa! Riprova 🔄" }]);
+    }
+    setChatLoading(false);
   };
 
   const avviaRipassoEstate = async (argomento, materiaKey, meseIdx) => {
@@ -2650,13 +2693,19 @@ export default function Home() {
         </div>
       )}
       <div style={{ flex:1, overflowY:"auto", padding:"14px 18px", display:"flex", flexDirection:"column", gap:"12px" }}>
+        {(!chatContesto?.tipo || chatMsgs.length === 0) && (
         <div style={{ display:"flex", gap:"10px" }}>
           <div style={{ width:"28px", height:"28px", borderRadius:"9px", background:`${t.secondario}33`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"14px", flexShrink:0, alignSelf:"flex-end" }}>🧑‍🏫</div>
           <div style={{ ...S.card, maxWidth:"80%", fontSize:"14px", lineHeight:1.65, fontWeight:600, borderLeft:`3px solid ${t.primario}`, background:`${t.primario}0D` }}>
-            {chatContesto ? `Ciao ${figlioAttivo?.nome}! 👋 Sei qui per studiare "${chatContesto.argomento}"? Ottima scelta! Cosa non ti è chiaro? 😊` : `Ciao ${figlioAttivo?.nome}! 👋 Sono Lex! Su cosa hai bisogno di aiuto oggi in ${mat.label}? 😊`}
+            {chatContesto?.tipo
+              ? `Sto preparando gli esercizi su "${chatContesto.argomento}"... ✍️`
+              : chatContesto
+                ? `Ciao ${figlioAttivo?.nome}! 👋 Sei qui per studiare "${chatContesto.argomento}"? Ottima scelta! Cosa non ti è chiaro? 😊`
+                : `Ciao ${figlioAttivo?.nome}! 👋 Sono Lex! Su cosa hai bisogno di aiuto oggi in ${mat.label}? 😊`}
           </div>
         </div>
-        {chatMsgs.map((m,i) => (
+        )}
+        {chatMsgs.filter(m => !m.hidden).map((m,i) => (
           <div key={i} style={{ display:"flex", justifyContent:m.role==="user"?"flex-end":"flex-start", gap:"8px" }}>
             {m.role==="assistant" && <div style={{ width:"28px", height:"28px", borderRadius:"9px", background:`${t.secondario}33`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"14px", flexShrink:0, alignSelf:"flex-end" }}>🧑‍🏫</div>}
             <div style={{ maxWidth:"78%", padding:"12px 15px", borderRadius:m.role==="user"?"16px 16px 4px 16px":"16px 16px 16px 4px", background:m.role==="user"?t.gradiente: luce ? "#f0f0f8" : `${t.primario}0D`, border:m.role==="assistant"?`1px solid ${t.primario}33`:"none", fontSize:"14px", lineHeight:1.65, fontWeight:600, whiteSpace:"pre-wrap", color:m.role==="user"?"#ffffff": luce ? "#0a0a20" : "#e8e8f0" }}>{m.text}</div>
@@ -3203,7 +3252,7 @@ export default function Home() {
                           </button>
                         ) : giorno.tipo === "quaderno" ? (
                           <>
-                            <button onClick={() => apriChatConArgomento(giorno.tema, materia)} className="hcard" style={{ flex:1, padding:"16px 12px", borderRadius:"16px", background:`linear-gradient(135deg, ${giorno.color}, ${giorno.color}bb)`, border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", cursor:"pointer", boxShadow:`0 4px 16px ${giorno.color}55`, textAlign:"center" }}>
+                            <button onClick={() => apriChatConArgomento(giorno.tema, materia, "quaderno")} className="hcard" style={{ flex:1, padding:"16px 12px", borderRadius:"16px", background:`linear-gradient(135deg, ${giorno.color}, ${giorno.color}bb)`, border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", cursor:"pointer", boxShadow:`0 4px 16px ${giorno.color}55`, textAlign:"center" }}>
                               <div style={{ fontSize:"24px", marginBottom:"4px" }}>💬</div>
                               Chiedi a Lex
                             </button>
@@ -3216,7 +3265,7 @@ export default function Home() {
                             </label>
                           </>
                         ) : (
-                          <button onClick={() => apriChatConArgomento(giorno.tema, materia)} className="hcard" style={{ flex:1, padding:"16px 12px", borderRadius:"16px", background:`linear-gradient(135deg, ${giorno.color}, ${giorno.color}bb)`, border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", cursor:"pointer", boxShadow:`0 4px 16px ${giorno.color}55`, textAlign:"center" }}>
+                          <button onClick={() => apriChatConArgomento(giorno.tema, materia, giorno.tipo)} className="hcard" style={{ flex:1, padding:"16px 12px", borderRadius:"16px", background:`linear-gradient(135deg, ${giorno.color}, ${giorno.color}bb)`, border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", cursor:"pointer", boxShadow:`0 4px 16px ${giorno.color}55`, textAlign:"center" }}>
                             <div style={{ fontSize:"24px", marginBottom:"4px" }}>💬</div>
                             Chiedi a Lex
                           </button>
@@ -3243,7 +3292,7 @@ export default function Home() {
                   <div style={{ display:"flex", flexWrap:"wrap", gap:"6px", marginBottom:"12px" }}>
                     {val.map((a, i) => (<span key={i} style={{ background:`${est.colore}15`, border:`1px solid ${est.colore}35`, borderRadius:"20px", padding:"5px 12px", fontSize:"12px", fontWeight:700 }}>{a}</span>))}
                   </div>
-                  <button onClick={() => apriChatConArgomento(`introduzione a "${val[0]}" per il prossimo anno`, materia)} className="hcard" style={{ width:"100%", padding:"18px 16px", borderRadius:"18px", background:`linear-gradient(135deg, ${est.colore}, ${est.colore}bb)`, border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"14px", cursor:"pointer", boxShadow:`0 6px 20px ${est.colore}55`, display:"flex", alignItems:"center", justifyContent:"center", gap:"10px" }}>
+                  <button onClick={() => apriChatConArgomento(`introduzione a "${val[0]}" per il prossimo anno`, materia, "anteprima")} className="hcard" style={{ width:"100%", padding:"18px 16px", borderRadius:"18px", background:`linear-gradient(135deg, ${est.colore}, ${est.colore}bb)`, border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"14px", cursor:"pointer", boxShadow:`0 6px 20px ${est.colore}55`, display:"flex", alignItems:"center", justifyContent:"center", gap:"10px" }}>
                     <span style={{ fontSize:"22px" }}>💬</span> Fatti spiegare da Lex
                   </button>
                 </div>

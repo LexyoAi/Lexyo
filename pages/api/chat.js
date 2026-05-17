@@ -29,7 +29,19 @@ export default async function handler(req, res) {
   if (messages.length > 50) return res.status(400).json({ errore: "Conversazione troppo lunga" });
 
   const adattivita = getAdattivita(classe);
-  const contestoTxt = contesto?.argomento ? `\nArgomento specifico: "${contesto.argomento}". Concentrati su questo.` : "";
+  const contestoTxt = contesto?.argomento ? `\nArgomento: "${contesto.argomento}".` : "";
+
+  const tipoEstivo = {
+    esercizi: `Genera 3 esercizi pratici e numerati sull'argomento. Sii diretto e propositivo.`,
+    domande: `Proponi 3 domande aperte e stimolanti sull'argomento, numerate. Sii diretto e propositivo.`,
+    quaderno: `Crea una scheda riassuntiva con i punti chiave dell'argomento, usando elenchi puntati chiari.`,
+    anteprima: `Presenta l'argomento in modo semplice e coinvolgente come anteprima del prossimo anno scolastico.`,
+  };
+
+  const isEstivo = contesto?.tipo && tipoEstivo[contesto.tipo];
+  const systemText = isEstivo
+    ? `Sei Lexyo, insegnante di ${materia} per la ${classe} italiana. Stai seguendo il ripasso estivo ${delBambino}. ${tipoEstivo[contesto.tipo]} Tono amichevole e incoraggiante. In italiano.${contestoTxt}`
+    : `Sei Lexyo, insegnante di ${materia} per la ${classe} italiana. Metodo socratico: NON dare mai la risposta diretta. Guida ${ilBambino} con domande brevi. In italiano. Max 3 righe + 1 domanda finale.${contestoTxt}\nLivello: ${adattivita}`;
 
   const safeMessages = messages.map(m => ({
     role: m.role === "assistant" ? "assistant" : "user",
@@ -39,10 +51,10 @@ export default async function handler(req, res) {
   try {
     const response = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 450,
+      max_tokens: isEstivo ? 600 : 450,
       system: [{
         type: "text",
-        text: `Sei Lexyo, insegnante di ${materia} per la ${classe} italiana. Metodo socratico: NON dare mai la risposta diretta. Guida ${ilBambino} con domande brevi. In italiano. Max 3 righe + 1 domanda finale.${contestoTxt}\nLivello: ${adattivita}`,
+        text: systemText,
         cache_control: { type: "ephemeral" }
       }],
       messages: safeMessages,
