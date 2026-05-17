@@ -147,6 +147,8 @@ export default function Home() {
   const [referralCopiato, setReferralCopiato] = useState("");
   const [toastReferral, setToastReferral] = useState("");
   const [materiaRipasso, setMateriaRipasso] = useState("matematica");
+  const [fotoMeseChip, setFotoMeseChip] = useState(null);
+  const [fotoArgomento, setFotoArgomento] = useState("");
   const [livelloRipasso, setLivelloRipasso] = useState(0);
   const [ripassoQuiz, setRipassoQuiz] = useState(null);
   const [ripassoRisposte, setRipassoRisposte] = useState([]);
@@ -1135,7 +1137,7 @@ export default function Home() {
       setScreen("scegli_piano");
       return;
     }
-    if (s === "foto") { setPhoto(null); setSbloccato(false); setFotoFase("carica"); setFotoMsgs([]); setFotoInput(""); setPhotoOriginale(null); }
+    if (s === "foto") { setPhoto(null); setSbloccato(false); setFotoFase("carica"); setFotoMsgs([]); setFotoInput(""); setPhotoOriginale(null); setFotoMeseChip(null); setFotoArgomento(""); }
     if (s === "famiglia") setPinScreen("chiuso");
     if (s === "aggiungi_figlio") { setNomeFiglio(""); setSessoFiglio("M"); setClasseScelta(null); }
 
@@ -1367,7 +1369,7 @@ export default function Home() {
     inp: { width: "100%", padding: "14px 18px", borderRadius: "14px", background: luce ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.05)", border: `1px solid ${luce ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.1)"}`, color: luce ? "#0a0a20" : "white", fontSize: "15px", fontFamily: "'Nunito', sans-serif", fontWeight: 600, outline: "none", boxSizing: "border-box" },
     title: { fontSize: "30px", fontWeight: 900, background: "linear-gradient(135deg, #a78bfa, #60a5fa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: "8px", textAlign: "center" },
     gray: { color: luce ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.5)", fontSize: "14px", fontWeight: 600, textAlign: "center", lineHeight: 1.6 },
-    nav: { padding: "10px 20px 24px", borderTop: `1px solid ${luce ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.07)"}`, display: "flex", justifyContent: "space-around", background: luce ? "linear-gradient(180deg,#ffffff 0%,#f5f7ff 100%)" : "linear-gradient(180deg, #1A1B3A 0%, #141530 100%)", flexShrink: 0 },
+    nav: { paddingTop: "10px", paddingLeft: "20px", paddingRight: "20px", paddingBottom: "max(24px, calc(env(safe-area-inset-bottom) + 10px))", borderTop: `1px solid ${luce ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.07)"}`, display: "flex", justifyContent: "space-around", background: luce ? "linear-gradient(180deg,#ffffff 0%,#f5f7ff 100%)" : "linear-gradient(180deg, #1A1B3A 0%, #141530 100%)", flexShrink: 0 },
     hdr: { padding: "14px 20px", borderBottom: `1px solid ${luce ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.07)"}`, display: "flex", alignItems: "center", gap: "12px", background: luce ? "linear-gradient(180deg,#ffffff 0%,#f5f7ff 100%)" : "linear-gradient(180deg, #1A1B3A 0%, #141530 100%)", flexShrink: 0 },
     back: { background: luce ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.07)", border: `1px solid ${luce ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)"}`, borderRadius: "10px", width: "36px", height: "36px", color: luce ? "#0a0a20" : "white", fontSize: "18px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" },
   };
@@ -2422,13 +2424,25 @@ export default function Home() {
     );
   }
 
-  if (screen === "foto") return (
+  if (screen === "foto") {
+    const fotoMesiProg = PROGRAMMA[figlioAttivo?.classe]?.materie[materia] || [];
+    const mesiShortFoto = ["Set","Ott","Nov","Dic","Gen","Feb","Mar","Apr","Mag"];
+    const temiFotoMese = fotoMeseChip !== null ? (fotoMesiProg[fotoMeseChip]?.temi || []) : [];
+    return (
     <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
       <Head><title>Lexyo — Foto Compiti</title></Head>
       <div style={{ ...S.hdr, borderBottomColor:`${t.secondario}44` }}>
         <button onClick={() => goScreen("studia")} style={S.back}>←</button>
         <div style={{ width:"36px", height:"36px", borderRadius:"11px", background:t.gradiente, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"18px", boxShadow:`0 4px 16px ${t.glow}`, flexShrink:0 }}>📸</div>
-        <div><p style={{ fontWeight:900, fontSize:"15px" }}>Foto Compiti</p><p style={{ fontSize:"11px", color:t.primario, fontWeight:700 }}>{mat.emoji} {mat.label} · {prog?.label}</p></div>
+        <div><p style={{ fontWeight:900, fontSize:"15px" }}>Foto Compiti</p><p style={{ fontSize:"11px", color:t.primario, fontWeight:700 }}>{mat.emoji} {mat.label}{fotoArgomento ? ` · ${fotoArgomento}` : ""} · {prog?.label}</p></div>
+      </div>
+      {/* ── Selettore Materia ── */}
+      <div style={{ display:"flex", borderBottom:"1px solid rgba(255,255,255,0.08)", background:"rgba(0,0,0,0.2)", flexShrink:0, overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
+        {Object.entries(MATERIE).map(([key, info]) => (
+          <button key={key} onClick={() => { setMateria(key); setFotoMeseChip(null); setFotoArgomento(""); }} style={{ flex:1, padding:"12px 4px", minHeight:"44px", background:materia===key?`${info.colore}15`:"transparent", border:"none", borderBottom:materia===key?`2px solid ${info.colore}`:"2px solid transparent", color:materia===key?"white":"rgba(255,255,255,0.4)", fontFamily:"'Nunito', sans-serif", fontWeight:800, fontSize:"11px", cursor:"pointer", whiteSpace:"nowrap", minWidth:"55px", WebkitTapHighlightColor:"transparent" }}>
+            {info.emoji} {info.label.split(" ")[0]}
+          </button>
+        ))}
       </div>
       <div style={{ flex:1, overflowY:"auto", padding:"18px" }}>
         {fotoBloccata && !isAdmin && (
@@ -2441,6 +2455,36 @@ export default function Home() {
         )}
         {(!fotoBloccata || isAdmin) && fotoFase === "carica" && (
           <>
+            {/* ── Selettore Argomento dal Programma ── */}
+            {fotoMesiProg.some(m => m?.temi?.length > 0) && (
+              <div style={{ marginBottom:"16px" }}>
+                <p style={{ fontSize:"10px", fontWeight:800, color:"rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"8px" }}>📅 Argomento (opzionale)</p>
+                <div style={{ display:"flex", gap:"6px", marginBottom: fotoMeseChip !== null ? "10px" : "0", overflowX:"auto", paddingBottom:"2px", WebkitOverflowScrolling:"touch" }}>
+                  {mesiShortFoto.map((nome, idx) => {
+                    const temi = fotoMesiProg[idx]?.temi || [];
+                    if (temi.length === 0) return null;
+                    const sel = fotoMeseChip === idx;
+                    return (
+                      <button key={idx} className="chip-mese" onClick={() => { setFotoMeseChip(sel ? null : idx); if (sel) setFotoArgomento(""); }} style={{ padding:"10px 14px", minHeight:"44px", borderRadius:"20px", background:sel?`${t.primario}33`:"rgba(255,255,255,0.06)", border:`2px solid ${sel?t.primario:"rgba(255,255,255,0.1)"}`, color:sel?"white":"rgba(255,255,255,0.65)", fontFamily:"'Nunito'", fontWeight:800, fontSize:"12px", cursor:"pointer", whiteSpace:"nowrap", flexShrink:0, WebkitTapHighlightColor:"transparent" }}>
+                        {nome}
+                      </button>
+                    );
+                  })}
+                </div>
+                {fotoMeseChip !== null && temiFotoMese.length > 0 && (
+                  <div className="vfade" style={{ display:"flex", flexWrap:"wrap", gap:"7px", marginBottom:"10px" }}>
+                    {temiFotoMese.map(tema => {
+                      const sel = fotoArgomento === tema;
+                      return (
+                        <button key={tema} className="chip-tema" onClick={() => setFotoArgomento(sel ? "" : tema)} style={{ padding:"10px 14px", minHeight:"44px", borderRadius:"14px", background:sel?`${t.primario}28`:"rgba(255,255,255,0.07)", border:`2px solid ${sel?t.primario:"rgba(255,255,255,0.1)"}`, color:sel?"white":"rgba(255,255,255,0.75)", fontFamily:"'Nunito'", fontWeight:700, fontSize:"12px", cursor:"pointer", WebkitTapHighlightColor:"transparent" }}>
+                          {sel && <span style={{ marginRight:"4px" }}>✅</span>}{tema}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
             <label style={{ display:"flex", border:`2px dashed ${photo?`${t.primario}88`:`${t.secondario}44`}`, borderRadius:"18px", padding:"24px", textAlign:"center", cursor:"pointer", marginBottom:"14px", background:photo?"transparent":`${t.secondario}08`, minHeight:"170px", alignItems:"center", justifyContent:"center" }}>
               {photo ? <img src={photo} alt="Compito" style={{ maxWidth:"100%", maxHeight:"250px", borderRadius:"12px", objectFit:"contain" }} /> : <div><div style={{ fontSize:"44px", marginBottom:"10px" }}>📷</div><p style={{ fontWeight:800, fontSize:"15px", marginBottom:"5px", color:"white" }}>{isMobile ? "Fotografa l'esercizio" : "Carica foto dell'esercizio"}</p><p style={{ fontSize:"12px", color:"rgba(255,255,255,0.4)", fontWeight:600 }}>{isMobile ? "Tocca per aprire la fotocamera" : "Clicca per scegliere una foto"}</p><p style={{ fontSize:"11px", color:"rgba(255,255,255,0.3)", fontWeight:600, marginTop:"4px" }}>🚫 Vietato fotografare persone</p></div>}
               <input type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={(e) => { const f=e.target.files[0]; if(!f) return; compressPhoto(f,(c)=>{ setPhoto(c); setPhotoOriginale(c); }); }} />
@@ -2453,7 +2497,7 @@ export default function Home() {
                   setFotoFase("analisi_loading");
                   try {
                     const token = await getAccessToken();
-                    const res = await fetch("/api/analizza-foto", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ photo, materia:mat.label, classe:prog?.label, sesso: figlioAttivo?.sesso || "M", fase:"analisi", fingerprint: getFingerprint(), accessToken: token }) });
+                    const res = await fetch("/api/analizza-foto", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ photo, materia:mat.label, argomento: fotoArgomento || undefined, classe:prog?.label, sesso: figlioAttivo?.sesso || "M", fase:"analisi", fingerprint: getFingerprint(), accessToken: token }) });
                     const d = await res.json();
                     if (d.bloccata) {
                       if (d.trial_esaurito && isTrial && !isAdmin) { localStorage.setItem("lexyo_trial_foto", String(TRIAL_FOTO_MAX)); setTrialFotoUsate(TRIAL_FOTO_MAX); }
@@ -2512,7 +2556,8 @@ export default function Home() {
       </div>
       <Nav />
     </div>
-  );
+    );
+  }
 
   if (screen === "chat") {
     const chatMesiProg = PROGRAMMA[figlioAttivo.classe]?.materie[materia] || [];
@@ -2528,6 +2573,14 @@ export default function Home() {
           <p style={{ fontWeight:900, fontSize:"15px" }}>Lex — {mat.label}</p>
           {chatContesto ? <p style={{ fontSize:"11px", color:t.primario, fontWeight:700 }}>📌 {chatContesto.argomento}</p> : <p style={{ fontSize:"11px", color:t.primario, fontWeight:700 }}>● Online · {prog?.label}</p>}
         </div>
+      </div>
+      {/* ── Selettore Materia Chat ── */}
+      <div style={{ display:"flex", borderBottom:`1px solid ${luce?"rgba(0,0,0,0.08)":"rgba(255,255,255,0.08)"}`, background: luce ? "rgba(0,0,0,0.04)" : "rgba(0,0,0,0.2)", flexShrink:0, overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
+        {Object.entries(MATERIE).map(([key, info]) => (
+          <button key={key} onClick={() => { setMateria(key); setChatMeseChip(null); setChatContesto(null); setChatMsgs([]); }} style={{ flex:1, padding:"12px 4px", minHeight:"44px", background:materia===key?`${info.colore}15`:"transparent", border:"none", borderBottom:materia===key?`2px solid ${info.colore}`:"2px solid transparent", color:materia===key? luce?"#0a0a20":"white": luce?"rgba(0,0,30,0.35)":"rgba(255,255,255,0.4)", fontFamily:"'Nunito', sans-serif", fontWeight:800, fontSize:"11px", cursor:"pointer", whiteSpace:"nowrap", minWidth:"55px", WebkitTapHighlightColor:"transparent" }}>
+            {info.emoji} {info.label.split(" ")[0]}
+          </button>
+        ))}
       </div>
       {chatMesiProg.some(m => m?.temi?.length > 0) && (
         <div style={{ padding:"10px 14px 10px", borderBottom:`1px solid ${t.secondario}33`, background: luce ? "#f5f7ff" : "#12122a", flexShrink:0 }}>
@@ -3730,23 +3783,39 @@ export default function Home() {
                   <div>📊 Lex ti dà il voto finale</div>
                 </div>
               </div>
-              <div style={{ display:"flex", gap:"8px", marginBottom:"14px" }}>
+              {/* ── Selettore Materia ── */}
+              <p style={{ fontSize:"10px", fontWeight:800, color:"rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"8px" }}>📚 Materia</p>
+              <div style={{ display:"flex", gap:"6px", marginBottom:"16px", overflowX:"auto", paddingBottom:"2px", WebkitOverflowScrolling:"touch" }}>
                 {Object.entries(MATERIE).map(([key, info]) => (
-                  <button key={key} onClick={() => { setMateria(key); setInterrogMeseChip(null); setInterrogTopicScelto(""); }} style={{ flex:1, padding:"8px 4px", borderRadius:"12px", background:materia===key?`${info.colore}22`:"rgba(255,255,255,0.04)", border:`2px solid ${materia===key?info.colore:"rgba(255,255,255,0.08)"}`, color:"white", fontFamily:"'Nunito', sans-serif", fontWeight:800, fontSize:"10px", cursor:"pointer" }}>
-                    <div style={{ fontSize:"16px", marginBottom:"2px" }}>{info.emoji}</div>{info.label.split(" ")[0]}
+                  <button key={key} onClick={() => { setMateria(key); setInterrogMeseChip(null); setInterrogTopicScelto(""); }} style={{ flex:"0 0 auto", padding:"10px 14px", minHeight:"56px", borderRadius:"14px", background:materia===key?`${info.colore}22`:"rgba(255,255,255,0.04)", border:`2px solid ${materia===key?info.colore:"rgba(255,255,255,0.08)"}`, color:materia===key?"white":"rgba(255,255,255,0.55)", fontFamily:"'Nunito', sans-serif", fontWeight:800, fontSize:"11px", cursor:"pointer", textAlign:"center", WebkitTapHighlightColor:"transparent" }}>
+                    <div style={{ fontSize:"20px", marginBottom:"4px" }}>{info.emoji}</div>{info.label.split(" ")[0]}
                   </button>
                 ))}
               </div>
+              {/* ── Bottone Carica Foto (CTA principale) ── */}
+              <label style={{ display:"block", cursor:"pointer", marginBottom:"14px", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+                <div style={{ background:t.gradiente, borderRadius:"18px", padding:"20px 24px", display:"flex", alignItems:"center", gap:"16px", boxShadow:`0 6px 20px ${t.glow}`, userSelect:"none", WebkitUserSelect:"none" }}>
+                  <div style={{ fontSize:"38px", flexShrink:0 }}>📸</div>
+                  <div style={{ flex:1 }}>
+                    <p style={{ fontWeight:900, fontSize:"16px", color:"white", marginBottom:"4px" }}>Carica Foto degli Appunti</p>
+                    <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.75)", fontWeight:600 }}>Lex legge i tuoi appunti e ti interroga</p>
+                  </div>
+                  <div style={{ fontSize:"22px", color:"rgba(255,255,255,0.7)" }}>→</div>
+                </div>
+                <input type="file" accept="image/*" style={{ display:"none" }} onChange={(e) => { const f=e.target.files[0]; if(f) caricaFoto(f); }} />
+              </label>
+              {/* ── Scegli dal Programma (alternativa) ── */}
               {tuttiMesiInterrog.some(m => m?.temi?.length > 0) && (
                 <div style={{ marginBottom:"16px" }}>
-                  <p style={{ fontSize:"12px", fontWeight:800, color:"rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"8px" }}>o scegli dal programma</p>
-                  <div style={{ display:"flex", gap:"6px", marginBottom:"12px", overflowX:"auto", paddingBottom:"4px", WebkitOverflowScrolling:"touch" }}>
+                  <p style={{ textAlign:"center", fontSize:"11px", color:"rgba(255,255,255,0.25)", fontWeight:700, margin:"4px 0 12px" }}>— oppure scegli dal programma —</p>
+                  <p style={{ fontSize:"10px", fontWeight:800, color:"rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"8px" }}>📅 Argomento</p>
+                  <div style={{ display:"flex", gap:"6px", marginBottom:"10px", overflowX:"auto", paddingBottom:"4px", WebkitOverflowScrolling:"touch" }}>
                     {mesiShortI.map((nome, idx) => {
                       const temi = tuttiMesiInterrog[idx]?.temi || [];
                       if (temi.length === 0) return null;
                       const sel = interrogMeseChip === idx;
                       return (
-                        <button key={idx} className="chip-mese" onClick={() => { setInterrogMeseChip(sel ? null : idx); setInterrogTopicScelto(""); }} style={{ padding:"9px 16px", borderRadius:"20px", background:sel?`${t.primario}33`:"rgba(255,255,255,0.06)", border:`2px solid ${sel?t.primario:"rgba(255,255,255,0.1)"}`, color:sel?"white":"rgba(255,255,255,0.65)", fontSize:"13px" }}>
+                        <button key={idx} className="chip-mese" onClick={() => { setInterrogMeseChip(sel ? null : idx); setInterrogTopicScelto(""); }} style={{ padding:"11px 16px", minHeight:"44px", borderRadius:"20px", background:sel?`${t.primario}33`:"rgba(255,255,255,0.06)", border:`2px solid ${sel?t.primario:"rgba(255,255,255,0.1)"}`, color:sel?"white":"rgba(255,255,255,0.65)", fontSize:"13px", flexShrink:0, WebkitTapHighlightColor:"transparent" }}>
                           {nome}
                         </button>
                       );
@@ -3757,7 +3826,7 @@ export default function Home() {
                       {temiInterrogMese.map(tema => {
                         const sel = interrogTopicScelto === tema;
                         return (
-                          <button key={tema} className="chip-tema" onClick={() => setInterrogTopicScelto(sel ? "" : tema)} style={{ padding:"10px 16px", borderRadius:"14px", background:sel?`${t.primario}28`:"rgba(255,255,255,0.07)", border:`2px solid ${sel?t.primario:"rgba(255,255,255,0.1)"}`, color:sel?"white":"rgba(255,255,255,0.75)", fontSize:"13px" }}>
+                          <button key={tema} className="chip-tema" onClick={() => setInterrogTopicScelto(sel ? "" : tema)} style={{ padding:"11px 16px", minHeight:"44px", borderRadius:"14px", background:sel?`${t.primario}28`:"rgba(255,255,255,0.07)", border:`2px solid ${sel?t.primario:"rgba(255,255,255,0.1)"}`, color:sel?"white":"rgba(255,255,255,0.75)", fontSize:"13px", WebkitTapHighlightColor:"transparent" }}>
                             {sel && <span style={{ marginRight:"5px" }}>✅</span>}{tema}
                           </button>
                         );
@@ -3766,20 +3835,11 @@ export default function Home() {
                   )}
                   {interrogTopicScelto && (
                     <button onClick={avviaDaTopic} style={{ ...S.btn, background:t.gradiente, border:"none", marginTop:"6px", boxShadow:`0 4px 16px ${t.glow}` }}>
-                      🎤 Inizia interrogazione su "{interrogTopicScelto}"
+                      🎤 Inizia interrogazione su &quot;{interrogTopicScelto}&quot;
                     </button>
                   )}
-                  <p style={{ textAlign:"center", fontSize:"11px", color:"rgba(255,255,255,0.2)", fontWeight:600, margin:"12px 0 6px" }}>— oppure —</p>
                 </div>
               )}
-              <label style={{ display:"flex", border:`2px dashed ${t.primario}66`, borderRadius:"20px", padding:"32px 24px", textAlign:"center", cursor:"pointer", alignItems:"center", justifyContent:"center", minHeight:"160px", background:`${t.primario}08` }}>
-                <div>
-                  <div style={{ fontSize:"48px", marginBottom:"12px" }}>📸</div>
-                  <p style={{ fontWeight:900, fontSize:"16px", color:"white", marginBottom:"6px" }}>Fotografa i tuoi appunti</p>
-                  <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.4)", fontWeight:600 }}>Lex leggerà gli argomenti e ti interrogherà</p>
-                </div>
-                <input type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={(e) => { const f=e.target.files[0]; if(f) caricaFoto(f); }} />
-              </label>
             </div>
           )}
 

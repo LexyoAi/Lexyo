@@ -249,4 +249,36 @@ html[data-tema="light"] .cw-letter { color: white !important; }
   cursor: pointer;
   transition: all 0.15s;
   border-style: solid;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── OTTIMIZZAZIONI TOUCH GLOBALI ── */
+button {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Prevenzione accidentale selezione testo su tablet */
+.hcard, .chip-mese, .chip-tema {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Scroll momentum su iOS per tutti i contenitori scrollabili */
+[style*="overflowY: auto"],
+[style*="overflowY:auto"],
+[style*="overflow-y: auto"],
+[style*="overflowX: auto"],
+[style*="overflowX:auto"] {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Safe area insets per iPhone con notch/Dynamic Island */
+.lexyo-nav-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom), 8px);
 }
