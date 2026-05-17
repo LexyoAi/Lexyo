@@ -6864,7 +6864,10 @@ export default function Home() {
         <div style={S.hdr}>
           <button onClick={() => goScreen("home")} style={S.back}>←</button>
           <div>
-            <p style={{ fontWeight:900, fontSize:"17px" }}>🏴󠁧󠁢󠁥󠁮󠁧󠁿 Inglese con Lex</p>
+            <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+              <img src="https://flagcdn.com/w80/gb.png" alt="UK" width={28} height={19} style={{ borderRadius:"3px", boxShadow:"0 1px 4px rgba(0,0,0,0.3)", display:"block", objectFit:"cover", flexShrink:0 }} />
+              <p style={{ fontWeight:900, fontSize:"17px", margin:0 }}>Inglese con Lex</p>
+            </div>
             <p style={{ fontSize:"11px", color: luce ? "rgba(0,0,30,0.4)" : "rgba(255,255,255,0.4)", fontWeight:600 }}>{figlioAttivo?.nome} · {CLASSI[figlioAttivo?.classe]?.label}</p>
           </div>
         </div>
@@ -7146,13 +7149,6 @@ export default function Home() {
 
           {carta && (
             <div key={`${ingleseMese}-${ingleseVocIdx}`} className="voc-card" style={{ flex:1, display:"flex", flexDirection:"column", gap:"12px" }}>
-              {/* Tipo domanda badge */}
-              <div style={{ alignSelf:"center" }}>
-                <span style={{ fontSize:"11px", fontWeight:800, color: isItEn ? "#f59e0b" : "#29C9FF", background: isItEn ? "rgba(245,158,11,0.12)" : "rgba(41,201,255,0.12)", padding:"4px 12px", borderRadius:"20px", letterSpacing:"0.5px" }}>
-                  {isItEn ? "🇮🇹 → 🏴󠁧󠁢󠁥󠁮󠁧󠁿  IT → EN" : "🏴󠁧󠁢󠁥󠁮󠁧󠁿 → 🇮🇹  EN → IT"}
-                </span>
-              </div>
-
               {/* Card centrale */}
               <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background: luce ? "white" : "rgba(255,255,255,0.055)", borderRadius:"26px", padding:"28px 20px", border: luce ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.08)", boxShadow: luce ? "0 4px 20px rgba(0,0,0,0.07)" : "none" }}>
                 <p style={{ fontSize:"76px", margin:"0 0 10px", lineHeight:1 }}>{carta.emoji}</p>

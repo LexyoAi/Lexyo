@@ -401,13 +401,19 @@ export default function Landing({ onEntra }) {
             { label:"Estate con Lex",             sub:"Compiti e ripasso",                  desc:"Piano di ripasso estivo personalizzato con letture consigliate, quiz e anteprima degli argomenti dell'anno prossimo. Nessuna lacuna a settembre.", emoji:"🌊", bg:"linear-gradient(145deg,#FFE500,#FFC200,#FF9900)", border:"linear-gradient(135deg,#FF7700,#FFE500)" },
             { label:"Dashboard Genitore",         sub:"Controllo totale",                   desc:"Area protetta da PIN con statistiche complete: sessioni, argomenti capiti, semaforo preparazione, badge conquistati e streak giornaliero.", emoji:"👨‍👩‍👧", bg:"linear-gradient(145deg,#00BCD4,#0097A7,#006064)", border:"linear-gradient(135deg,#004D5E,#26C6DA)" },
             { label:"Preparazione Esame",         sub:"Solo 3ª Media",                      desc:"Tema italiano, matematica, storia, geografia, inglese e colloquio orale simulato. Tutto quello che serve per superare l'esame di Stato.", emoji:"🎓", bg:"linear-gradient(145deg,#FF8F00,#F57C00,#E65100)", border:"linear-gradient(135deg,#BF360C,#FFCA28)" },
-            { label:"Inglese con Lex",            sub:"Dal vocabolario alla conversazione",  desc:"Vocabolario con pronuncia fonetica, esercizi di grammatica, quiz a scelta multipla e conversazione guidata in inglese. Calibrato per classe e mese.", emoji:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", bg:"linear-gradient(145deg,#C084FC,#A855F7,#9333EA)", border:"linear-gradient(135deg,#7C3AED,#EC4899)" },
+            { label:"Inglese con Lex",            sub:"Dal vocabolario alla conversazione",  desc:"Vocabolario con pronuncia fonetica, esercizi di grammatica, quiz a scelta multipla e conversazione guidata in inglese. Calibrato per classe e mese.", flag:true, bg:"linear-gradient(145deg,#C084FC,#A855F7,#9333EA)", border:"linear-gradient(135deg,#7C3AED,#EC4899)" },
           ].map((c,i) => (
             <div key={i} className="lcard" style={{ padding:"22px 16px", borderRadius:"22px", background:c.bg, boxShadow:"0 6px 18px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", "--card-border":c.border }}>
               <div className="lcard-shine" />
               <div className="lcard-depth" />
               <div className="lcard-content">
-                <div style={{ fontSize:"32px", marginBottom:"10px" }}>{c.emoji}</div>
+                {c.flag ? (
+                  <div style={{ marginBottom:"10px" }}>
+                    <img src="https://flagcdn.com/w80/gb.png" alt="UK" width={46} height={31} style={{ borderRadius:"5px", boxShadow:"0 2px 8px rgba(0,0,0,0.3)", display:"block", objectFit:"cover" }} />
+                  </div>
+                ) : (
+                  <div style={{ fontSize:"32px", marginBottom:"10px" }}>{c.emoji}</div>
+                )}
                 <p style={{ fontSize:"13px", fontWeight:900, color:"rgba(0,0,0,0.85)", lineHeight:1.2, marginBottom:"4px" }}>{c.label}</p>
                 <p style={{ fontSize:"11px", color:"rgba(0,0,0,0.55)", fontWeight:700, marginBottom:"10px" }}>{c.sub}</p>
                 <p style={{ fontSize:"12px", color:"rgba(0,0,0,0.70)", lineHeight:1.65, fontWeight:500 }}>{c.desc}</p>
@@ -518,7 +524,7 @@ export default function Landing({ onEntra }) {
             <div style={{ display:"flex", flexWrap:"wrap", gap:"40px", alignItems:"center" }}>
               <div style={{ flex:"1", minWidth:"260px" }}>
                 <div style={{ display:"inline-flex", alignItems:"center", gap:"10px", background:"rgba(0,0,0,0.15)", borderRadius:"100px", padding:"6px 18px", marginBottom:"20px" }}>
-                  <span style={{ fontSize:"16px" }}>🏴󠁧󠁢󠁥󠁮󠁧󠁿</span>
+                  <img src="https://flagcdn.com/w80/gb.png" alt="UK" width={22} height={15} style={{ borderRadius:"3px", boxShadow:"0 1px 4px rgba(0,0,0,0.3)", display:"block", objectFit:"cover" }} />
                   <span style={{ fontSize:"12px", fontWeight:900, color:"rgba(255,255,255,0.85)", textTransform:"uppercase", letterSpacing:"2px" }}>Inglese con Lex</span>
                 </div>
                 <h2 style={{ fontSize:"clamp(26px,4vw,42px)", fontWeight:900, letterSpacing:"-1.5px", lineHeight:1.1, color:"white", marginBottom:"14px" }}>
