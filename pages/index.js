@@ -3916,17 +3916,24 @@ export default function Home() {
                 ))}
               </div>
               {/* ── Bottone Carica Foto (CTA principale) ── */}
-              <label style={{ display:"block", cursor:"pointer", marginBottom:"14px", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-                <div style={{ background:t.gradiente, borderRadius:"18px", padding:"20px 24px", display:"flex", alignItems:"center", gap:"16px", boxShadow:`0 6px 20px ${t.glow}`, userSelect:"none", WebkitUserSelect:"none" }}>
-                  <div style={{ fontSize:"38px", flexShrink:0 }}>📸</div>
-                  <div style={{ flex:1 }}>
-                    <p style={{ fontWeight:900, fontSize:"16px", color:"white", marginBottom:"4px" }}>Carica Foto degli Appunti</p>
-                    <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.75)", fontWeight:600 }}>Lex legge i tuoi appunti e ti interroga</p>
+              <div style={{ display:"flex", gap:"10px", marginBottom:"14px" }}>
+                <label style={{ flex:1, cursor:"pointer", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+                  <div style={{ background:t.gradiente, borderRadius:"18px", padding:"18px 10px", display:"flex", flexDirection:"column", alignItems:"center", gap:"8px", boxShadow:`0 6px 20px ${t.glow}`, userSelect:"none", WebkitUserSelect:"none", textAlign:"center", minHeight:"110px", justifyContent:"center" }}>
+                    <div style={{ fontSize:"34px" }}>📷</div>
+                    <p style={{ fontWeight:900, fontSize:"14px", color:"white", margin:0 }}>Scatta Foto</p>
+                    <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.75)", fontWeight:600, margin:0 }}>Apri fotocamera</p>
                   </div>
-                  <div style={{ fontSize:"22px", color:"rgba(255,255,255,0.7)" }}>→</div>
-                </div>
-                <input type="file" accept="image/*" style={{ display:"none" }} onChange={(e) => { const f=e.target.files[0]; if(f) caricaFoto(f); }} />
-              </label>
+                  <input type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={(e) => { const f=e.target.files[0]; if(f) caricaFoto(f); e.target.value=""; }} />
+                </label>
+                <label style={{ flex:1, cursor:"pointer", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+                  <div style={{ background:"rgba(255,255,255,0.08)", border:"2px solid rgba(255,255,255,0.15)", borderRadius:"18px", padding:"18px 10px", display:"flex", flexDirection:"column", alignItems:"center", gap:"8px", userSelect:"none", WebkitUserSelect:"none", textAlign:"center", minHeight:"110px", justifyContent:"center" }}>
+                    <div style={{ fontSize:"34px" }}>🖼️</div>
+                    <p style={{ fontWeight:900, fontSize:"14px", color:"white", margin:0 }}>Dalla Galleria</p>
+                    <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.75)", fontWeight:600, margin:0 }}>Scegli dalla memoria</p>
+                  </div>
+                  <input type="file" accept="image/*" style={{ display:"none" }} onChange={(e) => { const f=e.target.files[0]; if(f) caricaFoto(f); e.target.value=""; }} />
+                </label>
+              </div>
               {/* ── Scegli dal Programma (alternativa) ── */}
               {tuttiMesiInterrog.some(m => m?.temi?.length > 0) && (
                 <div style={{ marginBottom:"16px" }}>
