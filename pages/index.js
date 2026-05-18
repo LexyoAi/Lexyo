@@ -599,7 +599,7 @@ export default function Home() {
       setShowFormCompito(false);
     } catch (e) {
       console.error("aggiungiCompito:", e);
-      alert("Errore: " + (e?.message || e?.code || JSON.stringify(e)));
+      alert("Errore nel salvare il compito. Riprova.");
     }
     setSalvaCompitoLoading(false);
   };
@@ -3774,28 +3774,17 @@ export default function Home() {
       });
     };
 
-    const avviaRicognizione = async () => {
+    const avviaRicognizione = () => {
       if (window._interrogAudio) { try { window._interrogAudio.pause(); } catch {} }
       setInterrogMicErrore("");
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SR) {
-        setInterrogMicErrore("Il tuo browser non supporta il microfono. Apri l'app in Chrome o Safari e riprova.");
+        setInterrogMicErrore("Il riconoscimento vocale non è supportato. Su Android usa Chrome, su iPhone usa Safari.");
         setInterrogFase("risposta_testo");
         return;
       }
-
-      // Richiede permesso microfono esplicitamente — necessario su iOS Safari e Android
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach(t => t.stop());
-      } catch (err) {
-        const negato = err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError";
-        setInterrogMicErrore(negato
-          ? "Permesso microfono negato. Vai nelle impostazioni del browser e abilita il microfono per questo sito."
-          : "Impossibile accedere al microfono. Controlla che nessun'altra app lo stia usando.");
-        setInterrogFase("risposta_testo");
-        return;
-      }
+      const isPWA = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+      const isAndroid = /android/i.test(navigator.userAgent);
 
       const r = new SR();
       r.lang = "it-IT";
@@ -3809,11 +3798,17 @@ export default function Home() {
       };
       r.onend = () => setInterrogFase("conferma");
       r.onerror = (ev) => {
-        if (ev.error !== "aborted") {
-          setInterrogMicErrore("Registrazione interrotta. Riprova o scrivi la risposta.");
+        if (ev.error === "not-allowed") {
+          setInterrogMicErrore(isPWA && isAndroid
+            ? "Permesso microfono negato. Vai in Impostazioni Android → App → Chrome → Autorizzazioni → Microfono → Consenti, poi riprova."
+            : "Permesso microfono negato. Abilita il microfono nelle impostazioni del browser per questo sito.");
+        } else if (ev.error === "network") {
+          setInterrogMicErrore("Connessione internet necessaria per il riconoscimento vocale. Controlla la connessione e riprova.");
+        } else if (ev.error !== "aborted") {
+          setInterrogMicErrore("Errore microfono. Riprova o scrivi la risposta.");
           setInterrogTrascrizione("");
         }
-        setInterrogFase("risposta_testo");
+        if (ev.error !== "aborted") setInterrogFase("risposta_testo");
       };
       try { r.start(); window._interrogSR = r; }
       catch {
@@ -4015,8 +4010,13 @@ export default function Home() {
             <div style={{ padding:"8px 0" }}>
               {interrogMicErrore ? (
                 <div style={{ ...S.card, marginBottom:"14px", background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.35)", textAlign:"center" }}>
-                  <p style={{ fontWeight:900, fontSize:"14px", marginBottom:"4px", color:"#f87171" }}>🎤 Microfono non disponibile</p>
-                  <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.6)", fontWeight:600, lineHeight:1.6 }}>{interrogMicErrore}</p>
+                  <p style={{ fontWeight:900, fontSize:"14px", marginBottom:"6px", color:"#f87171" }}>🎤 Microfono non disponibile</p>
+                  <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.6)", fontWeight:600, lineHeight:1.7, marginBottom: typeof window !== "undefined" && /android/i.test(navigator.userAgent) ? "10px" : "0" }}>{interrogMicErrore}</p>
+                  {typeof window !== "undefined" && /android/i.test(navigator.userAgent) && (
+                    <a href={`intent://${window.location.host}${window.location.pathname}#Intent;scheme=https;package=com.android.chrome;end`} style={{ display:"inline-block", padding:"8px 16px", borderRadius:"10px", background:"#4285F4", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"12px", textDecoration:"none" }}>
+                      Apri in Chrome →
+                    </a>
+                  )}
                 </div>
               ) : (
                 <div style={{ ...S.card, marginBottom:"14px", background:"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.25)", textAlign:"center" }}>
@@ -4108,10 +4108,18 @@ export default function Home() {
             <div style={{ background: luce ? "white" : "#1a1b3a", borderRadius:"24px", padding:"28px 24px", maxWidth:"340px", width:"100%", boxShadow:"0 20px 60px rgba(0,0,0,0.5)", textAlign:"center" }}>
               <div style={{ fontSize:"52px", marginBottom:"12px" }}>🎤</div>
               <p style={{ fontWeight:900, fontSize:"18px", marginBottom:"8px" }}>Accesso al microfono</p>
-              <p style={{ fontSize:"14px", color: luce ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.55)", fontWeight:600, lineHeight:1.7, marginBottom:"24px" }}>
-                Lexyo ha bisogno del microfono per ascoltare la tua risposta.<br />
-                Premi <strong>Consenti</strong> quando il browser te lo chiede.
+              <p style={{ fontSize:"14px", color: luce ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.55)", fontWeight:600, lineHeight:1.7, marginBottom:"8px" }}>
+                Lexyo ha bisogno del microfono per ascoltare la tua risposta.
               </p>
+              {/android/i.test(typeof navigator !== "undefined" ? navigator.userAgent : "") && (
+                <div style={{ background:"rgba(66,133,244,0.12)", border:"1px solid rgba(66,133,244,0.3)", borderRadius:"12px", padding:"10px 14px", marginBottom:"16px", textAlign:"left" }}>
+                  <p style={{ fontSize:"12px", fontWeight:800, color:"#4285F4", marginBottom:"4px" }}>📱 Prima volta su Android?</p>
+                  <p style={{ fontSize:"12px", color: luce ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.6)", fontWeight:600, lineHeight:1.6 }}>
+                    Quando appare il popup Android, premi <strong>Consenti</strong>.<br/>
+                    Se lo hai negato per errore: <strong>Impostazioni → App → Chrome → Autorizzazioni → Microfono → Consenti</strong>.
+                  </p>
+                </div>
+              )}
               <button
                 onClick={() => { setInterrogMicOverlay(false); avviaRicognizione(); }}
                 style={{ width:"100%", padding:"15px", borderRadius:"14px", background:"linear-gradient(135deg,#ef4444,#dc2626)", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"16px", cursor:"pointer", marginBottom:"10px" }}>
