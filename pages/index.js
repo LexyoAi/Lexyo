@@ -7556,9 +7556,10 @@ export default function Home() {
             </p>
             <p style={{ fontSize:"40px", fontWeight:900, color: corrFin === 10 ? "#f59e0b" : corrFin >= 7 ? "#10b981" : "#ef4444", margin:"8px 0 4px", fontFamily:"'Nunito'" }}>{corrFin}/10</p>
             <p style={{ fontSize:"14px", color: luce ? "#374151" : "rgba(255,255,255,0.6)", marginBottom:"32px", fontFamily:"'Nunito'" }}>{perc}% di risposte corrette</p>
-            <div style={{ display:"flex", gap:"12px" }}>
+            <div style={{ display:"flex", gap:"12px", flexWrap:"wrap", justifyContent:"center" }}>
               <button onClick={() => goScreen("inglese")} style={{ padding:"14px 22px", borderRadius:"16px", background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)", color: luce ? "#374151" : "white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer" }}>← Torna</button>
-              <button onClick={() => goScreen("inglese_quiz")} style={{ padding:"14px 22px", borderRadius:"16px", background:"linear-gradient(135deg,#10b981,#059669)", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer" }}>Riprova 🔄</button>
+              <button onClick={() => { setIngleseQuizIdx(0); setIngleseQuizRisposte([]); setIngleseQuizRisposta(null); setIngleseQuizFinale(false); }} style={{ padding:"14px 22px", borderRadius:"16px", background:"linear-gradient(135deg,#10b981,#059669)", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer" }}>Riprova 🔄</button>
+              <button onClick={() => { setIngleseQuizDomande(null); setIngleseQuizIdx(0); setIngleseQuizRisposte([]); setIngleseQuizRisposta(null); setIngleseQuizFinale(false); setIngleseQuizLoading(false); }} style={{ padding:"14px 22px", borderRadius:"16px", background:"linear-gradient(135deg,#6C47FF,#9B3FD4)", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer" }}>🆕 Nuovo Quiz</button>
             </div>
           </div>
           <Nav />
