@@ -78,6 +78,7 @@ export default function Home() {
   const [interrogLexParla, setInterrogLexParla] = useState(false);
   const [interrogTopicScelto, setInterrogTopicScelto] = useState("");
   const [interrogMicErrore, setInterrogMicErrore] = useState("");
+  const [interrogMicOverlay, setInterrogMicOverlay] = useState(false);
   const [interrogMeseChip, setInterrogMeseChip] = useState(null);
   const [streak, setStreak] = useState(0);
   const [levelUpAnim, setLevelUpAnim] = useState(false);
@@ -598,7 +599,7 @@ export default function Home() {
       setShowFormCompito(false);
     } catch (e) {
       console.error("aggiungiCompito:", e);
-      alert("Errore nel salvare il compito. Riprova.");
+      alert("Errore: " + (e?.message || e?.code || JSON.stringify(e)));
     }
     setSalvaCompitoLoading(false);
   };
@@ -3985,7 +3986,7 @@ export default function Home() {
                   {interrogLexParla ? "🔊 Lex sta parlando..." : "▶️ Ascolta la domanda"}
                 </button>
               </div>
-              <button onClick={avviaRicognizione} style={{ ...S.btn, background:"linear-gradient(135deg,#ef4444,#dc2626)", border:"none", fontSize:"16px", padding:"18px", marginBottom:"8px" }}>
+              <button onClick={() => setInterrogMicOverlay(true)} style={{ ...S.btn, background:"linear-gradient(135deg,#ef4444,#dc2626)", border:"none", fontSize:"16px", padding:"18px", marginBottom:"8px" }}>
                 🎤 Rispondi con la voce
               </button>
               <p style={{ textAlign:"center", fontSize:"11px", color:"rgba(255,255,255,0.25)", fontWeight:600 }}>Voce: Chrome e Safari — Mic: premi Rispondi</p>
@@ -4028,7 +4029,7 @@ export default function Home() {
                 <button onClick={() => { setInterrogTrascrizione(""); setInterrogFase("domanda"); }} style={{ ...S.btn, ...S.btnS, flex:1 }}>← Indietro</button>
                 <button onClick={() => setInterrogFase("conferma")} disabled={!interrogTrascrizione.trim()} style={{ ...S.btn, flex:2, background:interrogTrascrizione.trim()?"linear-gradient(135deg,#6366f1,#8b5cf6)":"rgba(255,255,255,0.08)", border:"none", opacity:interrogTrascrizione.trim()?1:0.5 }}>✅ Conferma risposta</button>
               </div>
-              <button onClick={() => { setInterrogTrascrizione(""); setInterrogFase("risposta"); avviaRicognizione(); }} style={{ marginTop:"10px", width:"100%", background:"none", border:`1px solid rgba(239,68,68,0.3)`, borderRadius:"12px", padding:"10px", color:"#ef4444", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"'Nunito'" }}>
+              <button onClick={() => { setInterrogTrascrizione(""); setInterrogMicErrore(""); setInterrogMicOverlay(true); }} style={{ marginTop:"10px", width:"100%", background:"none", border:`1px solid rgba(239,68,68,0.3)`, borderRadius:"12px", padding:"10px", color:"#ef4444", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"'Nunito'" }}>
                 🎤 Riprova con il microfono
               </button>
             </div>
@@ -4100,6 +4101,30 @@ export default function Home() {
 
         </div>
         <Nav />
+
+        {/* ── Overlay pre-autorizzazione microfono ── */}
+        {interrogMicOverlay && (
+          <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.75)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:"24px" }}>
+            <div style={{ background: luce ? "white" : "#1a1b3a", borderRadius:"24px", padding:"28px 24px", maxWidth:"340px", width:"100%", boxShadow:"0 20px 60px rgba(0,0,0,0.5)", textAlign:"center" }}>
+              <div style={{ fontSize:"52px", marginBottom:"12px" }}>🎤</div>
+              <p style={{ fontWeight:900, fontSize:"18px", marginBottom:"8px" }}>Accesso al microfono</p>
+              <p style={{ fontSize:"14px", color: luce ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.55)", fontWeight:600, lineHeight:1.7, marginBottom:"24px" }}>
+                Lexyo ha bisogno del microfono per ascoltare la tua risposta.<br />
+                Premi <strong>Consenti</strong> quando il browser te lo chiede.
+              </p>
+              <button
+                onClick={() => { setInterrogMicOverlay(false); avviaRicognizione(); }}
+                style={{ width:"100%", padding:"15px", borderRadius:"14px", background:"linear-gradient(135deg,#ef4444,#dc2626)", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"16px", cursor:"pointer", marginBottom:"10px" }}>
+                🎤 Attiva il microfono
+              </button>
+              <button
+                onClick={() => { setInterrogMicOverlay(false); setInterrogFase("risposta_testo"); }}
+                style={{ width:"100%", padding:"12px", borderRadius:"14px", background:"none", border:"1px solid rgba(255,255,255,0.15)", color: luce ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.45)", fontFamily:"'Nunito'", fontWeight:700, fontSize:"14px", cursor:"pointer" }}>
+                ✏️ Preferisco scrivere
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
