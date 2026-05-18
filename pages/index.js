@@ -4012,10 +4012,34 @@ export default function Home() {
                   {interrogLexParla ? "🔊 Lex sta parlando..." : "▶️ Ascolta la domanda"}
                 </button>
               </div>
-              <button onClick={() => setInterrogMicOverlay(true)} style={{ ...S.btn, background:"linear-gradient(135deg,#ef4444,#dc2626)", border:"none", fontSize:"16px", padding:"18px", marginBottom:"8px" }}>
-                🎤 Rispondi con la voce
-              </button>
-              <p style={{ textAlign:"center", fontSize:"11px", color:"rgba(255,255,255,0.25)", fontWeight:600 }}>Voce: Chrome e Safari — Mic: premi Rispondi</p>
+              {typeof navigator !== "undefined" && /android/i.test(navigator.userAgent) ? (
+                <div>
+                  <div style={{ background:"rgba(99,102,241,0.1)", border:"1px solid rgba(99,102,241,0.3)", borderRadius:"14px", padding:"14px 16px", marginBottom:"12px", textAlign:"center" }}>
+                    <p style={{ fontWeight:900, fontSize:"15px", marginBottom:"4px", color:"white" }}>✍️ Scrivi la tua risposta</p>
+                    <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.55)", fontWeight:700, lineHeight:1.5 }}>
+                      🎤 Premi il tasto <strong style={{ color:"#a78bfa" }}>microfono della tastiera</strong> per rispondere a voce
+                    </p>
+                  </div>
+                  <textarea
+                    value={interrogTrascrizione}
+                    onChange={e => setInterrogTrascrizione(e.target.value)}
+                    placeholder="Scrivi qui... oppure usa il 🎤 sulla tastiera"
+                    rows={4}
+                    style={{ width:"100%", padding:"14px", borderRadius:"14px", background: luce ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.07)", border:`1px solid ${luce ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.15)"}`, color: luce ? "#0a0a20" : "white", fontSize:"15px", fontFamily:"'Nunito'", fontWeight:600, outline:"none", resize:"none", boxSizing:"border-box", lineHeight:1.6 }}
+                  />
+                  <div style={{ display:"flex", gap:"10px", marginTop:"12px" }}>
+                    <button onClick={() => setInterrogMicOverlay(true)} style={{ ...S.btn, ...S.btnS, flex:1, fontSize:"13px", padding:"12px 8px" }}>🎤 Mic browser</button>
+                    <button onClick={() => { if (interrogTrascrizione.trim()) setInterrogFase("conferma"); }} disabled={!interrogTrascrizione.trim()} style={{ ...S.btn, flex:2, background:interrogTrascrizione.trim()?"linear-gradient(135deg,#6366f1,#8b5cf6)":"rgba(255,255,255,0.08)", border:"none", opacity:interrogTrascrizione.trim()?1:0.5 }}>✅ Conferma risposta</button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <button onClick={() => setInterrogMicOverlay(true)} style={{ ...S.btn, background:"linear-gradient(135deg,#ef4444,#dc2626)", border:"none", fontSize:"16px", padding:"18px", marginBottom:"8px" }}>
+                    🎤 Rispondi con la voce
+                  </button>
+                  <p style={{ textAlign:"center", fontSize:"11px", color:"rgba(255,255,255,0.25)", fontWeight:600 }}>Voce: Chrome e Safari — Mic: premi Rispondi</p>
+                </>
+              )}
             </div>
           )}
 
