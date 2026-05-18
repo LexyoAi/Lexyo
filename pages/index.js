@@ -4800,7 +4800,7 @@ export default function Home() {
               <p style={{ color:"rgba(255,255,255,0.5)", fontSize:"13px", fontWeight:600 }}>Indovina con meno indizi per guadagnare più stelle!</p>
               <p style={{ color:"#fbbf24", fontSize:"13px", fontWeight:800, marginTop:"8px" }}>⭐ 1 indizio = 5 stelle · 5 indizi = 1 stella</p>
             </div>
-            <button onClick={avviaChiSono} style={{ ...S.btn, background:"linear-gradient(135deg,#29C9FF,#007ACC)", maxWidth:"280px", fontWeight:900 }}>Inizia! 🎭</button>
+            <button onClick={() => avviaChiSono()} style={{ ...S.btn, background:"linear-gradient(135deg,#29C9FF,#007ACC)", maxWidth:"280px", fontWeight:900 }}>Inizia! 🎭</button>
           </div>
         </div>
       );
@@ -5095,20 +5095,16 @@ export default function Home() {
 
     const avviaParole = async (forceNew = false) => {
       setWordLoading(true); setCwSelected(null); setCwDir('H');
-      const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 20000);
       try {
         const token = await getAccessToken();
         const r = await fetch("/api/parole-crociate", {
           method:"POST", headers:{"Content-Type":"application/json"},
           body:JSON.stringify({materia:MATERIE[materia]?.label,classe:prog?.label,argomento:giocaArgomento,sesso:figlioAttivo?.sesso||"M",accessToken:token,forceNew}),
-          signal: ctrl.signal,
         });
         const d = await r.json();
         if(d.parole&&d.parole.length>0){ setWordGame(buildCrossword(d.parole)); setWordInputs({}); setWordVerificato(false); }
-        else setWordGame(null);
-      } catch { setWordGame(null); }
-      clearTimeout(t);
+        else { alert("Errore: " + (d.errore || "nessuna parola ricevuta")); setWordGame(null); }
+      } catch(e) { alert("Errore connessione: " + (e?.message || "riprova")); setWordGame(null); }
       setWordLoading(false);
     };
 
@@ -5185,7 +5181,7 @@ export default function Home() {
             <p style={{color:"rgba(255,255,255,0.5)",fontSize:"14px",fontWeight:600}}>6 parole su: <strong style={{color:"white"}}>{giocaArgomento}</strong></p>
             <p style={{color:"#fbbf24",fontSize:"13px",fontWeight:700,marginTop:"4px"}}>Ogni parola corretta = 1 ⭐</p>
           </div>
-          <button onClick={avviaParole} style={{...S.btn,...S.btnP,maxWidth:"300px"}}>Inizia il Gioco →</button>
+          <button onClick={() => avviaParole()} style={{...S.btn,...S.btnP,maxWidth:"300px"}}>Inizia il Gioco →</button>
         </div>
       </div>
     );
@@ -5263,9 +5259,9 @@ export default function Home() {
 
           {/* GRID */}
           <div style={{display:"flex",justifyContent:"center",padding:"14px 8px",overflowX:"auto"}}>
-            <div style={{display:"inline-block",borderRadius:"10px",overflow:"hidden",border:"2px solid rgba(0,0,0,0.15)",boxShadow:"0 8px 32px rgba(0,0,0,0.25)",background:"#111"}}>
+            <div style={{display:"inline-block",border:"2px solid #111",background:"#111",gap:"1px"}}>
               {wordGame.grid.map((row,r)=>(
-                <div key={r} style={{display:"flex"}}>
+                <div key={r} style={{display:"flex",gap:"1px"}}>
                   {row.map((cell,c)=>{
                     const k=`${r},${c}`,isActive=cell!==null;
                     const isSelected=cwSelected?.r===r&&cwSelected?.c===c;
@@ -5277,21 +5273,19 @@ export default function Home() {
                     let bg='#111';
                     let txtColor='#111';
                     if(isActive){
-                      if(wordVerificato&&letter&&letter===correctLetter){ bg='rgba(16,185,129,0.2)'; txtColor='#059669'; }
-                      else if(isWrong){ bg='rgba(239,68,68,0.15)'; txtColor='#dc2626'; }
-                      else if(isSelected){ bg=t.primario; txtColor='white'; }
-                      else if(inWord){ bg='rgba(255,255,255,0.92)'; txtColor='#111'; }
+                      if(wordVerificato&&letter&&letter===correctLetter){ bg='#d1fae5'; txtColor='#059669'; }
+                      else if(isWrong){ bg='#fee2e2'; txtColor='#dc2626'; }
+                      else if(isSelected){ bg='#ffef9e'; txtColor='#111'; }
                       else{ bg='white'; txtColor='#111'; }
                     }
                     return (
                       <div key={c} onClick={()=>handleCellClick(r,c)} style={{
                         width:CELL,height:CELL,background:bg,
-                        border:isActive?`1px solid rgba(0,0,0,${isSelected?0.4:0.15})`:"none",
                         boxSizing:"border-box",position:"relative",
                         display:"flex",alignItems:"center",justifyContent:"center",
                         cursor:isActive&&!wordVerificato?"pointer":"default"
                       }}>
-                        {num&&isActive&&<span className="cw-letter" style={{position:"absolute",top:1,left:2,fontSize:CELL>27?"7px":"5px",fontWeight:900,color:isSelected?"rgba(255,255,255,0.85)":"rgba(0,0,0,0.4)",lineHeight:1,zIndex:1,pointerEvents:"none"}}>{num}</span>}
+                        {num&&isActive&&<span className="cw-letter" style={{position:"absolute",top:1,left:2,fontSize:CELL>27?"7px":"5px",fontWeight:900,color:"rgba(0,0,0,0.45)",lineHeight:1,zIndex:1,pointerEvents:"none"}}>{num}</span>}
                         {isActive&&<span className="cw-letter" style={{fontSize:CELL>27?"15px":"12px",fontWeight:900,lineHeight:1,color:txtColor,pointerEvents:"none"}}>{letter}</span>}
                       </div>
                     );
