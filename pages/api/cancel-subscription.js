@@ -50,6 +50,6 @@ export default async function handler(req, res) {
     return res.json({ ok: true, fine_periodo: fineperiodo });
   } catch (e) {
     console.error("[cancel-subscription]", e.message);
-    return res.status(500).json({ errore: e.message });
+    return res.status(500).json({ errore: "Errore temporaneo. Riprova." });
   }
 }

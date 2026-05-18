@@ -14,7 +14,8 @@ export default async function handler(req, res) {
   const isPremium = await verifyPremium(accessToken);
 
   if (!isPremium) {
-    const check = await checkTrialUsage(fingerprint, "sblocca");
+    const fp = (fingerprint && fingerprint !== "ssr") ? fingerprint : null;
+    const check = await checkTrialUsage(fp, "sblocca");
     if (!check.consentito) {
       return res.status(429).json({
         errore: "Hai già sbloccato 3 soluzioni oggi. Torna domani oppure abbonati per soluzioni illimitate!",

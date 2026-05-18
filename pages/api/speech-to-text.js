@@ -2,11 +2,16 @@ import formidable from "formidable";
 import { createReadStream } from "fs";
 import FormData from "form-data";
 import fetch from "node-fetch";
+import { verifyAuth } from "../../lib/verify-auth";
 
 export const config = { api: { bodyParser: false } };
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
+
+  const token = req.headers.authorization?.startsWith("Bearer ") ? req.headers.authorization.slice(7) : null;
+  const user = await verifyAuth(token);
+  if (!user) return res.status(401).json({ errore: "Accesso richiesto. Effettua il login." });
 
   const form = formidable({ maxFileSize: 25 * 1024 * 1024 });
 

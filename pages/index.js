@@ -187,7 +187,7 @@ export default function Home() {
   const [esameOrale, setEsameOrale] = useState(null);
   const [esameStorico, setEsameStorico] = useState(() => {
     if (typeof window !== "undefined") {
-      try { return JSON.parse(localStorage.getItem("lexyo_esame_storico") || "[]"); } catch {}
+      try { return JSON.parse(localStorage.getItem("lexyo_esame_storico") || "[]"); } catch { return []; }
     }
     return [];
   });
@@ -203,7 +203,7 @@ export default function Home() {
   // ── Coriandoli & record ──
   const [mostraCoriandoli, setMostraCoriandoli] = useState(false);
   const [recordGiochi, setRecordGiochi] = useState(() => {
-    if (typeof window !== "undefined") { try { return JSON.parse(localStorage.getItem("lexyo_record_giochi") || "{}"); } catch {} }
+    if (typeof window !== "undefined") { try { return JSON.parse(localStorage.getItem("lexyo_record_giochi") || "{}"); } catch { return {}; } }
     return {};
   });
   // ── Trasforma Lex ──
@@ -926,16 +926,53 @@ export default function Home() {
     if (!email.trim() || !password.trim()) return;
     setAuthLoading(true); setAuthError(""); setAuthSuccess("");
     try {
+      const doLogin = async (loginEmail, loginPassword) => {
+        const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPassword });
+        if (error) return { error };
+        setUtente(data.user);
+        const { data: figliDB } = await supabase.from("figli").select("*").eq("genitore_id", data.user.id);
+        const createdAt2 = new Date(data.user.created_at);
+        const giorniPassati2 = Math.floor((Date.now() - createdAt2.getTime()) / (1000 * 60 * 60 * 24));
+        setTrialGiorni(Math.max(0, 3 - giorniPassati2));
+        let profilo2 = null;
+        try {
+          const pr2 = await fetch("/api/get-profilo", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${data.session?.access_token || ""}` },
+            body: JSON.stringify({ email: data.user.email, fingerprint: getFingerprint() }),
+          });
+          const pd2 = await pr2.json();
+          if (pd2.profilo) profilo2 = pd2.profilo;
+        } catch {}
+        const profilo = profilo2;
+        const isPremium2 = profilo?.abbonamento_attivo === true || profilo?.is_admin === true;
+        if (profilo) {
+          setProfiloUtente(profilo);
+          if (isPremium2) setPiano("premium");
+          setReferralCount(profilo.referral_count || 0);
+          setMesiGratisGuadagnati(profilo.mesi_gratis_guadagnati || 0);
+          if (profilo.referral_code) setReferralCode(profilo.referral_code);
+        }
+        if (profilo?.trial_usato === true && !isPremium2) setTrialGiorni(0);
+        if (profilo?.trial_avviato === true) setTrialAvviato(true);
+        if (figliDB && figliDB.length > 0) {
+          const figliFormattati = figliDB.map(f => ({ ...f, badge: f.badge || [], preparazione: f.preparazione || {} }));
+          setFigli(figliFormattati);
+          setFiglioAttivo(figliFormattati[0]);
+        }
+        setScreen("home");
+        return { error: null };
+      };
+
       if (authMode === "register") {
         const { data: signUpData, error } = await supabase.auth.signUp({ email: email.trim(), password: password.trim() });
-        if (error) { setAuthError(error.message === "User already registered" ? "Email già registrata. Accedi." : error.message); }
-        else {
-          if (signUpData?.session) { setUtente(signUpData.user); }
-          else { setAuthMode("login"); }
-          // Associa referral: usa l'input manuale o il codice salvato da URL
+        if (error && error.message !== "User already registered") {
+          setAuthError(error.message);
+        } else {
+          // Associa referral solo per nuove registrazioni
           const refCode = referralInput.trim().toUpperCase() ||
             (typeof window !== "undefined" ? localStorage.getItem("lexyo_referral_code") : null);
-          if (refCode && signUpData?.user?.id) {
+          if (!error && refCode && signUpData?.user?.id) {
             const { data: referente } = await supabase.from("profili").select("id,referral_count,mesi_gratis_guadagnati").eq("referral_code", refCode).maybeSingle();
             if (referente && referente.id !== signUpData.user.id) {
               const nuovoCount = (referente.referral_count || 0) + 1;
@@ -946,55 +983,13 @@ export default function Home() {
             setReferralInput("");
             setReferralDaUrl(false);
           }
+          // Accesso automatico dopo registrazione (o se email già registrata)
+          const { error: loginError } = await doLogin(email.trim(), password.trim());
+          if (loginError) setAuthError("Email già registrata. Controlla la password.");
         }
       } else {
-        const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: password.trim() });
-        if (error) { setAuthError("Email o password errati."); }
-        else {
-          setUtente(data.user);
-          // Carica figli dal database
-          const { data: figliDB } = await supabase.from("figli").select("*").eq("genitore_id", data.user.id);
-          // Calcola giorni trial rimasti dalla data di registrazione
-          const createdAt2 = new Date(data.user.created_at);
-          const giorniPassati2 = Math.floor((Date.now() - createdAt2.getTime()) / (1000 * 60 * 60 * 24));
-          const giorniRimasti2 = Math.max(0, 3 - giorniPassati2);
-          setTrialGiorni(giorniRimasti2);
-
-          // Carica profilo via API server-side (usa service key, bypassa RLS)
-          let profilo2 = null;
-          try {
-            const pr2 = await fetch("/api/get-profilo", {
-              method: "POST",
-              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${data.session?.access_token || ""}` },
-              body: JSON.stringify({ email: data.user.email, fingerprint: getFingerprint() }),
-            });
-            const pd2 = await pr2.json();
-            if (pd2.profilo) profilo2 = pd2.profilo;
-            else console.warn("[handleAuth] profilo non trovato per", data.user.email);
-          } catch (pe2) { console.error("[handleAuth] get-profilo error:", pe2.message); }
-          const profilo = profilo2;
-          const isPremium2 = profilo?.abbonamento_attivo === true || profilo?.is_admin === true;
-          if (profilo) {
-            setProfiloUtente(profilo);
-            if (isPremium2) setPiano("premium");
-            setReferralCount(profilo.referral_count || 0);
-            setMesiGratisGuadagnati(profilo.mesi_gratis_guadagnati || 0);
-            if (profilo.referral_code) setReferralCode(profilo.referral_code);
-          }
-          if (profilo?.trial_usato === true && !isPremium2) setTrialGiorni(0);
-          if (profilo?.trial_avviato === true) setTrialAvviato(true);
-          if (figliDB && figliDB.length > 0) {
-            const figliFormattati = figliDB.map(f => ({ ...f, badge: f.badge || [], preparazione: f.preparazione || {} }));
-            setFigli(figliFormattati);
-            setFiglioAttivo(figliFormattati[0]);
-            setScreen("home");
-          } else if (isPremium2) {
-            // Premium/admin senza figli → home (può aggiungere figli da lì)
-            setScreen("home");
-          } else {
-            setScreen("scegli_piano");
-          }
-        }
+        const { error: loginError } = await doLogin(email.trim(), password.trim());
+        if (loginError) setAuthError("Email o password errati.");
       }
     } catch (e) { setAuthError("Errore di connessione. Riprova."); }
     setAuthLoading(false);
@@ -3771,7 +3766,7 @@ export default function Home() {
           setInterrogAudio(d.audio || null);
           setInterrogFase("domanda");
         } catch { alert("Errore di connessione. Riprova."); setInterrogFase("carica"); }
-      });
+      }, () => { alert("Foto non valida. Riprova con un'altra foto."); setInterrogFase("carica"); });
     };
 
     const avviaRicognizione = async () => {
@@ -3811,7 +3806,8 @@ export default function Home() {
           const filename = (mr.mimeType || "").includes("mp4") ? "audio.mp4" : "audio.webm";
           const fd = new FormData();
           fd.append("audio", blob, filename);
-          const res = await fetch("/api/speech-to-text", { method: "POST", body: fd });
+          const sttToken = await getAccessToken();
+          const res = await fetch("/api/speech-to-text", { method: "POST", body: fd, headers: { Authorization: `Bearer ${sttToken}` } });
           const data = await res.json();
           if (data.testo?.trim()) {
             setInterrogTrascrizione(data.testo.trim());
@@ -3832,14 +3828,13 @@ export default function Home() {
     };
 
     const fermaRicognizione = () => {
-      window._interrogAborted = false;
       if (window._mediaRecorder?.state === "recording") {
         try { window._mediaRecorder.stop(); } catch {}
       }
     };
 
     const inviaRisposta = async () => {
-      if (!interrogTrascrizione.trim()) return;
+      if (!interrogTrascrizione.trim() || interrogFase === "valuta") return;
       const nuovaConv = [...interrogConv, { domanda: interrogDomanda, risposta: interrogTrascrizione }];
       setInterrogConv(nuovaConv);
       setInterrogTrascrizione("");
@@ -4719,7 +4714,7 @@ export default function Home() {
             <p style={{ fontSize:"14px", color:"#fbbf24", fontWeight:800, marginTop:"8px" }}>+{isRecord ? svState.punteggio * 2 : svState.punteggio} ⭐</p>
           </div>
           <div style={{ display:"flex", gap:"10px", width:"100%", maxWidth:"340px", flexWrap:"wrap" }}>
-            <button onClick={() => { const d = svState.domande; setSvState({ fase:"countdown", countdown:3, domande:d, corrente:0, punteggio:0, tempoRimasto:60 }); }} style={{ flex:1, padding:"14px", borderRadius:"14px", background:"rgba(255,229,0,0.15)", color:"#FFE500", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", border:"1px solid rgba(255,229,0,0.35)", cursor:"pointer" }}>🔄 Rigioca</button>
+            <button onClick={() => avviaSfida(true)} style={{ flex:1, padding:"14px", borderRadius:"14px", background:"rgba(255,229,0,0.15)", color:"#FFE500", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", border:"1px solid rgba(255,229,0,0.35)", cursor:"pointer" }}>🔄 Rigioca</button>
             <button onClick={() => { setSvState(null); avviaSfida(true); }} style={{ flex:1, padding:"14px", borderRadius:"14px", background:"linear-gradient(135deg,#FFE500,#FFB300)", color:"#0a0a20", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", border:"none", cursor:"pointer" }}>🆕 Nuovo Gioco</button>
           </div>
           <button onClick={() => goScreen("gioca")} style={{ padding:"12px 28px", borderRadius:"14px", background:"rgba(255,255,255,0.08)", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", border:"1px solid rgba(255,255,255,0.15)", cursor:"pointer" }}>← Indietro</button>
@@ -4734,13 +4729,13 @@ export default function Home() {
     const matInfo = MATERIE[materia] || MATERIE.matematica;
     const prog2 = figlioAttivo ? CLASSI[figlioAttivo.classe] : null;
 
-    const avviaChiSono = async () => {
+    const avviaChiSono = async (forceNew = false) => {
       setCsState({ fase:"loading" });
       try {
         const token = await getAccessToken();
         const r = await fetch("/api/chi-sono", {
           method:"POST", headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({ materia: matInfo.label, classe: prog2?.label, argomento: giocaArgomento, sesso: figlioAttivo?.sesso || "M", accessToken: token }),
+          body: JSON.stringify({ materia: matInfo.label, classe: prog2?.label, argomento: giocaArgomento, sesso: figlioAttivo?.sesso || "M", accessToken: token, forceNew }),
         });
         const d = await r.json();
         if (d.errore || !d.soggetto) { setCsState(null); alert(d.errore || "Errore. Riprova."); return; }
@@ -4880,7 +4875,7 @@ export default function Home() {
                 <p style={{ fontSize:"20px", fontWeight:900, color:"#00F090", marginBottom:"8px" }}>🎉 Brav{figlioAttivo?.sesso === "F" ? "a" : "o"}! Risposta corretta!</p>
                 <p style={{ color:"#fbbf24", fontWeight:800, fontSize:"15px", marginBottom:"16px" }}>+{csState.stelleGuadagnate * 3} ⭐</p>
                 <div style={{ display:"flex", gap:"10px", justifyContent:"center", flexWrap:"wrap" }}>
-                  <button onClick={() => { setCsRisposta(""); setCsState(prev => ({ ...prev, fase:"gioco", indizioCorrente:0, stelleGuadagnate:5, messaggioVerifica:null })); }} style={{ padding:"12px 18px", borderRadius:"14px", background:"rgba(41,201,255,0.15)", border:"1px solid rgba(41,201,255,0.35)", color:"#29C9FF", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", cursor:"pointer" }}>🔄 Rigioca</button>
+                  <button onClick={() => { setCsRisposta(""); setCsState(null); avviaChiSono(true); }} style={{ padding:"12px 18px", borderRadius:"14px", background:"rgba(41,201,255,0.15)", border:"1px solid rgba(41,201,255,0.35)", color:"#29C9FF", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", cursor:"pointer" }}>🔄 Rigioca</button>
                   <button onClick={() => { setCsState(null); setCsRisposta(""); avviaChiSono(); }} style={{ padding:"12px 18px", borderRadius:"14px", background:"linear-gradient(135deg,#29C9FF,#007ACC)", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", cursor:"pointer" }}>🆕 Nuovo Gioco</button>
                   <button onClick={() => goScreen("gioca")} style={{ padding:"12px 18px", borderRadius:"14px", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", cursor:"pointer" }}>← Indietro</button>
                 </div>
@@ -4891,7 +4886,7 @@ export default function Home() {
               <div style={{ textAlign:"center", marginTop:"16px" }}>
                 <p style={{ fontSize:"16px", fontWeight:800, color:"rgba(255,255,255,0.7)", marginBottom:"16px" }}>Ci vuole più pratica! 💪</p>
                 <div style={{ display:"flex", gap:"10px", justifyContent:"center", flexWrap:"wrap" }}>
-                  <button onClick={() => { setCsRisposta(""); setCsState(prev => ({ ...prev, fase:"gioco", indizioCorrente:0, stelleGuadagnate:5, messaggioVerifica:null })); }} style={{ padding:"12px 18px", borderRadius:"14px", background:"rgba(41,201,255,0.15)", border:"1px solid rgba(41,201,255,0.35)", color:"#29C9FF", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", cursor:"pointer" }}>🔄 Rigioca</button>
+                  <button onClick={() => { setCsRisposta(""); setCsState(null); avviaChiSono(true); }} style={{ padding:"12px 18px", borderRadius:"14px", background:"rgba(41,201,255,0.15)", border:"1px solid rgba(41,201,255,0.35)", color:"#29C9FF", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", cursor:"pointer" }}>🔄 Rigioca</button>
                   <button onClick={() => { setCsState(null); setCsRisposta(""); avviaChiSono(); }} style={{ padding:"12px 18px", borderRadius:"14px", background:"linear-gradient(135deg,#29C9FF,#007ACC)", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"13px", cursor:"pointer" }}>🆕 Nuovo Gioco</button>
                   <button onClick={() => goScreen("gioca")} style={{ padding:"12px 18px", borderRadius:"14px", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", cursor:"pointer" }}>← Indietro</button>
                 </div>
@@ -5031,7 +5026,7 @@ export default function Home() {
               <p style={{ fontSize:"24px", fontWeight:900, marginBottom:"6px" }}>{corrette>=6?"Fantastico! 🎉":corrette>=4?"Bravo! 💪":"Riprova! 🔄"}</p>
               <p style={{ color:"rgba(255,255,255,0.6)", fontSize:"14px", fontWeight:600, marginBottom:"12px" }}>{corrette} risposte giuste su {mcQuiz.length} — +{corrette*2} ⭐</p>
               <div style={{ display:"flex", gap:"8px", marginBottom:"8px" }}>
-                <button onClick={() => { setMcRisposte([]); setMcFine(false); }} style={{ ...S.btn, ...S.btnS, flex:1 }}>🔄 Rigioca</button>
+                <button onClick={() => avviaQuizMC(true)} style={{ ...S.btn, ...S.btnS, flex:1 }}>🔄 Rigioca</button>
                 <button onClick={() => { setMcQuiz(null); setMcRisposte([]); setMcFine(false); avviaQuizMC(true); }} style={{ ...S.btn, ...S.btnP, flex:1 }}>🆕 Nuovo Gioco</button>
               </div>
               <button onClick={() => goScreen("gioca")} style={{ ...S.btn, ...S.btnS }}>← Indietro</button>
@@ -5098,13 +5093,13 @@ export default function Home() {
       };
     };
 
-    const avviaParole = async () => {
+    const avviaParole = async (forceNew = false) => {
       setWordLoading(true); setCwSelected(null); setCwDir('H');
       try {
         const token = await getAccessToken();
         const r = await fetch("/api/parole-crociate", {
           method:"POST", headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({materia:MATERIE[materia]?.label,classe:prog?.label,argomento:giocaArgomento,sesso:figlioAttivo?.sesso||"M",accessToken:token}),
+          body:JSON.stringify({materia:MATERIE[materia]?.label,classe:prog?.label,argomento:giocaArgomento,sesso:figlioAttivo?.sesso||"M",accessToken:token,forceNew}),
         });
         const d = await r.json();
         if(d.parole&&d.parole.length>0){ setWordGame(buildCrossword(d.parole)); setWordInputs({}); setWordVerificato(false); }
@@ -5346,7 +5341,7 @@ export default function Home() {
                 <p style={{fontSize:"22px",fontWeight:900,marginBottom:"6px"}}>{corrette>=(wordGame?.placed?.length||0)*0.8?"Bravissimo! 🎉":"Quasi! 💪"}</p>
                 <p style={{color:"rgba(255,255,255,0.6)",fontSize:"14px",fontWeight:600,marginBottom:"14px"}}>{corrette} parole su {wordGame?.placed?.length} — +{corrette} ⭐</p>
                 <div style={{display:"flex",gap:"8px",marginBottom:"8px"}}>
-                  <button onClick={()=>{setWordInputs({});setWordVerificato(false);setCwSelected(null);setCwDir('H');}} style={{...S.btn,...S.btnS,flex:1}}>🔄 Rigioca</button>
+                  <button onClick={()=>avviaParole(true)} style={{...S.btn,...S.btnS,flex:1}}>🔄 Rigioca</button>
                   <button onClick={()=>{setWordGame(null);setWordInputs({});setWordVerificato(false);setCwSelected(null);setCwDir('H');avviaParole();}} style={{...S.btn,...S.btnP,flex:1}}>🆕 Nuovo Gioco</button>
                 </div>
                 <button onClick={()=>goScreen("gioca")} style={{...S.btn,...S.btnS}}>← Indietro</button>
@@ -7213,8 +7208,8 @@ export default function Home() {
     };
 
     const rigioca = () => {
-      if (!ingleseFonetica) return;
-      setIngleseVocSession(buildSession(ingleseFonetica));
+      setIngleseFonetica(null);
+      setIngleseFoneticaLoading(false);
       setIngleseVocIdx(0);
       setIngleseVocRisposta(null);
       setIngleseVocRisposte([]);

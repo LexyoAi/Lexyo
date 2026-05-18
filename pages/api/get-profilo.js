@@ -72,6 +72,6 @@ export default async function handler(req, res) {
     }
   } catch (e) {
     console.error("[get-profilo] exception:", e.message);
-    return res.status(500).json({ errore: e.message });
+    return res.status(500).json({ errore: "Errore temporaneo. Riprova." });
   }
 }

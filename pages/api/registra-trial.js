@@ -14,21 +14,22 @@ export default async function handler(req, res) {
   const { data: { user }, error: authError } = await supabase.auth.getUser(token);
   if (authError || !user) return res.status(401).json({ ok: false });
 
-  const { fingerprint, email } = req.body;
+  const { fingerprint } = req.body;
+  const emailAuth = user.email?.trim().toLowerCase() || null;
   const ip = req.headers["x-nf-client-connection-ip"]
     || (req.headers["x-forwarded-for"] || "").split(",")[0].trim()
     || req.socket?.remoteAddress
     || "unknown";
 
   try {
-    await supabase.from("trial_fingerprints").insert([{ ip, fingerprint, email: email || null }]);
+    await supabase.from("trial_fingerprints").insert([{ ip, fingerprint, email: emailAuth }]);
   } catch (e) {
     console.error("registra-trial error:", e.message);
   }
 
-  if (email) {
+  if (emailAuth) {
     try {
-      await supabase.from("profili").update({ trial_avviato: true }).ilike("email", email.trim().toLowerCase());
+      await supabase.from("profili").update({ trial_avviato: true }).ilike("email", emailAuth);
     } catch (_) {}
   }
 

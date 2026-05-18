@@ -16,7 +16,8 @@ export default async function handler(req, res) {
   const isPremium = await verifyPremium(accessToken);
 
   if (!isPremium) {
-    const check = await checkTrialUsage(fingerprint, "chat");
+    const fp = (fingerprint && fingerprint !== "ssr") ? fingerprint : null;
+    const check = await checkTrialUsage(fp, "chat");
     if (!check.consentito) {
       return res.status(429).json({
         risposta: "💬 Hai esaurito i messaggi disponibili nella prova gratuita.\nAbbonati per messaggi illimitati!",

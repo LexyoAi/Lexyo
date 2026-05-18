@@ -16,7 +16,8 @@ export default async function handler(req, res) {
 
   const isPremium = await verifyPremium(accessToken);
   if (!isPremium) {
-    const check = await checkTrialUsage(fingerprint, "dettato");
+    const fp = (fingerprint && fingerprint !== "ssr") ? fingerprint : null;
+    const check = await checkTrialUsage(fp, "dettato");
     if (!check.consentito) {
       return res.status(429).json({ errore: "Hai già corretto un dettato oggi. Torna domani o abbonati!", trial_esaurito: true });
     }

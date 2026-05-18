@@ -26,7 +26,8 @@ export default async function handler(req, res) {
   }
 
   if (!isPremium && (fase === "analisi" || fase === "correzione")) {
-    const check = await checkTrialUsage(fingerprint, "foto");
+    const fp = (fingerprint && fingerprint !== "ssr") ? fingerprint : null;
+    const check = await checkTrialUsage(fp, "foto");
     if (!check.consentito) {
       return res.status(429).json({
         risposta: "📸 Hai usato tutte le foto disponibili nella prova gratuita.\nAbbonati per foto illimitate!",
