@@ -195,9 +195,6 @@ html[data-tema="light"] textarea::placeholder {
 }
 .vfade { animation: fadeSlideIn 0.25s ease forwards; }
 
-/* ── Lettere cruciverba: sempre bianche (sfondo sempre scuro) ── */
-.cw-letter { color: white !important; }
-html[data-tema="light"] .cw-letter { color: white !important; }
 
 @keyframes shake {
   0%, 100% { transform: translateX(0); }

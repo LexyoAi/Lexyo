@@ -7080,53 +7080,25 @@ export default function Home() {
         </div>
 
         <div style={{ flex:1, overflowY:"auto", padding:"18px 16px 120px" }}>
-
-          <p style={{ fontSize:"10px", fontWeight:800, color: luce ? "rgba(0,0,30,0.35)" : "rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"10px" }}>Scegli il mese</p>
-          <div style={{ display:"flex", gap:"6px", marginBottom:"20px", overflowX:"auto", paddingBottom:"4px", WebkitOverflowScrolling:"touch" }}>
-            {mesiShortIng.map((nome, i) => {
-              const m = MESI_SCUOLA_ING[i];
-              const sel = ingleseMese === m;
-              return (
-                <button key={m} onClick={() => setIngleseMese(sel ? null : m)} style={{ padding:"9px 16px", borderRadius:"20px", background: sel ? "rgba(168,85,247,0.22)" : luce ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)", border:`2px solid ${sel ? "#a855f7" : luce ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)"}`, color: sel ? (luce ? "#7e22ce" : "white") : luce ? "rgba(0,0,30,0.65)" : "rgba(255,255,255,0.65)", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", cursor:"pointer", whiteSpace:"nowrap", flexShrink:0, transition:"all 0.18s" }}>
-                  {nome}
-                </button>
-              );
-            })}
+          <p style={{ fontSize:"10px", fontWeight:800, color: luce ? "rgba(0,0,30,0.35)" : "rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"12px" }}>Cosa vuoi fare?</p>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px" }}>
+            {[
+              { label:"Vocabolario",    sub:"Scegli mese e argomento",  emoji:"🔤", s:"inglese_vocabolario", bg:"linear-gradient(145deg,#29C9FF,#007ACC)", border:"linear-gradient(135deg,#0369A1,#29C9FF)" },
+              { label:"Grammatica",     sub:"Scegli mese e argomento",  emoji:"📝", s:"inglese_grammatica",   bg:"linear-gradient(145deg,#C084FC,#9333EA)", border:"linear-gradient(135deg,#7C3AED,#C084FC)" },
+              { label:"Quiz Inglese",   sub:"Scegli mese e argomento",  emoji:"🎯", s:"inglese_quiz",         bg:"linear-gradient(145deg,#00F090,#00A855)", border:"linear-gradient(135deg,#059669,#00F090)" },
+              { label:"Conversazione",  sub:"Scegli mese e argomento",  emoji:"💬", s:"inglese_conversazione",bg:"linear-gradient(145deg,#FF8533,#DD4400)", border:"linear-gradient(135deg,#C2410C,#FF8533)" },
+            ].map(a => (
+              <button key={a.s} className="hcard" onClick={() => goScreen(a.s)} style={{ padding:"22px 12px 18px", borderRadius:"22px", background:a.bg, boxShadow:"0 6px 18px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", textAlign:"left", cursor:"pointer", fontFamily:"'Nunito'", "--card-border":a.border }}>
+                <div className="card-shine" />
+                <div className="card-depth" />
+                <div className="card-content">
+                  <div style={{ fontSize:"30px", marginBottom:"10px" }}>{a.emoji}</div>
+                  <p style={{ margin:0, fontSize:"13px", fontWeight:900, color:"#111", lineHeight:1.2 }}>{a.label}</p>
+                  <p style={{ margin:"4px 0 0", fontSize:"10px", fontWeight:700, color:"rgba(0,0,0,0.5)" }}>{a.sub}</p>
+                </div>
+              </button>
+            ))}
           </div>
-
-          {ingMeseData ? (
-            <div className="vfade">
-              <div style={{ background: luce ? "rgba(168,85,247,0.08)" : "rgba(168,85,247,0.12)", borderRadius:"16px", padding:"12px 16px", marginBottom:"20px", border:`1px solid ${luce ? "rgba(168,85,247,0.25)" : "rgba(168,85,247,0.3)"}` }}>
-                <p style={{ margin:"0 0 3px", fontSize:"10px", fontWeight:800, color:"#a855f7", textTransform:"uppercase", letterSpacing:"1px" }}>📝 Grammatica di {MESI_LABEL_ING[MESI_SCUOLA_ING.indexOf(ingleseMese)]}</p>
-                <p style={{ margin:0, fontSize:"13px", fontWeight:700, color: luce ? "#6b21a8" : "#d8b4fe" }}>{ingMeseData.grammatica}</p>
-              </div>
-
-              <p style={{ fontSize:"10px", fontWeight:800, color: luce ? "rgba(0,0,30,0.35)" : "rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"12px" }}>Cosa vuoi fare?</p>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px" }}>
-                {[
-                  { label:"Vocabolario",    sub:"10 parole + fonetica",     emoji:"🔤", s:"inglese_vocabolario", bg:"linear-gradient(145deg,#29C9FF,#007ACC)", border:"linear-gradient(135deg,#0369A1,#29C9FF)" },
-                  { label:"Grammatica",     sub:"6 esercizi pratici",       emoji:"📝", s:"inglese_grammatica",   bg:"linear-gradient(145deg,#C084FC,#9333EA)", border:"linear-gradient(135deg,#7C3AED,#C084FC)" },
-                  { label:"Quiz Inglese",   sub:"10 domande",               emoji:"🎯", s:"inglese_quiz",         bg:"linear-gradient(145deg,#00F090,#00A855)", border:"linear-gradient(135deg,#059669,#00F090)" },
-                  { label:"Conversazione",  sub:"Parla con Lex in inglese", emoji:"💬", s:"inglese_conversazione",bg:"linear-gradient(145deg,#FF8533,#DD4400)", border:"linear-gradient(135deg,#C2410C,#FF8533)" },
-                ].map(a => (
-                  <button key={a.s} className="hcard" onClick={() => goScreen(a.s)} style={{ padding:"22px 12px 18px", borderRadius:"22px", background:a.bg, boxShadow:"0 6px 18px rgba(0,0,0,0.35), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", textAlign:"left", cursor:"pointer", fontFamily:"'Nunito'", "--card-border":a.border }}>
-                    <div className="card-shine" />
-                    <div className="card-depth" />
-                    <div className="card-content">
-                      <div style={{ fontSize:"30px", marginBottom:"10px" }}>{a.emoji}</div>
-                      <p style={{ margin:0, fontSize:"13px", fontWeight:900, color:"#111", lineHeight:1.2 }}>{a.label}</p>
-                      <p style={{ margin:"4px 0 0", fontSize:"10px", fontWeight:700, color:"rgba(0,0,0,0.5)" }}>{a.sub}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div style={{ textAlign:"center", padding:"50px 20px", color: luce ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.25)" }}>
-              <p style={{ fontSize:"36px", margin:"0 0 12px" }}>👆</p>
-              <p style={{ fontSize:"14px", fontWeight:700 }}>Scegli un mese per iniziare</p>
-            </div>
-          )}
         </div>
         <Nav />
       </div>
@@ -7410,7 +7382,41 @@ export default function Home() {
       } catch {}
       setIngleseGramLoading(false);
     };
-    if (!ingleseGramEsercizi && !ingleseGramLoading) caricaGram();
+    if (ingleseMese && !ingleseGramEsercizi && !ingleseGramLoading) caricaGram();
+
+    if (!ingleseMese) return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <div style={S.hdr}>
+          <button onClick={() => goScreen("inglese")} style={S.back}>←</button>
+          <div>
+            <p style={{ fontWeight:900, fontSize:"17px", margin:0 }}>📝 Grammatica</p>
+            <p style={{ fontSize:"11px", color: luce ? "rgba(0,0,30,0.4)" : "rgba(255,255,255,0.4)", fontWeight:600, margin:0 }}>{CLASSI[figlioAttivo?.classe]?.label} — scegli mese e argomento</p>
+          </div>
+        </div>
+        <div style={{ flex:1, overflowY:"auto", padding:"14px 16px 100px" }}>
+          <p style={{ fontSize:"10px", fontWeight:800, color: luce ? "rgba(0,0,30,0.35)" : "rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"12px" }}>Di quale argomento vuoi fare la grammatica?</p>
+          <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
+            {MESI_SCUOLA_ING.map((m, i) => {
+              const dati = PROGRAMMA_INGLESE[ingKey]?.[m];
+              if (!dati) return null;
+              return (
+                <button key={m} onClick={() => setIngleseMese(m)} style={{ width:"100%", textAlign:"left", background: luce ? "white" : "rgba(255,255,255,0.06)", border: luce ? "1px solid rgba(0,0,0,0.08)" : "1px solid rgba(255,255,255,0.09)", borderRadius:"18px", padding:"16px 18px", cursor:"pointer", fontFamily:"'Nunito'", boxShadow: luce ? "0 2px 8px rgba(0,0,0,0.06)" : "none", display:"flex", alignItems:"center", gap:"14px" }}>
+                  <div style={{ width:"44px", height:"44px", borderRadius:"14px", background:"linear-gradient(135deg,#C084FC,#9333EA)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    <span style={{ fontSize:"13px", fontWeight:900, color:"white" }}>{MESI_LABEL_ING[i].slice(0,3)}</span>
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ margin:"0 0 3px", fontSize:"14px", fontWeight:900, color: luce ? "#0a0a20" : "white" }}>{MESI_LABEL_ING[i]}</p>
+                    <p style={{ margin:0, fontSize:"11px", fontWeight:700, color:"#a78bfa", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{dati.grammatica}</p>
+                  </div>
+                  <span style={{ fontSize:"16px", color: luce ? "rgba(0,0,30,0.25)" : "rgba(255,255,255,0.25)", flexShrink:0 }}>→</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <Nav />
+      </div>
+    );
 
     return (
       <div style={{ ...S.app, background: luce ? "#F0F4FF" : "#0A0A1A" }}>
@@ -7547,7 +7553,41 @@ export default function Home() {
       } catch {}
       setIngleseQuizLoading(false);
     };
-    if (!ingleseQuizDomande && !ingleseQuizLoading) caricaQuiz();
+    if (ingleseMese && !ingleseQuizDomande && !ingleseQuizLoading) caricaQuiz();
+
+    if (!ingleseMese) return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <div style={S.hdr}>
+          <button onClick={() => goScreen("inglese")} style={S.back}>←</button>
+          <div>
+            <p style={{ fontWeight:900, fontSize:"17px", margin:0 }}>🎯 Quiz Inglese</p>
+            <p style={{ fontSize:"11px", color: luce ? "rgba(0,0,30,0.4)" : "rgba(255,255,255,0.4)", fontWeight:600, margin:0 }}>{CLASSI[figlioAttivo?.classe]?.label} — scegli mese e argomento</p>
+          </div>
+        </div>
+        <div style={{ flex:1, overflowY:"auto", padding:"14px 16px 100px" }}>
+          <p style={{ fontSize:"10px", fontWeight:800, color: luce ? "rgba(0,0,30,0.35)" : "rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"12px" }}>Di quale argomento vuoi fare il quiz?</p>
+          <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
+            {MESI_SCUOLA_ING.map((m, i) => {
+              const dati = PROGRAMMA_INGLESE[ingKey]?.[m];
+              if (!dati) return null;
+              return (
+                <button key={m} onClick={() => setIngleseMese(m)} style={{ width:"100%", textAlign:"left", background: luce ? "white" : "rgba(255,255,255,0.06)", border: luce ? "1px solid rgba(0,0,0,0.08)" : "1px solid rgba(255,255,255,0.09)", borderRadius:"18px", padding:"16px 18px", cursor:"pointer", fontFamily:"'Nunito'", boxShadow: luce ? "0 2px 8px rgba(0,0,0,0.06)" : "none", display:"flex", alignItems:"center", gap:"14px" }}>
+                  <div style={{ width:"44px", height:"44px", borderRadius:"14px", background:"linear-gradient(135deg,#00F090,#00A855)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    <span style={{ fontSize:"13px", fontWeight:900, color:"white" }}>{MESI_LABEL_ING[i].slice(0,3)}</span>
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ margin:"0 0 3px", fontSize:"14px", fontWeight:900, color: luce ? "#0a0a20" : "white" }}>{MESI_LABEL_ING[i]}</p>
+                    <p style={{ margin:0, fontSize:"11px", fontWeight:700, color:"#34d399", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{dati.grammatica}</p>
+                  </div>
+                  <span style={{ fontSize:"16px", color: luce ? "rgba(0,0,30,0.25)" : "rgba(255,255,255,0.25)", flexShrink:0 }}>→</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <Nav />
+      </div>
+    );
 
     if (ingleseQuizFinale) {
       const perc = Math.round((corrFin / 10) * 100);
@@ -7649,6 +7689,40 @@ export default function Home() {
     const meseLabel = ingleseMese ? MESI_LABEL_ING[MESI_SCUOLA_ING.indexOf(ingleseMese)] : "";
     const classeLabel = CLASSI[figlioAttivo?.classe]?.label || "";
     const hasStarted = ingleseChatMsgs.length > 0;
+
+    if (!ingleseMese) return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <div style={S.hdr}>
+          <button onClick={() => goScreen("inglese")} style={S.back}>←</button>
+          <div>
+            <p style={{ fontWeight:900, fontSize:"17px", margin:0 }}>💬 Conversazione</p>
+            <p style={{ fontSize:"11px", color: luce ? "rgba(0,0,30,0.4)" : "rgba(255,255,255,0.4)", fontWeight:600, margin:0 }}>{CLASSI[figlioAttivo?.classe]?.label} — scegli mese e argomento</p>
+          </div>
+        </div>
+        <div style={{ flex:1, overflowY:"auto", padding:"14px 16px 100px" }}>
+          <p style={{ fontSize:"10px", fontWeight:800, color: luce ? "rgba(0,0,30,0.35)" : "rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"12px" }}>Di quale argomento vuoi parlare con Lex?</p>
+          <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
+            {MESI_SCUOLA_ING.map((m, i) => {
+              const dati = PROGRAMMA_INGLESE[ingKey]?.[m];
+              if (!dati) return null;
+              return (
+                <button key={m} onClick={() => setIngleseMese(m)} style={{ width:"100%", textAlign:"left", background: luce ? "white" : "rgba(255,255,255,0.06)", border: luce ? "1px solid rgba(0,0,0,0.08)" : "1px solid rgba(255,255,255,0.09)", borderRadius:"18px", padding:"16px 18px", cursor:"pointer", fontFamily:"'Nunito'", boxShadow: luce ? "0 2px 8px rgba(0,0,0,0.06)" : "none", display:"flex", alignItems:"center", gap:"14px" }}>
+                  <div style={{ width:"44px", height:"44px", borderRadius:"14px", background:"linear-gradient(135deg,#FF8533,#DD4400)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    <span style={{ fontSize:"13px", fontWeight:900, color:"white" }}>{MESI_LABEL_ING[i].slice(0,3)}</span>
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ margin:"0 0 3px", fontSize:"14px", fontWeight:900, color: luce ? "#0a0a20" : "white" }}>{MESI_LABEL_ING[i]}</p>
+                    <p style={{ margin:0, fontSize:"11px", fontWeight:700, color:"#fbbf24", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{dati.conversazione || dati.grammatica}</p>
+                  </div>
+                  <span style={{ fontSize:"16px", color: luce ? "rgba(0,0,30,0.25)" : "rgba(255,255,255,0.25)", flexShrink:0 }}>→</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <Nav />
+      </div>
+    );
 
     const inviaMessaggio = async () => {
       const testo = ingleseChatInput.trim();
