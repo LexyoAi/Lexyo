@@ -1174,7 +1174,7 @@ export default function Home() {
     if (s === "ripasso_estate") { setRipassoEstateState(null); }
     if (s === "chat" && s !== screen) { setChatMsgs([]); setChatContesto(null); setChatMeseChip(null); }
     if (s === "calendario") setMeseAperto(null);
-    if (s === "interrogazione") { setInterrogFase("carica"); setInterrogArgomenti([]); setInterrogConv([]); setInterrogDomanda(""); setInterrogAudio(null); setInterrogVoto(null); setInterrogFeedback(""); setInterrogTrascrizione(""); setInterrogValutazione(""); setInterrogLexParla(false); setInterrogTopicScelto(""); setInterrogMeseChip(null); if (window._interrogAudio) { window._interrogAudio.pause(); window._interrogAudio = null; } }
+    if (s === "interrogazione") { setInterrogFase("carica"); setInterrogArgomenti([]); setInterrogConv([]); setInterrogDomanda(""); setInterrogAudio(null); setInterrogVoto(null); setInterrogFeedback(""); setInterrogTrascrizione(""); setInterrogValutazione(""); setInterrogLexParla(false); setInterrogTopicScelto(""); setInterrogMeseChip(null); setInterrogMicErrore(""); if (window._interrogAudio) { window._interrogAudio.pause(); window._interrogAudio = null; } if (window._mediaRecorder && window._mediaRecorder.state === "recording") { try { window._mediaRecorder.stop(); } catch {} } }
     if (s === "studia") { /* sub-screens reset on their own entry */ }
     if (s === "inglese") { setIngleseMese(null); }
     if (s === "inglese_vocabolario") { setIngleseFonetica(null); setIngleseFoneticaLoading(false); setIngleseVocIdx(0); setIngleseVocRisposta(null); setIngleseVocRisposte([]); setIngleseVocFinale(false); setIngleseVocSession(null); setIngleseVocStreak(0); }
@@ -3774,51 +3774,82 @@ export default function Home() {
       });
     };
 
-    const avviaRicognizione = () => {
+    const avviaRicognizione = async () => {
       if (window._interrogAudio) { try { window._interrogAudio.pause(); } catch {} }
       setInterrogMicErrore("");
-      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SR) {
-        setInterrogMicErrore("Il riconoscimento vocale non è supportato. Su Android usa Chrome, su iPhone usa Safari.");
+
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setInterrogMicErrore("Il microfono non è supportato su questo dispositivo.");
         setInterrogFase("risposta_testo");
         return;
       }
-      const isPWA = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
-      const isAndroid = /android/i.test(navigator.userAgent);
 
-      const r = new SR();
-      r.lang = "it-IT";
-      r.continuous = false;
-      r.interimResults = true;
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (err) {
+        const isPWA = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+        const isAndroid = /android/i.test(navigator.userAgent);
+        const negato = err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError";
+        setInterrogMicErrore(negato
+          ? (isPWA && isAndroid
+              ? "Permesso negato. Vai in Impostazioni Android → App → Chrome → Autorizzazioni → Microfono → Consenti, poi riprova."
+              : "Permesso microfono negato. Abilita il microfono nelle impostazioni del browser.")
+          : "Impossibile accedere al microfono. Controlla che nessun'altra app lo stia usando.");
+        setInterrogFase("risposta_testo");
+        return;
+      }
+
+      // Usa MediaRecorder (funziona su tutti i dispositivi inclusa PWA Android)
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : MediaRecorder.isTypeSupported("audio/webm")
+          ? "audio/webm"
+          : "audio/mp4";
+
+      const chunks = [];
+      let mr;
+      try {
+        mr = new MediaRecorder(stream, { mimeType });
+      } catch {
+        mr = new MediaRecorder(stream);
+      }
+
+      mr.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+      mr.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        setInterrogFase("trascrizione");
+        try {
+          const blob = new Blob(chunks, { type: mr.mimeType });
+          const ext = mr.mimeType.includes("mp4") ? "audio.mp4" : "audio.webm";
+          const fd = new FormData();
+          fd.append("audio", blob, ext);
+          const r = await fetch("/api/speech-to-text", { method: "POST", body: fd });
+          const d = await r.json();
+          if (d.testo?.trim()) {
+            setInterrogTrascrizione(d.testo.trim());
+            setInterrogFase("conferma");
+          } else {
+            setInterrogMicErrore("Non ho capito bene. Riprova o scrivi la risposta.");
+            setInterrogFase("risposta_testo");
+          }
+        } catch {
+          setInterrogMicErrore("Errore di connessione durante la trascrizione. Scrivi la risposta.");
+          setInterrogFase("risposta_testo");
+        }
+      };
+
+      mr.start();
+      window._mediaRecorder = mr;
       setInterrogTrascrizione("");
       setInterrogFase("risposta");
-      r.onresult = (e) => {
-        const testo = Array.from(e.results).map(x => x[0].transcript).join("");
-        setInterrogTrascrizione(testo);
-      };
-      r.onend = () => setInterrogFase("conferma");
-      r.onerror = (ev) => {
-        if (ev.error === "not-allowed") {
-          setInterrogMicErrore(isPWA && isAndroid
-            ? "Permesso microfono negato. Vai in Impostazioni Android → App → Chrome → Autorizzazioni → Microfono → Consenti, poi riprova."
-            : "Permesso microfono negato. Abilita il microfono nelle impostazioni del browser per questo sito.");
-        } else if (ev.error === "network") {
-          setInterrogMicErrore("Connessione internet necessaria per il riconoscimento vocale. Controlla la connessione e riprova.");
-        } else if (ev.error !== "aborted") {
-          setInterrogMicErrore("Errore microfono. Riprova o scrivi la risposta.");
-          setInterrogTrascrizione("");
-        }
-        if (ev.error !== "aborted") setInterrogFase("risposta_testo");
-      };
-      try { r.start(); window._interrogSR = r; }
-      catch {
-        setInterrogMicErrore("Impossibile avviare il microfono. Scrivi la risposta.");
-        setInterrogFase("risposta_testo");
-      }
     };
 
     const fermaRicognizione = () => {
       if (window._interrogSR) { try { window._interrogSR.stop(); } catch {} }
+      if (window._mediaRecorder && window._mediaRecorder.state === "recording") {
+        try { window._mediaRecorder.stop(); } catch {}
+      }
     };
 
     const inviaRisposta = async () => {
@@ -4006,17 +4037,20 @@ export default function Home() {
             </div>
           )}
 
+          {interrogFase === "trascrizione" && (
+            <div style={{ textAlign:"center", padding:"40px 20px" }}>
+              <LexChar stato="thinking" size={140} style={{ margin:"0 auto 20px" }} />
+              <p style={{ fontWeight:900, fontSize:"17px", marginBottom:"6px" }}>Lex sta capendo...</p>
+              <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.4)", fontWeight:600 }}>Trascrizione audio in corso</p>
+            </div>
+          )}
+
           {interrogFase === "risposta_testo" && (
             <div style={{ padding:"8px 0" }}>
               {interrogMicErrore ? (
                 <div style={{ ...S.card, marginBottom:"14px", background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.35)", textAlign:"center" }}>
                   <p style={{ fontWeight:900, fontSize:"14px", marginBottom:"6px", color:"#f87171" }}>🎤 Microfono non disponibile</p>
-                  <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.6)", fontWeight:600, lineHeight:1.7, marginBottom: typeof window !== "undefined" && /android/i.test(navigator.userAgent) ? "10px" : "0" }}>{interrogMicErrore}</p>
-                  {typeof window !== "undefined" && /android/i.test(navigator.userAgent) && (
-                    <a href={`intent://${window.location.host}${window.location.pathname}#Intent;scheme=https;package=com.android.chrome;end`} style={{ display:"inline-block", padding:"8px 16px", borderRadius:"10px", background:"#4285F4", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"12px", textDecoration:"none" }}>
-                      Apri in Chrome →
-                    </a>
-                  )}
+                  <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.6)", fontWeight:600, lineHeight:1.7 }}>{interrogMicErrore}</p>
                 </div>
               ) : (
                 <div style={{ ...S.card, marginBottom:"14px", background:"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.25)", textAlign:"center" }}>
