@@ -77,6 +77,7 @@ export default function Home() {
   const [interrogValutazione, setInterrogValutazione] = useState("");
   const [interrogLexParla, setInterrogLexParla] = useState(false);
   const [interrogTopicScelto, setInterrogTopicScelto] = useState("");
+  const [interrogMicErrore, setInterrogMicErrore] = useState("");
   const [interrogMeseChip, setInterrogMeseChip] = useState(null);
   const [streak, setStreak] = useState(0);
   const [levelUpAnim, setLevelUpAnim] = useState(false);
@@ -135,6 +136,7 @@ export default function Home() {
   const [compitiLoading, setCompitiLoading] = useState(false);
   const [showFormCompito, setShowFormCompito] = useState(false);
   const [nuovoCompito, setNuovoCompito] = useState({ testo:"", materia:"italiano", scadenza:"" });
+  const [salvaCompitoLoading, setSalvaCompitoLoading] = useState(false);
   const [fotoCompitoFase, setFotoCompitoFase] = useState("idle"); // "idle"|"analisi"|"risposta"
   const [fotoCompitoRisposta, setFotoCompitoRisposta] = useState(null);
   const [fotoCompitoPhoto, setFotoCompitoPhoto] = useState(null);
@@ -579,7 +581,8 @@ export default function Home() {
   };
 
   const aggiungiCompito = async () => {
-    if (!nuovoCompito.testo.trim() || !figlioAttivo) return;
+    if (!nuovoCompito.testo.trim() || !figlioAttivo || salvaCompitoLoading) return;
+    setSalvaCompitoLoading(true);
     const record = {
       figlio_id: figlioAttivo.id,
       testo: nuovoCompito.testo.trim(),
@@ -587,12 +590,17 @@ export default function Home() {
       scadenza: nuovoCompito.scadenza || null,
       completato: false,
     };
-    const { data, error } = await supabase.from("compiti_estivi").insert([record]).select().single();
-    if (!error && data) {
+    try {
+      const { data, error } = await supabase.from("compiti_estivi").insert([record]).select().single();
+      if (error) throw error;
       setCompitiEstivi(prev => [data, ...prev]);
       setNuovoCompito({ testo:"", materia:"italiano", scadenza:"" });
       setShowFormCompito(false);
+    } catch (e) {
+      console.error("aggiungiCompito:", e);
+      alert("Errore nel salvare il compito. Riprova.");
     }
+    setSalvaCompitoLoading(false);
   };
 
   const toggleCompito = async (c) => {
@@ -2599,7 +2607,7 @@ export default function Home() {
           </>
         )}
         {fotoBloccata && fotoFase !== "carica" && null}
-        {fotoFase === "analisi_loading" && <div style={{ textAlign:"center", padding:"40px", background:"rgba(255,255,255,0.05)", borderRadius:"18px" }}><div style={{ fontSize:"40px", marginBottom:"12px" }}>🧑‍🏫</div><p style={{ fontWeight:800, fontSize:"16px", marginBottom:"6px" }}>Lex sta analizzando...</p><p style={{ fontSize:"13px", color:"rgba(255,255,255,0.4)", fontWeight:600 }}>Ci vogliono 10-15 secondi</p></div>}
+        {fotoFase === "analisi_loading" && <div style={{ textAlign:"center", padding:"40px 20px", background:"rgba(255,255,255,0.05)", borderRadius:"18px" }}><LexChar stato="thinking" size={150} style={{ margin:"0 auto 16px" }} /><p style={{ fontWeight:800, fontSize:"17px", marginBottom:"6px" }}>Lex sta analizzando...</p><p style={{ fontSize:"13px", color:"rgba(255,255,255,0.4)", fontWeight:600 }}>Ci vogliono 10-15 secondi</p></div>}
         {(fotoFase === "domande" || fotoFase === "attendi_correzione" || fotoFase === "corretto") && (
           <>
             <div style={{ display:"flex", flexDirection:"column", gap:"12px", marginBottom:"14px" }}>
@@ -2630,7 +2638,7 @@ export default function Home() {
                 </label>
               </div>
             )}
-            {fotoFase === "correzione_loading" && <div style={{ textAlign:"center", padding:"40px", background:"rgba(255,255,255,0.05)", borderRadius:"18px" }}><div style={{ fontSize:"40px", marginBottom:"12px" }}>🔍</div><p style={{ fontWeight:800, fontSize:"16px" }}>Lex sta correggendo...</p></div>}
+            {fotoFase === "correzione_loading" && <div style={{ textAlign:"center", padding:"40px 20px", background:"rgba(255,255,255,0.05)", borderRadius:"18px" }}><LexChar stato="thinking" size={150} style={{ margin:"0 auto 16px" }} /><p style={{ fontWeight:800, fontSize:"17px" }}>Lex sta correggendo...</p></div>}
             {fotoFase === "corretto" && !sbloccato && <button onClick={sbloccaSol} style={{ ...S.btn, background:"linear-gradient(135deg,#f59e0b,#ef4444)", border:"none", marginTop:"14px" }}>🔓 Mostra Soluzione Completa</button>}
           </>
         )}
@@ -3078,8 +3086,8 @@ export default function Home() {
                 </select>
                 <input type="date" value={nuovoCompito.scadenza} onChange={e => setNuovoCompito(p => ({...p, scadenza: e.target.value}))} style={{ flex:1, padding:"10px 12px", borderRadius:"12px", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", color:"white", fontFamily:"'Nunito'", fontWeight:600, fontSize:"13px", outline:"none" }} />
               </div>
-              <button onClick={aggiungiCompito} disabled={!nuovoCompito.testo.trim()} style={{ width:"100%", padding:"13px", borderRadius:"12px", background: nuovoCompito.testo.trim() ? "linear-gradient(135deg,#00A855,#00F090)" : "rgba(255,255,255,0.08)", border:"none", color: nuovoCompito.testo.trim() ? "white" : "rgba(255,255,255,0.3)", fontFamily:"'Nunito'", fontWeight:900, fontSize:"15px", cursor: nuovoCompito.testo.trim() ? "pointer" : "not-allowed" }}>
-                Aggiungi →
+              <button onClick={aggiungiCompito} disabled={!nuovoCompito.testo.trim() || salvaCompitoLoading} style={{ width:"100%", padding:"13px", borderRadius:"12px", background: nuovoCompito.testo.trim() && !salvaCompitoLoading ? "linear-gradient(135deg,#00A855,#00F090)" : "rgba(255,255,255,0.08)", border:"none", color: nuovoCompito.testo.trim() && !salvaCompitoLoading ? "white" : "rgba(255,255,255,0.3)", fontFamily:"'Nunito'", fontWeight:900, fontSize:"15px", cursor: nuovoCompito.testo.trim() && !salvaCompitoLoading ? "pointer" : "not-allowed" }}>
+                {salvaCompitoLoading ? "Salvo..." : "Aggiungi →"}
               </button>
             </div>
           )}
@@ -3767,14 +3775,23 @@ export default function Home() {
 
     const avviaRicognizione = async () => {
       if (window._interrogAudio) { try { window._interrogAudio.pause(); } catch {} }
+      setInterrogMicErrore("");
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SR) { setInterrogFase("risposta_testo"); return; }
+      if (!SR) {
+        setInterrogMicErrore("Il tuo browser non supporta il microfono. Apri l'app in Chrome o Safari e riprova.");
+        setInterrogFase("risposta_testo");
+        return;
+      }
 
       // Richiede permesso microfono esplicitamente — necessario su iOS Safari e Android
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         stream.getTracks().forEach(t => t.stop());
-      } catch {
+      } catch (err) {
+        const negato = err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError";
+        setInterrogMicErrore(negato
+          ? "Permesso microfono negato. Vai nelle impostazioni del browser e abilita il microfono per questo sito."
+          : "Impossibile accedere al microfono. Controlla che nessun'altra app lo stia usando.");
         setInterrogFase("risposta_testo");
         return;
       }
@@ -3791,11 +3808,17 @@ export default function Home() {
       };
       r.onend = () => setInterrogFase("conferma");
       r.onerror = (ev) => {
+        if (ev.error !== "aborted") {
+          setInterrogMicErrore("Registrazione interrotta. Riprova o scrivi la risposta.");
+          setInterrogTrascrizione("");
+        }
         setInterrogFase("risposta_testo");
-        if (ev.error !== "aborted") setInterrogTrascrizione("");
       };
       try { r.start(); window._interrogSR = r; }
-      catch { setInterrogFase("risposta_testo"); }
+      catch {
+        setInterrogMicErrore("Impossibile avviare il microfono. Scrivi la risposta.");
+        setInterrogFase("risposta_testo");
+      }
     };
 
     const fermaRicognizione = () => {
@@ -3989,10 +4012,17 @@ export default function Home() {
 
           {interrogFase === "risposta_testo" && (
             <div style={{ padding:"8px 0" }}>
-              <div style={{ ...S.card, marginBottom:"14px", background:"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.25)", textAlign:"center" }}>
-                <p style={{ fontWeight:900, fontSize:"15px", marginBottom:"6px" }}>✍️ Scrivi la tua risposta</p>
-                <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.45)", fontWeight:600 }}>Il microfono non è disponibile — usa la tastiera</p>
-              </div>
+              {interrogMicErrore ? (
+                <div style={{ ...S.card, marginBottom:"14px", background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.35)", textAlign:"center" }}>
+                  <p style={{ fontWeight:900, fontSize:"14px", marginBottom:"4px", color:"#f87171" }}>🎤 Microfono non disponibile</p>
+                  <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.6)", fontWeight:600, lineHeight:1.6 }}>{interrogMicErrore}</p>
+                </div>
+              ) : (
+                <div style={{ ...S.card, marginBottom:"14px", background:"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.25)", textAlign:"center" }}>
+                  <p style={{ fontWeight:900, fontSize:"15px", marginBottom:"6px" }}>✍️ Scrivi la tua risposta</p>
+                  <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.45)", fontWeight:600 }}>Il microfono non è disponibile — usa la tastiera</p>
+                </div>
+              )}
               <textarea value={interrogTrascrizione} onChange={e => setInterrogTrascrizione(e.target.value)} placeholder="Scrivi qui la tua risposta..." rows={5} style={{ width:"100%", padding:"14px", borderRadius:"14px", background: luce ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.06)", border:`1px solid ${luce ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.12)"}`, color: luce ? "#0a0a20" : "white", fontSize:"15px", fontFamily:"'Nunito'", fontWeight:600, outline:"none", resize:"none", boxSizing:"border-box", lineHeight:1.6 }} />
               <div style={{ display:"flex", gap:"10px", marginTop:"12px" }}>
                 <button onClick={() => { setInterrogTrascrizione(""); setInterrogFase("domanda"); }} style={{ ...S.btn, ...S.btnS, flex:1 }}>← Indietro</button>
@@ -6835,10 +6865,10 @@ export default function Home() {
     const MATERIA_COLORI = { matematica:"#6366f1", italiano:"#ec4899", scienze:"#10b981", storia:"#f59e0b", geografia:"#0ea5e9", jolly:"#a855f7" };
 
     if (trasformaQuizDomande.length === 0) return (
-      <div style={{ ...S.app, ...S.center }}>
+      <div style={{ ...S.app, ...S.center, flexDirection:"column" }}>
         <Head><title>Quiz in caricamento...</title></Head>
-        <img src="/Lex-prof.png" alt="Lex" style={{ width:"100px", marginBottom:"16px", opacity:0.7 }} />
-        <p style={{ color:"#6C47FF", fontWeight:700 }}>Lex sta preparando le domande...</p>
+        <LexChar stato="thinking" size={160} style={{ marginBottom:"20px" }} />
+        <p style={{ color:"#6C47FF", fontWeight:800, fontSize:"17px" }}>Lex sta preparando le domande...</p>
       </div>
     );
 
