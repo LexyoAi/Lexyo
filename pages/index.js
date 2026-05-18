@@ -4765,8 +4765,13 @@ export default function Home() {
           });
         } else {
           suona("sbagliato");
-          setCsState(prev => prev ? { ...prev, messaggioVerifica:d.messaggio } : null);
           setCsRisposta("");
+          const nuovoIdx = csState.indizioCorrente + 1;
+          if (nuovoIdx >= csState.indizi.length) {
+            setCsState(prev => prev ? { ...prev, rivelato:true, fase:"perso", messaggioVerifica:null } : null);
+          } else {
+            setCsState(prev => prev ? { ...prev, indizioCorrente:nuovoIdx, stelleGuadagnate:Math.max(1, prev.stelleGuadagnate-1), messaggioVerifica:"❌ Non ci siamo! Ecco un altro indizio..." } : null);
+          }
         }
       } catch { alert("Errore verifica."); }
       setCsLoading(false);
@@ -5259,7 +5264,7 @@ export default function Home() {
 
           {/* GRID */}
           <div style={{display:"flex",justifyContent:"center",padding:"14px 8px",overflowX:"auto"}}>
-            <div style={{display:"inline-block",border:"2px solid #111",background:"#111",gap:"1px"}}>
+            <div style={{display:"inline-flex",flexDirection:"column",border:"3px solid #111",background:"#111",gap:"1px",borderRadius:"4px",overflow:"hidden"}}>
               {wordGame.grid.map((row,r)=>(
                 <div key={r} style={{display:"flex",gap:"1px"}}>
                   {row.map((cell,c)=>{
