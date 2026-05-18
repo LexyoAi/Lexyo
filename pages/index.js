@@ -3776,78 +3776,64 @@ export default function Home() {
 
     const avviaRicognizione = async () => {
       if (window._interrogAudio) { try { window._interrogAudio.pause(); } catch {} }
+      if (window._mediaRecorder?.state === "recording") { try { window._mediaRecorder.stop(); } catch {} }
       setInterrogMicErrore("");
-
-      if (!navigator.mediaDevices?.getUserMedia) {
-        setInterrogMicErrore("Il microfono non è supportato su questo dispositivo.");
-        setInterrogFase("risposta_testo");
-        return;
-      }
+      setInterrogTrascrizione("");
+      window._interrogAborted = false;
 
       let stream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       } catch (err) {
-        const isPWA = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
-        const isAndroid = /android/i.test(navigator.userAgent);
-        const negato = err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError";
-        setInterrogMicErrore(negato
-          ? (isPWA && isAndroid
-              ? "Permesso negato. Vai in Impostazioni Android → App → Chrome → Autorizzazioni → Microfono → Consenti, poi riprova."
-              : "Permesso microfono negato. Abilita il microfono nelle impostazioni del browser.")
-          : "Impossibile accedere al microfono. Controlla che nessun'altra app lo stia usando.");
+        const nome = err?.name || "sconosciuto";
+        const msg = err?.message || "";
+        setInterrogMicErrore("Errore microfono: " + nome + (msg ? " — " + msg : ""));
         setInterrogFase("risposta_testo");
         return;
       }
 
-      // Usa MediaRecorder (funziona su tutti i dispositivi inclusa PWA Android)
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : MediaRecorder.isTypeSupported("audio/webm")
-          ? "audio/webm"
-          : "audio/mp4";
+      const mimeType = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg", "audio/mp4"]
+        .find(t => { try { return MediaRecorder.isTypeSupported(t); } catch { return false; } }) || "";
 
       const chunks = [];
       let mr;
-      try {
-        mr = new MediaRecorder(stream, { mimeType });
-      } catch {
-        mr = new MediaRecorder(stream);
-      }
+      try { mr = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream); }
+      catch { mr = new MediaRecorder(stream); }
 
-      mr.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+      mr.ondataavailable = (e) => { if (e.data?.size > 0) chunks.push(e.data); };
+
       mr.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
+        if (window._interrogAborted) return;
         setInterrogFase("trascrizione");
         try {
-          const blob = new Blob(chunks, { type: mr.mimeType });
-          const ext = mr.mimeType.includes("mp4") ? "audio.mp4" : "audio.webm";
+          const blob = new Blob(chunks, { type: mr.mimeType || "audio/webm" });
+          const filename = (mr.mimeType || "").includes("mp4") ? "audio.mp4" : "audio.webm";
           const fd = new FormData();
-          fd.append("audio", blob, ext);
-          const r = await fetch("/api/speech-to-text", { method: "POST", body: fd });
-          const d = await r.json();
-          if (d.testo?.trim()) {
-            setInterrogTrascrizione(d.testo.trim());
+          fd.append("audio", blob, filename);
+          const res = await fetch("/api/speech-to-text", { method: "POST", body: fd });
+          const data = await res.json();
+          if (data.testo?.trim()) {
+            setInterrogTrascrizione(data.testo.trim());
             setInterrogFase("conferma");
           } else {
-            setInterrogMicErrore("Non ho capito bene. Riprova o scrivi la risposta.");
+            setInterrogMicErrore("Non ho capito. Riprova parlando più chiaramente, o scrivi la risposta.");
             setInterrogFase("risposta_testo");
           }
         } catch {
-          setInterrogMicErrore("Errore di connessione durante la trascrizione. Scrivi la risposta.");
+          setInterrogMicErrore("Errore durante la trascrizione. Scrivi la risposta.");
           setInterrogFase("risposta_testo");
         }
       };
 
-      mr.start();
+      mr.start(250);
       window._mediaRecorder = mr;
-      setInterrogTrascrizione("");
       setInterrogFase("risposta");
     };
 
     const fermaRicognizione = () => {
-      if (window._interrogSR) { try { window._interrogSR.stop(); } catch {} }
-      if (window._mediaRecorder && window._mediaRecorder.state === "recording") {
+      window._interrogAborted = false;
+      if (window._mediaRecorder?.state === "recording") {
         try { window._mediaRecorder.stop(); } catch {}
       }
     };
@@ -4012,34 +3998,12 @@ export default function Home() {
                   {interrogLexParla ? "🔊 Lex sta parlando..." : "▶️ Ascolta la domanda"}
                 </button>
               </div>
-              {typeof navigator !== "undefined" && /android/i.test(navigator.userAgent) ? (
-                <div>
-                  <div style={{ background:"rgba(99,102,241,0.1)", border:"1px solid rgba(99,102,241,0.3)", borderRadius:"14px", padding:"14px 16px", marginBottom:"12px", textAlign:"center" }}>
-                    <p style={{ fontWeight:900, fontSize:"15px", marginBottom:"4px", color:"white" }}>✍️ Scrivi la tua risposta</p>
-                    <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.55)", fontWeight:700, lineHeight:1.5 }}>
-                      🎤 Premi il tasto <strong style={{ color:"#a78bfa" }}>microfono della tastiera</strong> per rispondere a voce
-                    </p>
-                  </div>
-                  <textarea
-                    value={interrogTrascrizione}
-                    onChange={e => setInterrogTrascrizione(e.target.value)}
-                    placeholder="Scrivi qui... oppure usa il 🎤 sulla tastiera"
-                    rows={4}
-                    style={{ width:"100%", padding:"14px", borderRadius:"14px", background: luce ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.07)", border:`1px solid ${luce ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.15)"}`, color: luce ? "#0a0a20" : "white", fontSize:"15px", fontFamily:"'Nunito'", fontWeight:600, outline:"none", resize:"none", boxSizing:"border-box", lineHeight:1.6 }}
-                  />
-                  <div style={{ display:"flex", gap:"10px", marginTop:"12px" }}>
-                    <button onClick={() => setInterrogMicOverlay(true)} style={{ ...S.btn, ...S.btnS, flex:1, fontSize:"13px", padding:"12px 8px" }}>🎤 Mic browser</button>
-                    <button onClick={() => { if (interrogTrascrizione.trim()) setInterrogFase("conferma"); }} disabled={!interrogTrascrizione.trim()} style={{ ...S.btn, flex:2, background:interrogTrascrizione.trim()?"linear-gradient(135deg,#6366f1,#8b5cf6)":"rgba(255,255,255,0.08)", border:"none", opacity:interrogTrascrizione.trim()?1:0.5 }}>✅ Conferma risposta</button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <button onClick={() => setInterrogMicOverlay(true)} style={{ ...S.btn, background:"linear-gradient(135deg,#ef4444,#dc2626)", border:"none", fontSize:"16px", padding:"18px", marginBottom:"8px" }}>
-                    🎤 Rispondi con la voce
-                  </button>
-                  <p style={{ textAlign:"center", fontSize:"11px", color:"rgba(255,255,255,0.25)", fontWeight:600 }}>Voce: Chrome e Safari — Mic: premi Rispondi</p>
-                </>
-              )}
+              <button onClick={avviaRicognizione} style={{ ...S.btn, background:"linear-gradient(135deg,#ef4444,#dc2626)", border:"none", fontSize:"17px", padding:"20px", marginBottom:"10px", letterSpacing:"0.3px" }}>
+                🎤 Rispondi a voce
+              </button>
+              <button onClick={() => { setInterrogTrascrizione(""); setInterrogFase("risposta_testo"); }} style={{ width:"100%", background:"none", border:"none", color:"rgba(255,255,255,0.3)", fontSize:"13px", fontWeight:600, cursor:"pointer", fontFamily:"'Nunito'", padding:"6px 0" }}>
+                ✏️ Preferisco scrivere
+              </button>
             </div>
           )}
 
@@ -4055,7 +4019,7 @@ export default function Home() {
                 </div>
               )}
               <button onClick={fermaRicognizione} style={{ ...S.btn, ...S.btnS }}>⏹ Ho finito di parlare</button>
-              <button onClick={() => { fermaRicognizione(); setInterrogFase("risposta_testo"); }} style={{ marginTop:"10px", background:"none", border:"none", color:"rgba(255,255,255,0.3)", fontSize:"12px", fontWeight:600, cursor:"pointer", fontFamily:"'Nunito'" }}>
+              <button onClick={() => { window._interrogAborted = true; fermaRicognizione(); setInterrogTrascrizione(""); setInterrogFase("risposta_testo"); }} style={{ marginTop:"10px", background:"none", border:"none", color:"rgba(255,255,255,0.3)", fontSize:"12px", fontWeight:600, cursor:"pointer", fontFamily:"'Nunito'" }}>
                 ⌨️ Scrivi invece di parlare
               </button>
             </div>
@@ -4087,7 +4051,7 @@ export default function Home() {
                 <button onClick={() => { setInterrogTrascrizione(""); setInterrogFase("domanda"); }} style={{ ...S.btn, ...S.btnS, flex:1 }}>← Indietro</button>
                 <button onClick={() => setInterrogFase("conferma")} disabled={!interrogTrascrizione.trim()} style={{ ...S.btn, flex:2, background:interrogTrascrizione.trim()?"linear-gradient(135deg,#6366f1,#8b5cf6)":"rgba(255,255,255,0.08)", border:"none", opacity:interrogTrascrizione.trim()?1:0.5 }}>✅ Conferma risposta</button>
               </div>
-              <button onClick={() => { setInterrogTrascrizione(""); setInterrogMicErrore(""); setInterrogMicOverlay(true); }} style={{ marginTop:"10px", width:"100%", background:"none", border:`1px solid rgba(239,68,68,0.3)`, borderRadius:"12px", padding:"10px", color:"#ef4444", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"'Nunito'" }}>
+              <button onClick={() => { setInterrogTrascrizione(""); setInterrogMicErrore(""); setInterrogFase("domanda"); }} style={{ marginTop:"10px", width:"100%", background:"none", border:`1px solid rgba(239,68,68,0.3)`, borderRadius:"12px", padding:"10px", color:"#ef4444", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"'Nunito'" }}>
                 🎤 Riprova con il microfono
               </button>
             </div>
@@ -4160,37 +4124,6 @@ export default function Home() {
         </div>
         <Nav />
 
-        {/* ── Overlay pre-autorizzazione microfono ── */}
-        {interrogMicOverlay && (
-          <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.75)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:"24px" }}>
-            <div style={{ background: luce ? "white" : "#1a1b3a", borderRadius:"24px", padding:"28px 24px", maxWidth:"340px", width:"100%", boxShadow:"0 20px 60px rgba(0,0,0,0.5)", textAlign:"center" }}>
-              <div style={{ fontSize:"52px", marginBottom:"12px" }}>🎤</div>
-              <p style={{ fontWeight:900, fontSize:"18px", marginBottom:"8px" }}>Accesso al microfono</p>
-              <p style={{ fontSize:"14px", color: luce ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.55)", fontWeight:600, lineHeight:1.7, marginBottom:"8px" }}>
-                Lexyo ha bisogno del microfono per ascoltare la tua risposta.
-              </p>
-              {/android/i.test(typeof navigator !== "undefined" ? navigator.userAgent : "") && (
-                <div style={{ background:"rgba(66,133,244,0.12)", border:"1px solid rgba(66,133,244,0.3)", borderRadius:"12px", padding:"10px 14px", marginBottom:"16px", textAlign:"left" }}>
-                  <p style={{ fontSize:"12px", fontWeight:800, color:"#4285F4", marginBottom:"4px" }}>📱 Prima volta su Android?</p>
-                  <p style={{ fontSize:"12px", color: luce ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.6)", fontWeight:600, lineHeight:1.6 }}>
-                    Quando appare il popup Android, premi <strong>Consenti</strong>.<br/>
-                    Se lo hai negato per errore: <strong>Impostazioni → App → Chrome → Autorizzazioni → Microfono → Consenti</strong>.
-                  </p>
-                </div>
-              )}
-              <button
-                onClick={() => { setInterrogMicOverlay(false); avviaRicognizione(); }}
-                style={{ width:"100%", padding:"15px", borderRadius:"14px", background:"linear-gradient(135deg,#ef4444,#dc2626)", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"16px", cursor:"pointer", marginBottom:"10px" }}>
-                🎤 Attiva il microfono
-              </button>
-              <button
-                onClick={() => { setInterrogMicOverlay(false); setInterrogFase("risposta_testo"); }}
-                style={{ width:"100%", padding:"12px", borderRadius:"14px", background:"none", border:"1px solid rgba(255,255,255,0.15)", color: luce ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.45)", fontFamily:"'Nunito'", fontWeight:700, fontSize:"14px", cursor:"pointer" }}>
-                ✏️ Preferisco scrivere
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     );
   }

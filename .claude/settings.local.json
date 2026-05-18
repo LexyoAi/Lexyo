@@ -20,7 +20,8 @@
       "Bash(git push *)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Shq\\\\Desktop\\\\maiprof\" -Recurse -Directory)",
       "Bash(Select-Object -First 20)",
-      "Bash(Format-Table FullName)"
+      "Bash(Format-Table FullName)",
+      "Bash(node -e \"require\\('dotenv'\\).config\\({path:'.env.local'}\\); console.log\\('OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? 'SET \\(' + process.env.OPENAI_API_KEY.slice\\(0,8\\) + '...\\)' : 'MISSING'\\)\")"
     ]
   }
 }
