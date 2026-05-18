@@ -5259,7 +5259,7 @@ export default function Home() {
 
           {/* GRID */}
           <div style={{display:"flex",justifyContent:"center",padding:"14px 8px",overflowX:"auto"}}>
-            <div style={{display:"inline-block",borderRadius:"10px",overflow:"hidden",border:"2px solid rgba(0,0,0,0.15)",boxShadow:"0 8px 32px rgba(0,0,0,0.3)",background:"#111"}}>
+            <div style={{display:"inline-block",borderRadius:"10px",overflow:"hidden",border:"2px solid rgba(255,255,255,0.1)",boxShadow:"0 8px 32px rgba(0,0,0,0.5)"}}>
               {wordGame.grid.map((row,r)=>(
                 <div key={r} style={{display:"flex"}}>
                   {row.map((cell,c)=>{
@@ -5271,24 +5271,23 @@ export default function Home() {
                     const correctLetter=wordGame.grid[r][c]?.letter;
                     const isWrong=isActive&&letter&&letter!==correctLetter;
                     let bg='#0a0a1a';
-                    let letterColor='#111';
                     if(isActive){
-                      if(wordVerificato&&letter&&letter===correctLetter){ bg='rgba(16,185,129,0.25)'; letterColor='#34d399'; }
-                      else if(isWrong){ bg='rgba(239,68,68,0.18)'; letterColor='#f87171'; }
-                      else if(isSelected){ bg='white'; letterColor='#111'; }
-                      else if(inWord){ bg='rgba(255,255,255,0.85)'; letterColor='#111'; }
-                      else{ bg='white'; letterColor='#111'; }
+                      if(wordVerificato&&letter&&letter===correctLetter) bg='rgba(16,185,129,0.42)';
+                      else if(isWrong) bg='rgba(239,68,68,0.38)';
+                      else if(isSelected) bg=`${t.primario}66`;
+                      else if(inWord) bg=`${t.primario}28`;
+                      else bg='#1e1e3a';
                     }
                     return (
                       <div key={c} onClick={()=>handleCellClick(r,c)} style={{
                         width:CELL,height:CELL,background:bg,
-                        border:isActive?`1px solid ${isSelected?t.primario:`rgba(0,0,0,${inWord?0.25:0.15})`}`:"none",
+                        border:isActive?`1px solid rgba(255,255,255,${isSelected?0.5:inWord?0.18:0.09})`:"none",
                         boxSizing:"border-box",position:"relative",
                         display:"flex",alignItems:"center",justifyContent:"center",
                         cursor:isActive&&!wordVerificato?"pointer":"default"
                       }}>
-                        {num&&isActive&&<span className="cw-letter" style={{position:"absolute",top:1,left:2,fontSize:CELL>27?"7px":"5px",fontWeight:900,color:isSelected?t.primario:"rgba(0,0,0,0.45)",lineHeight:1,zIndex:1,pointerEvents:"none"}}>{num}</span>}
-                        {isActive&&<span className="cw-letter" style={{fontSize:CELL>27?"15px":"12px",fontWeight:900,lineHeight:1,color:letterColor,pointerEvents:"none"}}>{letter}</span>}
+                        {num&&isActive&&<span className="cw-letter" style={{position:"absolute",top:1,left:2,fontSize:CELL>27?"7px":"5px",fontWeight:900,color:"rgba(255,255,255,0.75)",lineHeight:1,zIndex:1,pointerEvents:"none"}}>{num}</span>}
+                        {isActive&&<span className="cw-letter" style={{fontSize:CELL>27?"15px":"12px",fontWeight:900,lineHeight:1,color:wordVerificato?(letter===correctLetter?"#34d399":"#f87171"):isWrong?"#f87171":"white",pointerEvents:"none"}}>{letter}</span>}
                       </div>
                     );
                   })}
