@@ -5095,16 +5095,20 @@ export default function Home() {
 
     const avviaParole = async (forceNew = false) => {
       setWordLoading(true); setCwSelected(null); setCwDir('H');
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 20000);
       try {
         const token = await getAccessToken();
         const r = await fetch("/api/parole-crociate", {
           method:"POST", headers:{"Content-Type":"application/json"},
           body:JSON.stringify({materia:MATERIE[materia]?.label,classe:prog?.label,argomento:giocaArgomento,sesso:figlioAttivo?.sesso||"M",accessToken:token,forceNew}),
+          signal: ctrl.signal,
         });
         const d = await r.json();
         if(d.parole&&d.parole.length>0){ setWordGame(buildCrossword(d.parole)); setWordInputs({}); setWordVerificato(false); }
         else setWordGame(null);
       } catch { setWordGame(null); }
+      clearTimeout(t);
       setWordLoading(false);
     };
 
@@ -5259,7 +5263,7 @@ export default function Home() {
 
           {/* GRID */}
           <div style={{display:"flex",justifyContent:"center",padding:"14px 8px",overflowX:"auto"}}>
-            <div style={{display:"inline-block",borderRadius:"10px",overflow:"hidden",border:"2px solid rgba(255,255,255,0.1)",boxShadow:"0 8px 32px rgba(0,0,0,0.5)"}}>
+            <div style={{display:"inline-block",borderRadius:"10px",overflow:"hidden",border:"2px solid rgba(0,0,0,0.15)",boxShadow:"0 8px 32px rgba(0,0,0,0.25)",background:"#111"}}>
               {wordGame.grid.map((row,r)=>(
                 <div key={r} style={{display:"flex"}}>
                   {row.map((cell,c)=>{
@@ -5270,24 +5274,25 @@ export default function Home() {
                     const num=cellNums[k];
                     const correctLetter=wordGame.grid[r][c]?.letter;
                     const isWrong=isActive&&letter&&letter!==correctLetter;
-                    let bg='#0a0a1a';
+                    let bg='#111';
+                    let txtColor='#111';
                     if(isActive){
-                      if(wordVerificato&&letter&&letter===correctLetter) bg='rgba(16,185,129,0.42)';
-                      else if(isWrong) bg='rgba(239,68,68,0.38)';
-                      else if(isSelected) bg=`${t.primario}66`;
-                      else if(inWord) bg=`${t.primario}28`;
-                      else bg='#1e1e3a';
+                      if(wordVerificato&&letter&&letter===correctLetter){ bg='rgba(16,185,129,0.2)'; txtColor='#059669'; }
+                      else if(isWrong){ bg='rgba(239,68,68,0.15)'; txtColor='#dc2626'; }
+                      else if(isSelected){ bg=t.primario; txtColor='white'; }
+                      else if(inWord){ bg='rgba(255,255,255,0.92)'; txtColor='#111'; }
+                      else{ bg='white'; txtColor='#111'; }
                     }
                     return (
                       <div key={c} onClick={()=>handleCellClick(r,c)} style={{
                         width:CELL,height:CELL,background:bg,
-                        border:isActive?`1px solid rgba(255,255,255,${isSelected?0.5:inWord?0.18:0.09})`:"none",
+                        border:isActive?`1px solid rgba(0,0,0,${isSelected?0.4:0.15})`:"none",
                         boxSizing:"border-box",position:"relative",
                         display:"flex",alignItems:"center",justifyContent:"center",
                         cursor:isActive&&!wordVerificato?"pointer":"default"
                       }}>
-                        {num&&isActive&&<span className="cw-letter" style={{position:"absolute",top:1,left:2,fontSize:CELL>27?"7px":"5px",fontWeight:900,color:"rgba(255,255,255,0.75)",lineHeight:1,zIndex:1,pointerEvents:"none"}}>{num}</span>}
-                        {isActive&&<span className="cw-letter" style={{fontSize:CELL>27?"15px":"12px",fontWeight:900,lineHeight:1,color:wordVerificato?(letter===correctLetter?"#34d399":"#f87171"):isWrong?"#f87171":"white",pointerEvents:"none"}}>{letter}</span>}
+                        {num&&isActive&&<span className="cw-letter" style={{position:"absolute",top:1,left:2,fontSize:CELL>27?"7px":"5px",fontWeight:900,color:isSelected?"rgba(255,255,255,0.85)":"rgba(0,0,0,0.4)",lineHeight:1,zIndex:1,pointerEvents:"none"}}>{num}</span>}
+                        {isActive&&<span className="cw-letter" style={{fontSize:CELL>27?"15px":"12px",fontWeight:900,lineHeight:1,color:txtColor,pointerEvents:"none"}}>{letter}</span>}
                       </div>
                     );
                   })}
