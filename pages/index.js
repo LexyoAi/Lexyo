@@ -1256,7 +1256,7 @@ export default function Home() {
       const res = await fetch("/api/interroga-analizza", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ argomento, materia: MATERIE[materiaKey]?.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M", accessToken: token }),
+        body: JSON.stringify({ argomento, materia: MATERIE[materiaKey]?.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M", nome: figlioAttivo?.nome || "", accessToken: token }),
       });
       const d = await res.json();
       if (d.errore) { setRipassoEstateState(null); setScreen("estate"); alert(d.errore); return; }
@@ -3743,7 +3743,7 @@ export default function Home() {
         const res = await fetch("/api/interroga-analizza", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ argomento: interrogTopicScelto, materia: mat.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M", accessToken: token }),
+          body: JSON.stringify({ argomento: interrogTopicScelto, materia: mat.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M", nome: figlioAttivo?.nome || "", accessToken: token }),
         });
         const d = await res.json();
         if (d.errore) { alert(d.errore); setInterrogFase("carica"); return; }
@@ -3762,7 +3762,7 @@ export default function Home() {
           const res = await fetch("/api/interroga-analizza", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ photo: compressed, materia: mat.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M", accessToken: token }),
+            body: JSON.stringify({ photo: compressed, materia: mat.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M", nome: figlioAttivo?.nome || "", accessToken: token }),
           });
           const d = await res.json();
           if (d.errore) { alert(d.errore); setInterrogFase("carica"); return; }
@@ -7166,7 +7166,7 @@ export default function Home() {
           const opzioni = [...altriEn, c.parola].sort(() => Math.random() - 0.5);
           return { tipo:"it_en", emoji:c.emoji, mostra:c.corretta, suggerimento:"What's the English word?", corretta:c.parola, opzioni };
         }
-        return { tipo:"en_it", emoji:c.emoji, mostra:c.parola, suggerimento:"Come si dice in italiano?", corretta:c.corretta, opzioni:c.opzioni };
+        return { tipo:"en_it", emoji:c.emoji, mostra:c.parola, suggerimento:"Come si traduce in italiano?", corretta:c.corretta, opzioni:c.opzioni };
       });
     };
 

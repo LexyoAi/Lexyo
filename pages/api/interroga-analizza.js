@@ -12,7 +12,7 @@ const TEXT_TTL = 14 * 24 * 60 * 60 * 1000;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { accessToken, photo, argomento, materia, classe, sesso } = req.body;
+  const { accessToken, photo, argomento, materia, classe, sesso, nome } = req.body;
   const user = await verifyAuth(accessToken);
   if (!user) return res.status(401).json({ errore: "Accesso richiesto. Effettua il login." });
   const adattivita = getAdattivita(classe);
@@ -90,7 +90,8 @@ Livello studente: ${adattivita}`, cache_control: { type: "ephemeral" } }],
       }
     }
 
-    const testoAudio = `${dati.benvenuto} Prima domanda: ${dati.prima_domanda}`;
+    const saluto = nome ? `Eccomi ${nome}! ` : "Eccomi! ";
+    const testoAudio = `${saluto}Siamo pronti per l'interrogazione, iniziamo subito! Prima domanda: ${dati.prima_domanda}`;
     const audio = await tts(testoAudio, VOICE_INTERROGA);
 
     res.json({
