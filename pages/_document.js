@@ -16,6 +16,13 @@ export default function Document() {
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
         <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+        {/* Privacy-friendly analytics by Plausible */}
+        <script async src="https://plausible.io/js/pa-LK1UujSlmlt-uzKAP_sVV.js"></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()`
+          }}
+        />
       </Head>
       <body className="antialiased" style={{ margin: 0 }}>
         <Main />
