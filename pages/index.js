@@ -5658,10 +5658,11 @@ export default function Home() {
           body: JSON.stringify({ materia: info.label, classe: prog?.label, argomento: argomentoCorrente, sesso: figlioAttivo?.sesso || "M", accessToken: token }),
         });
         const d = await r.json();
-        setRipassoQuiz(d.domande || []);
+        if (!d.domande?.length) throw new Error(d.errore || "Nessuna domanda ricevuta");
+        setRipassoQuiz(d.domande);
         setRipassoRisposte([]);
         setRipassoFine(false);
-      } catch { setRipassoQuiz([]); }
+      } catch (e) { alert(e.message || "Errore di connessione. Riprova."); }
       setRipassoLoading(false);
     };
 
