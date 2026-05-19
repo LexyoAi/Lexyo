@@ -13,6 +13,7 @@ export default function Document() {
         <meta name="apple-mobile-web-app-title" content="Lexyo" />
         <meta name="format-detection" content="telephone=no" />
         <link rel="manifest" href="/manifest.json" />
+        <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
         <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
