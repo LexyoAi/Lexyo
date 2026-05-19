@@ -94,11 +94,26 @@ export default function Landing({ onEntra }) {
     <>
       <Head>
         <title>Lexyo — Il professore AI per i tuoi figli</title>
-        <meta name="description" content="La prima app AI educativa italiana. Programma MIUR, voce italiana, zero pubblicità." />
+        <meta name="description" content="Lexyo è il professore AI per i bambini italiani dalla 3ª elementare alla 3ª media. Foto compiti, interrogazioni orali, dettato AI e quiz basati sul programma MIUR. Prova gratis 3 giorni." />
+        <meta name="keywords" content="app educativa bambini, professore AI italiano, aiuto compiti, ripetizioni online, app scuola elementare, app scuola media, intelligenza artificiale bambini, studio AI" />
+        <meta name="author" content="Lexyo.it" />
+        <meta name="robots" content="index, follow" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#ffffff" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta property="og:title" content="Lexyo — Il professore AI di tuo figlio" />
+        <meta property="og:description" content="Sempre paziente. Sempre disponibile. Non dà le risposte — insegna a trovarle. Prova gratis 3 giorni." />
+        <meta property="og:image" content="https://app.lexyo.it/icons/icon-512.png" />
+        <meta property="og:url" content="https://app.lexyo.it" />
+        <meta property="og:type" content="website" />
+        <meta property="og:locale" content="it_IT" />
+        <meta property="og:site_name" content="Lexyo" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Lexyo — Il professore AI di tuo figlio" />
+        <meta name="twitter:description" content="Sempre paziente. Sempre disponibile. Non dà le risposte — insegna a trovarle." />
+        <meta name="twitter:image" content="https://app.lexyo.it/icons/icon-512.png" />
+        <link rel="canonical" href="https://app.lexyo.it" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />

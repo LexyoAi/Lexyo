@@ -12,6 +12,22 @@ export default function Document() {
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Lexyo" />
         <meta name="format-detection" content="telephone=no" />
+        <meta name="description" content="Lexyo è il professore AI per i bambini italiani dalla 3ª elementare alla 3ª media. Foto compiti, interrogazioni orali, dettato AI e quiz basati sul programma MIUR. Prova gratis 3 giorni." />
+        <meta name="keywords" content="app educativa bambini, professore AI italiano, aiuto compiti, ripetizioni online, app scuola elementare, app scuola media, intelligenza artificiale bambini, studio AI" />
+        <meta name="author" content="Lexyo.it" />
+        <meta name="robots" content="index, follow" />
+        <meta property="og:title" content="Lexyo — Il professore AI di tuo figlio" />
+        <meta property="og:description" content="Sempre paziente. Sempre disponibile. Non dà le risposte — insegna a trovarle. Prova gratis 3 giorni." />
+        <meta property="og:image" content="https://app.lexyo.it/icons/icon-512.png" />
+        <meta property="og:url" content="https://app.lexyo.it" />
+        <meta property="og:type" content="website" />
+        <meta property="og:locale" content="it_IT" />
+        <meta property="og:site_name" content="Lexyo" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Lexyo — Il professore AI di tuo figlio" />
+        <meta name="twitter:description" content="Sempre paziente. Sempre disponibile. Non dà le risposte — insegna a trovarle." />
+        <meta name="twitter:image" content="https://app.lexyo.it/icons/icon-512.png" />
+        <link rel="canonical" href="https://app.lexyo.it" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
