@@ -5670,7 +5670,12 @@ export default function Home() {
         });
         const d = await r.json();
         if (!d.domande?.length) throw new Error(d.errore || "Nessuna domanda ricevuta");
-        setRipassoQuiz(d.domande);
+        const domandeMescolate = d.domande.map(dom => {
+          const testoCorretto = dom.opzioni[dom.corretta];
+          const shuffled = [...dom.opzioni].sort(() => Math.random() - 0.5);
+          return { ...dom, opzioni: shuffled, corretta: shuffled.indexOf(testoCorretto) };
+        });
+        setRipassoQuiz(domandeMescolate);
         setRipassoRisposte([]);
         setRipassoFine(false);
       } catch (e) { alert(e.message || "Errore di connessione. Riprova."); }
@@ -5695,12 +5700,12 @@ export default function Home() {
         const ieri = new Date(Date.now() - 86400000).toISOString().split("T")[0];
         const ultiGiorno = figlioAttivo?.ripasso_ultimo_giorno;
         const nuovoStreak = ultiGiorno === oggi ? ripassoStreak : ultiGiorno === ieri ? ripassoStreak + 1 : 1;
-        const eraCompletato = prevBest === 10;  // overlay solo al primo 10/10
+        const eraCompletato = prevBest >= 7;  // overlay solo se non aveva già superato il livello
         setRipassoScores(nuoviScores);
         setRipassoXp(nuovoXp);
         setRipassoStreak(nuovoStreak);
         setFiglioAttivo(prev => ({ ...prev, ripasso_scores: nuoviScores, ripasso_xp: nuovoXp, ripasso_streak: nuovoStreak, ripasso_ultimo_giorno: oggi }));
-        if (!eraCompletato) { setTimeout(() => suona("obiettivo"), 350); setRipassoNuovoLivelloOverlay(true); } else { setTimeout(() => suona("livello"), 350); }
+        if (corrette >= 7 && !eraCompletato) { setTimeout(() => suona("obiettivo"), 350); setRipassoNuovoLivelloOverlay(true); } else { setTimeout(() => suona("livello"), 350); }
         supabase.from("figli").update({ ripasso_scores: nuoviScores, ripasso_xp: nuovoXp, ripasso_streak: nuovoStreak, ripasso_ultimo_giorno: oggi }).eq("id", figlioAttivo.id).then(() => {});
         setTimeout(() => setScreen("ripasso_risultato"), 400);
       }
