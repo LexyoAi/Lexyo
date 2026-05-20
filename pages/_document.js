@@ -40,25 +40,50 @@ export default function Document() {
               "@context": "https://schema.org",
               "@type": "SoftwareApplication",
               "name": "Lexyo",
+              "description": "App educativa AI per bambini italiani dalla 3ª elementare alla 3ª media. Professore AI disponibile 24/7 per compiti, interrogazioni orali, dettato e quiz basati sul programma MIUR.",
+              "url": "https://app.lexyo.it",
               "applicationCategory": "EducationalApplication",
-              "operatingSystem": "Android, iOS, Web",
-              "description": "Lexyo è il professore AI per i bambini italiani dalla 3ª elementare alla 3ª media. Foto compiti, interrogazioni orali, dettato AI e quiz basati sul programma MIUR.",
+              "operatingSystem": "Web, iOS, Android",
               "offers": {
                 "@type": "Offer",
                 "price": "12.90",
                 "priceCurrency": "EUR",
+                "priceValidUntil": "2027-12-31",
+                "description": "Abbonamento mensile con 3 giorni di prova gratuita",
                 "availability": "https://schema.org/InStock"
               },
-              "url": "https://app.lexyo.it",
-              "inLanguage": "it",
-              "publisher": {
+              "aggregateRating": {
+                "@type": "AggregateRating",
+                "ratingValue": "4.8",
+                "ratingCount": "24"
+              },
+              "author": {
                 "@type": "Organization",
-                "name": "Lexyo",
+                "name": "Lexyo.it",
                 "url": "https://app.lexyo.it"
+              },
+              "inLanguage": "it-IT",
+              "audience": {
+                "@type": "EducationalAudience",
+                "educationalRole": "student",
+                "audienceType": "Bambini 8-14 anni"
               }
             })
           }}
         />
+        {/* Meta Pixel Facebook */}
+        <script dangerouslySetInnerHTML={{__html: `
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '810354571928741');
+fbq('track', 'PageView');
+`}} />
         {/* Privacy-friendly analytics by Plausible */}
         <script async src="https://plausible.io/js/pa-LK1UujSlmlt-uzKAP_sVV.js"></script>
         <script
@@ -68,6 +93,7 @@ export default function Document() {
         />
       </Head>
       <body className="antialiased" style={{ margin: 0 }}>
+        <noscript><img height="1" width="1" style={{display:'none'}} src="https://www.facebook.com/tr?id=810354571928741&ev=PageView&noscript=1" /></noscript>
         <Main />
         <NextScript />
       </body>

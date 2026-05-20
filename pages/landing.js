@@ -64,7 +64,7 @@ export default function Landing({ onEntra }) {
 
   const features = [
     { Icon: Camera,        titolo: "Foto Compiti",             desc: "Scatta la foto dell'esercizio. Lex guida tuo figlio passo per passo senza mai dare la risposta diretta — metodo socratico.", tag: "Metodo Socratico",    colore: "#6366f1" },
-    { Icon: MessageCircle, titolo: "Chat con Lex 24/7",        desc: "Domande su qualsiasi materia, a qualsiasi ora. Lex risponde stimolando il ragionamento, non sostituendolo.", tag: "Sempre Disponibile",  colore: "#0ea5e9" },
+    { Icon: MessageCircle, titolo: "Chat con Lex 24/7",        desc: "Domande su qualsiasi materia, a qualsiasi ora. Studio intelligente con AI: Lex risponde stimolando il ragionamento, non sostituendolo.", tag: "Sempre Disponibile",  colore: "#0ea5e9" },
 
     { Icon: Zap,           titolo: "Quiz a Scelta Multipla",   desc: "Quiz su ogni argomento del programma con 4 opzioni. Feedback immediato e spiegazione della risposta corretta inclusa.", tag: "Feedback Immediato",   colore: "#10b981" },
     { Icon: GraduationCap, titolo: "Interrogazione Orale",     desc: "Lex simula l'interrogazione con domande reali del programma MIUR. Valuta, approfondisce e indica cosa ripassare.", tag: "Come a Scuola",       colore: "#8b5cf6" },
@@ -73,7 +73,7 @@ export default function Landing({ onEntra }) {
     { Icon: Zap,           titolo: "Sfida Velocità",           desc: "20 domande in 60 secondi di fuoco. Batti il tuo record e scala la classifica. Adrenalina pura con il programma MIUR.", tag: "60 Secondi",          colore: "#ef4444" },
     { Icon: HelpCircle,    titolo: "Chi Sono?",                desc: "Indovina il personaggio storico, l'autore o il concetto con meno indizi possibili. Il tuo miglior punteggio salvato.", tag: "Deduzione",           colore: "#38bdf8" },
     { Icon: Sun,           titolo: "Estate con Lex",           desc: "Piano di ripasso estivo personalizzato con letture consigliate, quiz e anteprima degli argomenti dell'anno successivo.", tag: "Tutto l'Anno",        colore: "#f97316" },
-    { Icon: RefreshCcw,    titolo: "Ripasso Guidato",          desc: "Mappa visiva degli argomenti già studiati. Quiz di ripasso per consolidare le conoscenze prima delle verifiche.", tag: "Mappa Visiva",        colore: "#10b981" },
+    { Icon: RefreshCcw,    titolo: "Ripasso Guidato",          desc: "Mappa visiva degli argomenti già studiati. Quiz di ripasso per consolidare le conoscenze prima delle verifiche — la vera alternativa alle ripetizioni online.", tag: "Mappa Visiva",        colore: "#10b981" },
     { Icon: BarChart3,     titolo: "Dashboard Genitore",       desc: "Area protetta da PIN con statistiche complete: sessioni, argomenti capiti, semaforo preparazione, badge e streak.", tag: "Controllo Totale",    colore: "#8b5cf6" },
     { Icon: GraduationCap, titolo: "Preparazione Esame",       desc: "Sezione dedicata all'esame di 3ª media: tema italiano, matematica, storia, geografia, inglese e colloquio orale simulato.", tag: "Solo 3ª Media",       colore: "#a78bfa" },
     { Icon: Ban,           titolo: "Zero Pubblicità",          desc: "Nessun banner, nessuna notifica commerciale, nessun video suggerito. Con Lexyo si studia. Punto.", tag: "Mai e Poi Mai",       colore: "#ef4444" },
@@ -94,8 +94,8 @@ export default function Landing({ onEntra }) {
     <>
       <Head>
         <title>Lexyo — Il Professore AI per i Bambini Italiani | Compiti, Quiz, Interrogazioni</title>
-        <meta name="description" content="Lexyo è il professore AI per i bambini italiani dalla 3ª elementare alla 3ª media. Foto compiti, interrogazioni orali, dettato AI e quiz basati sul programma MIUR. Prova gratis 3 giorni." />
-        <meta name="keywords" content="app educativa bambini, professore AI italiano, aiuto compiti, ripetizioni online, app scuola elementare, app scuola media, intelligenza artificiale bambini, studio AI" />
+        <meta name="description" content="Lexyo è l'app AI che aiuta i bambini delle elementari e medie con i compiti. Foto compiti, interrogazioni orali, dettato AI, quiz MIUR. Prova gratis 3 giorni senza carta di credito." />
+        <meta name="keywords" content="app compiti bambini, professore AI italiano, aiuto compiti elementari, ripetizioni online bambini, app studio scuola media, intelligenza artificiale educativa, app educativa italiana, compiti AI, studio intelligente, Lexyo" />
         <meta name="author" content="Lexyo.it" />
         <meta name="robots" content="index, follow" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />

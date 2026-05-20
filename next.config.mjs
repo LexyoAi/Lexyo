@@ -4,6 +4,7 @@ const nextConfig = {
   reactStrictMode: true,
   images: {
     formats: ["image/webp"],
+    minimumCacheTTL: 60,
   },
   async redirects() {
     return [
@@ -21,6 +22,12 @@ const nextConfig = {
         source: "/icons/:path*",
         headers: [
           { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        source: "/public/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=86400" },
         ],
       },
       {
