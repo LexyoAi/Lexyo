@@ -1,6 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  compress: true,
   reactStrictMode: true,
+  images: {
+    formats: ["image/webp"],
+  },
   async redirects() {
     return [
       {
@@ -13,6 +17,12 @@ const nextConfig = {
   },
   async headers() {
     return [
+      {
+        source: "/icons/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
       {
         source: "/:path*",
         headers: [

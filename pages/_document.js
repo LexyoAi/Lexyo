@@ -33,6 +33,32 @@ export default function Document() {
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
         <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              "name": "Lexyo",
+              "applicationCategory": "EducationalApplication",
+              "operatingSystem": "Android, iOS, Web",
+              "description": "Lexyo è il professore AI per i bambini italiani dalla 3ª elementare alla 3ª media. Foto compiti, interrogazioni orali, dettato AI e quiz basati sul programma MIUR.",
+              "offers": {
+                "@type": "Offer",
+                "price": "12.90",
+                "priceCurrency": "EUR",
+                "availability": "https://schema.org/InStock"
+              },
+              "url": "https://app.lexyo.it",
+              "inLanguage": "it",
+              "publisher": {
+                "@type": "Organization",
+                "name": "Lexyo",
+                "url": "https://app.lexyo.it"
+              }
+            })
+          }}
+        />
         {/* Privacy-friendly analytics by Plausible */}
         <script async src="https://plausible.io/js/pa-LK1UujSlmlt-uzKAP_sVV.js"></script>
         <script

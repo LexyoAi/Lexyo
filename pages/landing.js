@@ -93,7 +93,7 @@ export default function Landing({ onEntra }) {
   return (
     <>
       <Head>
-        <title>Lexyo — Il professore AI per i tuoi figli</title>
+        <title>Lexyo — Il Professore AI per i Bambini Italiani | Compiti, Quiz, Interrogazioni</title>
         <meta name="description" content="Lexyo è il professore AI per i bambini italiani dalla 3ª elementare alla 3ª media. Foto compiti, interrogazioni orali, dettato AI e quiz basati sul programma MIUR. Prova gratis 3 giorni." />
         <meta name="keywords" content="app educativa bambini, professore AI italiano, aiuto compiti, ripetizioni online, app scuola elementare, app scuola media, intelligenza artificiale bambini, studio AI" />
         <meta name="author" content="Lexyo.it" />
@@ -328,7 +328,7 @@ export default function Landing({ onEntra }) {
           <div style={{ display:"flex", justifyContent:"center", alignItems:"center", marginBottom:"32px" }}>
             <div style={{ position:"relative" }}>
               <div style={{ position:"absolute", top:"-32px", right:"-32px", bottom:"-32px", left:"-32px", borderRadius:"50%", background:"radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)", animation:"glow 4s ease-in-out infinite" }} />
-              <img src="/Lex-prof.png" alt="Lex Professore" className="lex-main-img" style={{ width:"clamp(200px, 40vw, 340px)", objectFit:"contain", display:"block", animation:"lexProfIdle 5s ease-in-out infinite, lexGlow 5s ease-in-out infinite", transformOrigin:"bottom center", position:"relative", zIndex:1 }} />
+              <img src="/Lex-prof.png" alt="Lex il leone professore AI di Lexyo" className="lex-main-img" style={{ width:"clamp(200px, 40vw, 340px)", objectFit:"contain", display:"block", animation:"lexProfIdle 5s ease-in-out infinite, lexGlow 5s ease-in-out infinite", transformOrigin:"bottom center", position:"relative", zIndex:1 }} />
             </div>
           </div>
 
@@ -385,7 +385,7 @@ export default function Landing({ onEntra }) {
       <section style={{ padding:"0 24px 60px", maxWidth:"880px", margin:"0 auto" }}>
         <div id="merita" data-animate className={V("merita")} style={{ background:"#ffffff", border:"2px solid rgba(99,102,241,0.15)", borderRadius:"28px", padding:"56px 40px", textAlign:"center", position:"relative", overflow:"hidden", boxShadow:"0 8px 40px rgba(99,102,241,0.1)" }}>
           <div style={{ position:"absolute", top:0, right:0, bottom:0, left:0, background:"radial-gradient(ellipse 80% 60% at 50% 50%, rgba(99,102,241,0.06) 0%, transparent 70%)", pointerEvents:"none" }} />
-          <img src="/Lex-prof.png" alt="Lex" style={{ width:"clamp(90px,14vw,130px)", objectFit:"contain", margin:"0 auto 20px", display:"block", animation:"lexProfIdle 5s ease-in-out infinite", transformOrigin:"bottom center", position:"relative", zIndex:1 }} />
+          <img src="/Lex-prof.png" alt="Lex il leone professore AI di Lexyo" loading="lazy" style={{ width:"clamp(90px,14vw,130px)", objectFit:"contain", margin:"0 auto 20px", display:"block", animation:"lexProfIdle 5s ease-in-out infinite", transformOrigin:"bottom center", position:"relative", zIndex:1 }} />
           <h2 style={{ fontSize:"clamp(28px, 5vw, 52px)", fontWeight:900, letterSpacing:"-2px", lineHeight:1.12, color:"#0D0F2B", marginBottom:"16px", position:"relative", zIndex:1 }}>
             Tuo figlio merita di imparare,<br/>
             <span style={{ background:"linear-gradient(135deg,#a78bfa,#6366f1)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text" }}>non di copiare.</span>
@@ -424,7 +424,7 @@ export default function Landing({ onEntra }) {
               <div className="lcard-content">
                 {c.flag ? (
                   <div style={{ marginBottom:"10px" }}>
-                    <img src="https://flagcdn.com/w80/gb.png" alt="UK" width={46} height={31} style={{ borderRadius:"5px", boxShadow:"0 2px 8px rgba(0,0,0,0.3)", display:"block", objectFit:"cover" }} />
+                    <img src="https://flagcdn.com/w80/gb.png" alt="UK" width={46} height={31} loading="lazy" style={{ borderRadius:"5px", boxShadow:"0 2px 8px rgba(0,0,0,0.3)", display:"block", objectFit:"cover" }} />
                   </div>
                 ) : (
                   <div style={{ fontSize:"32px", marginBottom:"10px" }}>{c.emoji}</div>
@@ -460,7 +460,7 @@ export default function Landing({ onEntra }) {
       <div id="come-funziona" data-animate className={V("come-funziona")} style={{ textAlign:"center" }}>
         <div style={{ position:"relative", display:"inline-block", marginBottom:"8px" }}>
           <div style={{ position:"absolute", top:"-20px", right:"-20px", bottom:"-20px", left:"-20px", borderRadius:"50%", background:"radial-gradient(circle,rgba(99,102,241,0.1) 0%,transparent 70%)", pointerEvents:"none" }} />
-          <img src="/Lex-prof.png" alt="Lex" style={{ width:"clamp(80px,12vw,110px)", objectFit:"contain", display:"block", margin:"0 auto", animation:"lexProfIdle 5s ease-in-out infinite", transformOrigin:"bottom center", position:"relative", zIndex:1 }} />
+          <img src="/Lex-prof.png" alt="Lex il leone professore AI di Lexyo" loading="lazy" style={{ width:"clamp(80px,12vw,110px)", objectFit:"contain", display:"block", margin:"0 auto", animation:"lexProfIdle 5s ease-in-out infinite", transformOrigin:"bottom center", position:"relative", zIndex:1 }} />
         </div>
         <p style={{ fontSize:"12px", fontWeight:800, color:"#6366f1", textTransform:"uppercase", letterSpacing:"2px", marginBottom:"12px" }}>Come funziona</p>
         <h2 style={{ fontSize:"clamp(24px,4vw,40px)", fontWeight:900, letterSpacing:"-1.2px", lineHeight:1.1, color:"#0D0F2B" }}>
@@ -539,7 +539,7 @@ export default function Landing({ onEntra }) {
             <div style={{ display:"flex", flexWrap:"wrap", gap:"40px", alignItems:"center" }}>
               <div style={{ flex:"1", minWidth:"260px" }}>
                 <div style={{ display:"inline-flex", alignItems:"center", gap:"10px", background:"rgba(0,0,0,0.15)", borderRadius:"100px", padding:"6px 18px", marginBottom:"20px" }}>
-                  <img src="https://flagcdn.com/w80/gb.png" alt="UK" width={22} height={15} style={{ borderRadius:"3px", boxShadow:"0 1px 4px rgba(0,0,0,0.3)", display:"block", objectFit:"cover" }} />
+                  <img src="https://flagcdn.com/w80/gb.png" alt="UK" width={22} height={15} loading="lazy" style={{ borderRadius:"3px", boxShadow:"0 1px 4px rgba(0,0,0,0.3)", display:"block", objectFit:"cover" }} />
                   <span style={{ fontSize:"12px", fontWeight:900, color:"rgba(255,255,255,0.85)", textTransform:"uppercase", letterSpacing:"2px" }}>Inglese con Lex</span>
                 </div>
                 <h2 style={{ fontSize:"clamp(26px,4vw,42px)", fontWeight:900, letterSpacing:"-1.5px", lineHeight:1.1, color:"white", marginBottom:"14px" }}>
@@ -817,14 +817,14 @@ export default function Landing({ onEntra }) {
           </div>
           <div style={{ display:"flex", gap:"14px", justifyContent:"center", flexWrap:"wrap" }}>
             <button onClick={handleInstallAndroid} className="btn-cta" style={{ display:"flex", alignItems:"center", gap:"12px", background:"linear-gradient(135deg,#3b82f6,#2563eb)", border:"none", borderRadius:"16px", padding:"16px 30px", color:"white", fontFamily:"'Plus Jakarta Sans'", cursor:"pointer" }}>
-              <img src="https://cdn.simpleicons.org/android/ffffff" width="30" height="30" alt="Android" style={{ objectFit:"contain", flexShrink:0 }} />
+              <img src="https://cdn.simpleicons.org/android/ffffff" width="30" height="30" alt="Android" loading="lazy" style={{ objectFit:"contain", flexShrink:0 }} />
               <div style={{ textAlign:"left" }}>
                 <p style={{ fontSize:"11px", fontWeight:600, color:"rgba(255,255,255,0.75)", margin:0 }}>Scarica per</p>
                 <p style={{ fontSize:"16px", fontWeight:900, margin:0 }}>Android</p>
               </div>
             </button>
             <button onClick={() => setShowIosModal("ios")} className="btn-cta" style={{ display:"flex", alignItems:"center", gap:"12px", background:"white", border:"1px solid rgba(0,0,0,0.12)", borderRadius:"16px", padding:"16px 30px", color:"#0D0F2B", fontFamily:"'Plus Jakarta Sans'", cursor:"pointer" }}>
-              <img src="https://cdn.simpleicons.org/apple/000000" width="28" height="28" alt="Apple" style={{ objectFit:"contain", flexShrink:0 }} />
+              <img src="https://cdn.simpleicons.org/apple/000000" width="28" height="28" alt="Apple" loading="lazy" style={{ objectFit:"contain", flexShrink:0 }} />
               <div style={{ textAlign:"left" }}>
                 <p style={{ fontSize:"11px", fontWeight:600, color:"rgba(0,0,0,0.5)", margin:0 }}>Istruzioni per</p>
                 <p style={{ fontSize:"16px", fontWeight:900, margin:0 }}>iPhone / iPad</p>
@@ -874,7 +874,7 @@ export default function Landing({ onEntra }) {
       {scrollY > 500 && (
         <div className="sticky-bar-el" style={{ position:"fixed", bottom:0, left:0, right:0, background:"rgba(255,255,255,0.97)", backdropFilter:"blur(24px)", borderTop:"1px solid rgba(99,102,241,0.15)", padding:"12px 20px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", zIndex:300, gap:"12px", boxShadow:"0 -4px 24px rgba(99,102,241,0.1)" }}>
           <div style={{ display:"flex", alignItems:"center", gap:"10px", minWidth:0 }}>
-            <img src="/Lex-prof.png" alt="Lexyo" style={{ width:"36px", height:"36px", objectFit:"contain", flexShrink:0 }} />
+            <img src="/Lex-prof.png" alt="Lexyo" loading="lazy" style={{ width:"36px", height:"36px", objectFit:"contain", flexShrink:0 }} />
             <div>
               <p style={{ fontWeight:900, fontSize:"14px", margin:0, color:"#0D0F2B" }}>📱 Installa Lexyo — è gratis</p>
               <p className="sticky-sub" style={{ fontSize:"11px", color:"#8892AE", margin:0 }}>Nessun App Store · Funziona offline</p>
@@ -882,11 +882,11 @@ export default function Landing({ onEntra }) {
           </div>
           <div style={{ display:"flex", gap:"8px", flexShrink:0 }}>
             <button onClick={handleInstallAndroid} style={{ display:"flex", alignItems:"center", gap:"7px", background:"linear-gradient(135deg,#3b82f6,#2563eb)", border:"none", borderRadius:"10px", padding:"9px 16px", color:"white", fontFamily:"'Plus Jakarta Sans'", fontWeight:800, fontSize:"13px", cursor:"pointer" }}>
-              <img src="https://cdn.simpleicons.org/android/ffffff" width="18" height="18" alt="" style={{ objectFit:"contain" }} />
+              <img src="https://cdn.simpleicons.org/android/ffffff" width="18" height="18" alt="" loading="lazy" style={{ objectFit:"contain" }} />
               Android
             </button>
             <button onClick={() => setShowIosModal("ios")} style={{ display:"flex", alignItems:"center", gap:"7px", background:"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.2)", borderRadius:"10px", padding:"9px 16px", color:"#6366f1", fontFamily:"'Plus Jakarta Sans'", fontWeight:800, fontSize:"13px", cursor:"pointer" }}>
-              <img src="https://cdn.simpleicons.org/apple/6366f1" width="16" height="16" alt="" style={{ objectFit:"contain" }} />
+              <img src="https://cdn.simpleicons.org/apple/6366f1" width="16" height="16" alt="" loading="lazy" style={{ objectFit:"contain" }} />
               iPhone
             </button>
           </div>
@@ -896,7 +896,7 @@ export default function Landing({ onEntra }) {
       {/* FOOTER */}
       <footer style={{ borderTop:"1px solid rgba(99,102,241,0.1)", padding:"28px 24px", maxWidth:"880px", margin:"0 auto", display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:"14px", background:"#F7F8FF" }}>
         <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-          <img src="/Lex-prof.png" alt="Lex" style={{ width:"28px", height:"28px", objectFit:"contain" }} />
+          <img src="/Lex-prof.png" alt="Lex" loading="lazy" style={{ width:"28px", height:"28px", objectFit:"contain" }} />
           <span style={{ fontWeight:800, fontSize:"16px", color:"#0D0F2B" }}>Lexyo</span>
           <span style={{ fontSize:"12px", color:"#8892AE" }}>© 2026 · Made with ❤️ in Italy 🇮🇹</span>
         </div>
@@ -904,6 +904,7 @@ export default function Landing({ onEntra }) {
           <a href="/privacy" style={{ fontSize:"13px", color:"#8892AE", textDecoration:"none", fontWeight:600 }}>Privacy Policy</a>
           <a href="/termini" style={{ fontSize:"13px", color:"#8892AE", textDecoration:"none", fontWeight:600 }}>Termini di Servizio</a>
           <a href="/cookie"  style={{ fontSize:"13px", color:"#8892AE", textDecoration:"none", fontWeight:600 }}>Cookie Policy</a>
+          <a href="/faq"    style={{ fontSize:"13px", color:"#8892AE", textDecoration:"none", fontWeight:600 }}>FAQ</a>
           <a href="mailto:info@lexyo.it" style={{ fontSize:"13px", color:"#8892AE", textDecoration:"none", fontWeight:600 }}>Contatti</a>
         </div>
       </footer>
