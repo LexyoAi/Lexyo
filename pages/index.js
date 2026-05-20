@@ -390,6 +390,9 @@ export default function Home() {
     const p = params.get("pagamento");
     if (p === "successo") {
       setPagamentoFlash("successo");
+      if (typeof fbq !== 'undefined') {
+        fbq('track', 'Purchase', {value: 12.90, currency: 'EUR'});
+      }
       window.history.replaceState({}, "", window.location.pathname);
       // Polling: aspetta che il webhook Stripe aggiorni abbonamento_attivo su Supabase
       let attempts = 0;
@@ -441,6 +444,9 @@ export default function Home() {
       });
       const d = await res.json();
       if (d.url) {
+        if (typeof fbq !== 'undefined') {
+          fbq('track', 'InitiateCheckout', {value: 12.90, currency: 'EUR'});
+        }
         window.location.href = d.url;
       } else {
         alert("Errore Stripe: " + (d.errore || "Riprova"));
@@ -982,6 +988,11 @@ export default function Home() {
             localStorage.removeItem("lexyo_referral_code");
             setReferralInput("");
             setReferralDaUrl(false);
+          }
+          if (!error) {
+            if (typeof fbq !== 'undefined') {
+              fbq('track', 'CompleteRegistration');
+            }
           }
           // Accesso automatico dopo registrazione (o se email già registrata)
           const { error: loginError } = await doLogin(email.trim(), password.trim());
