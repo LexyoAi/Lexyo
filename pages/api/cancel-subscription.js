@@ -4,6 +4,11 @@ import { createClient } from "@supabase/supabase-js";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const getSupabase = () => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
+function safeIso(ts) {
+  if (typeof ts !== "number" || isNaN(ts) || ts <= 0) return null;
+  return new Date(ts * 1000).toISOString();
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
 
@@ -33,7 +38,6 @@ export default async function handler(req, res) {
         return res.status(404).json({ errore: "Nessun account di pagamento trovato per questa email." });
       }
       customerId = customer.id;
-      // Salva nel profilo per usi futuri
       await sb.from("profili").update({ stripe_customer_id: customerId }).ilike("email", emailNorm);
     }
 
@@ -47,16 +51,25 @@ export default async function handler(req, res) {
 
     if (!sub) {
       const statiTrovati = subscriptions.data.map(s => s.status).join(", ") || "nessuno";
-      return res.status(404).json({ errore: `Nessun abbonamento attivo trovato (stati trovati: ${statiTrovati}).` });
+      return res.status(404).json({ errore: `Nessun abbonamento attivo (stati trovati: ${statiTrovati}).` });
     }
 
-    const updated = await stripe.subscriptions.update(sub.id, { cancel_at_period_end: true });
+    // Legge current_period_end dal sub già recuperato (non cambia con cancel_at_period_end)
+    let fineperiodo = safeIso(sub.current_period_end);
 
-    const fineperiodo = new Date(updated.current_period_end * 1000).toISOString();
-    await sb
-      .from("profili")
-      .update({ abbonamento_disdetto: true, abbonamento_scadenza: fineperiodo })
-      .ilike("email", emailNorm);
+    await stripe.subscriptions.update(sub.id, { cancel_at_period_end: true });
+
+    // Se non disponibile nella lista, recupera il sub aggiornato
+    if (!fineperiodo) {
+      try {
+        const fresh = await stripe.subscriptions.retrieve(sub.id);
+        fineperiodo = safeIso(fresh.current_period_end);
+      } catch { /* il webhook aggiornerà la data */ }
+    }
+
+    const updateFields = { abbonamento_disdetto: true };
+    if (fineperiodo) updateFields.abbonamento_scadenza = fineperiodo;
+    await sb.from("profili").update(updateFields).ilike("email", emailNorm);
 
     return res.json({ ok: true, fine_periodo: fineperiodo });
   } catch (e) {
