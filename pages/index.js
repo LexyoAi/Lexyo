@@ -4390,22 +4390,43 @@ export default function Home() {
               </>
             ) : !disdettaConfermata ? (
               <>
-                <div style={{ textAlign:"center", marginBottom:"20px" }}>
-                  <div style={{ fontSize:"36px", marginBottom:"10px" }}>💎</div>
-                  <p style={{ fontWeight:900, fontSize:"18px", marginBottom:"4px" }}>Piano Premium Attivo</p>
-                  <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.45)" }}>12,90€/mese · rinnovo automatico</p>
-                </div>
-                <div style={{ background:"rgba(139,92,246,0.08)", border:"1px solid rgba(139,92,246,0.2)", borderRadius:"14px", padding:"16px", marginBottom:"20px" }}>
-                  {["✅ Accesso completo a tutte le funzioni","✅ Foto compiti illimitate","✅ Chat AI 24/7","✅ Programma MIUR per tutte le classi","✅ Zero pubblicità per sempre"].map((t,i) => (
-                    <p key={i} style={{ fontSize:"13px", fontWeight:600, color:"rgba(255,255,255,0.65)", marginBottom: i < 4 ? "8px" : 0 }}>{t}</p>
-                  ))}
-                </div>
-                <button onClick={() => { setDisdettaConfermata(true); setCancelErrore(""); }} style={{ width:"100%", padding:"13px", background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.3)", borderRadius:"14px", color:"#f87171", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer", marginBottom:"10px" }}>
-                  Disdici abbonamento
-                </button>
-                <button onClick={() => { setShowGestisciAbb(false); setDisdettaConfermata(false); setDisdettaSuccesso(null); setCancelErrore(""); setCancelLoading(false); }} style={{ width:"100%", padding:"13px", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", border:"none", borderRadius:"14px", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer" }}>
-                  Mantieni Premium ✨
-                </button>
+                {profiloUtente?.abbonamento_disdetto ? (
+                  <>
+                    <div style={{ textAlign:"center", marginBottom:"24px" }}>
+                      <div style={{ fontSize:"40px", marginBottom:"10px" }}>⏳</div>
+                      <p style={{ fontWeight:900, fontSize:"18px", color:"white", marginBottom:"8px" }}>Abbonamento in scadenza</p>
+                      <p style={{ fontSize:"14px", color:"rgba(255,255,255,0.65)", lineHeight:1.6 }}>
+                        Hai già disdetto. Puoi usare Lexyo Premium fino al
+                      </p>
+                      <p style={{ fontSize:"18px", fontWeight:900, color:"#a78bfa", marginTop:"6px" }}>
+                        {profiloUtente.abbonamento_scadenza ? new Date(profiloUtente.abbonamento_scadenza).toLocaleDateString("it-IT") : "fine del periodo corrente"}
+                      </p>
+                      <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.35)", marginTop:"8px" }}>Dopo quella data il tuo account tornerà al piano gratuito.</p>
+                    </div>
+                    <button onClick={() => { setShowGestisciAbb(false); setDisdettaConfermata(false); setDisdettaSuccesso(null); setCancelErrore(""); setCancelLoading(false); }} style={{ width:"100%", padding:"14px", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", border:"none", borderRadius:"14px", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"15px", cursor:"pointer" }}>
+                      Chiudi
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ textAlign:"center", marginBottom:"20px" }}>
+                      <div style={{ fontSize:"36px", marginBottom:"10px" }}>💎</div>
+                      <p style={{ fontWeight:900, fontSize:"18px", marginBottom:"4px" }}>Piano Premium Attivo</p>
+                      <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.45)" }}>12,90€/mese · rinnovo automatico</p>
+                    </div>
+                    <div style={{ background:"rgba(139,92,246,0.08)", border:"1px solid rgba(139,92,246,0.2)", borderRadius:"14px", padding:"16px", marginBottom:"20px" }}>
+                      {["✅ Accesso completo a tutte le funzioni","✅ Foto compiti illimitate","✅ Chat AI 24/7","✅ Programma MIUR per tutte le classi","✅ Zero pubblicità per sempre"].map((t,i) => (
+                        <p key={i} style={{ fontSize:"13px", fontWeight:600, color:"rgba(255,255,255,0.65)", marginBottom: i < 4 ? "8px" : 0 }}>{t}</p>
+                      ))}
+                    </div>
+                    <button onClick={() => { setDisdettaConfermata(true); setCancelErrore(""); }} style={{ width:"100%", padding:"13px", background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.3)", borderRadius:"14px", color:"#f87171", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer", marginBottom:"10px" }}>
+                      Disdici abbonamento
+                    </button>
+                    <button onClick={() => { setShowGestisciAbb(false); setDisdettaConfermata(false); setDisdettaSuccesso(null); setCancelErrore(""); setCancelLoading(false); }} style={{ width:"100%", padding:"13px", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", border:"none", borderRadius:"14px", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer" }}>
+                      Mantieni Premium ✨
+                    </button>
+                  </>
+                )}
               </>
             ) : (
               <>
