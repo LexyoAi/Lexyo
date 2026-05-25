@@ -2087,7 +2087,7 @@ export default function Home() {
           { label:"YouTube", bg:"#FF0000", icon:"https://cdn.simpleicons.org/youtube/ffffff", onClick:() => { copiaNegliAppunti(testoCondivisione, ""); mostraToast("Testo copiato! Incollalo in un post Community YouTube ▶"); } },
         ];
         return (
-          <div style={{ position:"fixed", inset:0, zIndex:10000, background:"rgba(0,0,0,0.92)", backdropFilter:"blur(16px)", display:"flex", alignItems:"flex-end", justifyContent:"center", padding:"0 0 0" }}>
+          <div className="dark-overlay" style={{ position:"fixed", inset:0, zIndex:10000, background:"rgba(0,0,0,0.92)", backdropFilter:"blur(16px)", display:"flex", alignItems:"flex-end", justifyContent:"center", padding:"0 0 0" }}>
             <div style={{ width:"100%", maxWidth:"480px", maxHeight:"92vh", overflowY:"auto", background:"linear-gradient(180deg,#0e0e22 0%,#12112b 100%)", borderRadius:"28px 28px 0 0", padding:"28px 20px 36px", boxShadow:"0 -8px 48px rgba(108,71,255,0.35)" }}>
 
               {/* Intestazione benvenuto */}
@@ -4366,7 +4366,7 @@ export default function Home() {
 
       {/* Modale gestione abbonamento */}
       {showGestisciAbb && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.85)", backdropFilter:"blur(14px)", display:"flex", alignItems:"flex-end", justifyContent:"center", zIndex:2000, padding:"0 0 24px" }} onClick={() => { setShowGestisciAbb(false); setDisdettaConfermata(false); }}>
+        <div className="dark-overlay" style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.85)", backdropFilter:"blur(14px)", display:"flex", alignItems:"flex-end", justifyContent:"center", zIndex:2000, padding:"0 0 24px" }} onClick={() => { setShowGestisciAbb(false); setDisdettaConfermata(false); }}>
           <div style={{ background:"#12121f", border:"1px solid rgba(139,92,246,0.35)", borderRadius:"28px 28px 20px 20px", padding:"32px 24px 28px", maxWidth:"420px", width:"100%", position:"relative" }} onClick={e => e.stopPropagation()}>
             <button onClick={() => { setShowGestisciAbb(false); setDisdettaConfermata(false); }} style={{ position:"absolute", top:"14px", right:"14px", background:"rgba(255,255,255,0.07)", border:"none", borderRadius:"50%", width:"30px", height:"30px", color:"rgba(255,255,255,0.5)", cursor:"pointer", fontSize:"15px" }}>✕</button>
 

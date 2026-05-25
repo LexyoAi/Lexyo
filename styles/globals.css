@@ -237,6 +237,59 @@ html[data-tema="light"] textarea::placeholder {
   50% { transform: scale(1.06); }
 }
 
+/* ── Modal scuri: esclusi dal tema chiaro ──
+   Usato sul wrapper esterno dei modal che devono restare dark (benvenuto premium, gestione abbonamento). */
+html[data-tema="light"] .dark-overlay,
+html[data-tema="light"] .dark-overlay div {
+  color: rgba(255, 255, 255, 0.87) !important;
+}
+html[data-tema="light"] .dark-overlay p,
+html[data-tema="light"] .dark-overlay span,
+html[data-tema="light"] .dark-overlay strong,
+html[data-tema="light"] .dark-overlay em,
+html[data-tema="light"] .dark-overlay b,
+html[data-tema="light"] .dark-overlay h1,
+html[data-tema="light"] .dark-overlay h2,
+html[data-tema="light"] .dark-overlay h3,
+html[data-tema="light"] .dark-overlay h4,
+html[data-tema="light"] .dark-overlay h5,
+html[data-tema="light"] .dark-overlay label,
+html[data-tema="light"] .dark-overlay small,
+html[data-tema="light"] .dark-overlay li,
+html[data-tema="light"] .dark-overlay button {
+  color: inherit !important;
+}
+html[data-tema="light"] .dark-overlay [style*="#12121f"] {
+  background: #12121f !important;
+}
+html[data-tema="light"] .dark-overlay [style*="#1A1B3A"],
+html[data-tema="light"] .dark-overlay [style*="#0F1028"],
+html[data-tema="light"] .dark-overlay [style*="#0a0a1a"],
+html[data-tema="light"] .dark-overlay [style*="#141530"],
+html[data-tema="light"] .dark-overlay [style*="#161730"],
+html[data-tema="light"] .dark-overlay [style*="#0a0a0f"],
+html[data-tema="light"] .dark-overlay [style*="#06060f"] {
+  background: revert !important;
+  box-shadow: revert !important;
+}
+html[data-tema="light"] .dark-overlay [style*="rgba(255,255,255,0."]:not([style*="linear-gradient"]) {
+  background: revert !important;
+}
+html[data-tema="light"] .dark-overlay [style*="solid rgba(255,255,255"] {
+  border-color: revert !important;
+}
+html[data-tema="light"] .dark-overlay [style*="color: white"],
+html[data-tema="light"] .dark-overlay [style*="color:white"],
+html[data-tema="light"] .dark-overlay [style*="color: rgba(255,255,255"],
+html[data-tema="light"] .dark-overlay [style*="color:rgba(255,255,255"] {
+  color: inherit !important;
+}
+html[data-tema="light"] .dark-overlay input,
+html[data-tema="light"] .dark-overlay textarea {
+  color: rgba(255, 255, 255, 0.87) !important;
+  caret-color: rgba(255, 255, 255, 0.87) !important;
+}
+
 /* ── CHIP PROGRAMMA ── */
 .chip-mese, .chip-tema {
   flex-shrink: 0;
