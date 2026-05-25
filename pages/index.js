@@ -991,10 +991,10 @@ export default function Home() {
           }
           if (!error) {
             if (typeof fbq !== 'undefined') {
-              fbq('track', 'Lead', {
-                content_name: 'Registrazione Lexyo',
+              fbq('track', 'StartTrial', {
+                value: 0,
                 currency: 'EUR',
-                value: 0
+                predicted_ltv: 12.90
               });
             }
           }
