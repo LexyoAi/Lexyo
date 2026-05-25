@@ -1534,7 +1534,7 @@ export default function Home() {
   if (screen === "landing") return <Landing onEntra={() => setScreen("login")} />;
 
   if (screen === "splash") return (
-    <div style={{ position:"fixed", inset:0, background:"linear-gradient(180deg,#0e0e22 0%,#12112b 100%)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:0 }}>
+    <div className="dark-overlay" style={{ position:"fixed", inset:0, background:"linear-gradient(180deg,#0e0e22 0%,#12112b 100%)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:0 }}>
       <Head><title>Lexyo</title></Head>
       <img src="/icons/lexyo-icon-512.png" alt="Lexyo" style={{ width:110, height:110, borderRadius:"28px", marginBottom:"20px", boxShadow:"0 8px 32px rgba(108,71,255,0.45)" }} />
       <p style={{ fontFamily:"'Nunito',sans-serif", fontWeight:900, fontSize:"36px", color:"white", margin:0, letterSpacing:"-0.5px" }}>Lexyo</p>
