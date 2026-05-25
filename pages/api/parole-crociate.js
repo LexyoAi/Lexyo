@@ -35,7 +35,7 @@ Livello studente: ${adattivita}`, cache_control: { type: "ephemeral" } }],
   try {
     if (forceNew) {
       const dati = await genera();
-      cacheAddVariant(key, dati, MAX_VARIANTS, TTL);
+      await cacheAddVariant(key, dati, MAX_VARIANTS, TTL);
       res.setHeader("X-Cache", "FORCE_NEW");
       return res.json(dati);
     }

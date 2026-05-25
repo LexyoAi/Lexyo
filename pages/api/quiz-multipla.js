@@ -76,7 +76,7 @@ IMPORTANTE: opzioni[corretta] deve essere identico a risposta_corretta.`, cache_
   try {
     if (forceNew) {
       const data = await genera();
-      cacheAddVariant(key, data, MAX_VARIANTS, TTL);
+      await cacheAddVariant(key, data, MAX_VARIANTS, TTL);
       res.setHeader("X-Cache", "FORCE_NEW");
       return res.json(data);
     }

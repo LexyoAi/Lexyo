@@ -94,7 +94,7 @@ export default function Landing({ onEntra }) {
     <>
       <Head>
         <title>Lexyo — Il Professore AI per i Bambini Italiani | Compiti, Quiz, Interrogazioni</title>
-        <meta name="description" content="Lexyo è l'app AI che aiuta i bambini delle elementari e medie con i compiti. Foto compiti, interrogazioni orali, dettato AI, quiz MIUR. Prova gratis 3 giorni senza carta di credito." />
+        <meta name="description" content="Lexyo è l'app AI che aiuta i bambini delle elementari e medie con i compiti. Foto compiti, interrogazioni orali, quiz MIUR. Prova gratis 3 giorni senza carta di credito." />
         <meta name="keywords" content="app compiti bambini, professore AI italiano, aiuto compiti elementari, ripetizioni online bambini, app studio scuola media, intelligenza artificiale educativa, app educativa italiana, compiti AI, studio intelligente, Lexyo" />
         <meta name="author" content="Lexyo.it" />
         <meta name="robots" content="index, follow" />

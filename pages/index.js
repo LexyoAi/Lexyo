@@ -991,7 +991,11 @@ export default function Home() {
           }
           if (!error) {
             if (typeof fbq !== 'undefined') {
-              fbq('track', 'CompleteRegistration');
+              fbq('track', 'Lead', {
+                content_name: 'Registrazione Lexyo',
+                currency: 'EUR',
+                value: 0
+              });
             }
           }
           // Accesso automatico dopo registrazione (o se email già registrata)

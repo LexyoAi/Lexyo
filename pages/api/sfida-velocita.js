@@ -49,7 +49,7 @@ opzioneA è SEMPRE la risposta corretta.`, cache_control: { type: "ephemeral" } 
   try {
     if (forceNew) {
       const data = await genera();
-      cacheAddVariant(key, data, MAX_VARIANTS, TTL);
+      await cacheAddVariant(key, data, MAX_VARIANTS, TTL);
       res.setHeader("X-Cache", "FORCE_NEW");
       return res.json({ domande: data });
     }

@@ -12,7 +12,7 @@ export default function Document() {
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Lexyo" />
         <meta name="format-detection" content="telephone=no" />
-        <meta name="description" content="Lexyo è il professore AI per i bambini italiani dalla 3ª elementare alla 3ª media. Foto compiti, interrogazioni orali, dettato AI e quiz basati sul programma MIUR. Prova gratis 3 giorni." />
+        <meta name="description" content="Lexyo è il professore AI per i bambini italiani dalla 3ª elementare alla 3ª media. Foto compiti, interrogazioni orali e quiz basati sul programma MIUR. Prova gratis 3 giorni." />
         <meta name="keywords" content="app educativa bambini, professore AI italiano, aiuto compiti, ripetizioni online, app scuola elementare, app scuola media, intelligenza artificiale bambini, studio AI" />
         <meta name="author" content="Lexyo.it" />
         <meta name="robots" content="index, follow" />
@@ -40,7 +40,7 @@ export default function Document() {
               "@context": "https://schema.org",
               "@type": "SoftwareApplication",
               "name": "Lexyo",
-              "description": "App educativa AI per bambini italiani dalla 3ª elementare alla 3ª media. Professore AI disponibile 24/7 per compiti, interrogazioni orali, dettato e quiz basati sul programma MIUR.",
+              "description": "App educativa AI per bambini italiani dalla 3ª elementare alla 3ª media. Professore AI disponibile 24/7 per compiti, interrogazioni orali e quiz basati sul programma MIUR.",
               "url": "https://app.lexyo.it",
               "applicationCategory": "EducationalApplication",
               "operatingSystem": "Web, iOS, Android",
