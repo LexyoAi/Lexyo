@@ -110,6 +110,9 @@ export default function Home() {
   const [showAppIosModal, setShowAppIosModal] = useState(false);
   const [showGestisciAbb, setShowGestisciAbb] = useState(false);
   const [disdettaConfermata, setDisdettaConfermata] = useState(false);
+  const [disdettaSuccesso, setDisdettaSuccesso] = useState(null);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelErrore, setCancelErrore] = useState("");
   const [trialCheckLoading, setTrialCheckLoading] = useState(false);
   const [trialBlockMsg, setTrialBlockMsg] = useState("");
   const [tema, setTema] = useState(() => {
@@ -4366,11 +4369,26 @@ export default function Home() {
 
       {/* Modale gestione abbonamento */}
       {showGestisciAbb && (
-        <div className="dark-overlay" style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.85)", backdropFilter:"blur(14px)", display:"flex", alignItems:"flex-end", justifyContent:"center", zIndex:2000, padding:"0 0 24px" }} onClick={() => { setShowGestisciAbb(false); setDisdettaConfermata(false); }}>
+        <div className="dark-overlay" style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.85)", backdropFilter:"blur(14px)", display:"flex", alignItems:"flex-end", justifyContent:"center", zIndex:2000, padding:"0 0 24px" }} onClick={() => { setShowGestisciAbb(false); setDisdettaConfermata(false); setDisdettaSuccesso(null); setCancelErrore(""); setCancelLoading(false); }}>
           <div style={{ background:"#12121f", border:"1px solid rgba(139,92,246,0.35)", borderRadius:"28px 28px 20px 20px", padding:"32px 24px 28px", maxWidth:"420px", width:"100%", position:"relative" }} onClick={e => e.stopPropagation()}>
-            <button onClick={() => { setShowGestisciAbb(false); setDisdettaConfermata(false); }} style={{ position:"absolute", top:"14px", right:"14px", background:"rgba(255,255,255,0.07)", border:"none", borderRadius:"50%", width:"30px", height:"30px", color:"rgba(255,255,255,0.5)", cursor:"pointer", fontSize:"15px" }}>✕</button>
+            <button onClick={() => { setShowGestisciAbb(false); setDisdettaConfermata(false); setDisdettaSuccesso(null); setCancelErrore(""); setCancelLoading(false); }} style={{ position:"absolute", top:"14px", right:"14px", background:"rgba(255,255,255,0.07)", border:"none", borderRadius:"50%", width:"30px", height:"30px", color:"rgba(255,255,255,0.5)", cursor:"pointer", fontSize:"15px" }}>✕</button>
 
-            {!disdettaConfermata ? (
+            {disdettaSuccesso ? (
+              <>
+                <div style={{ textAlign:"center", marginBottom:"24px" }}>
+                  <div style={{ fontSize:"48px", marginBottom:"12px" }}>✅</div>
+                  <p style={{ fontWeight:900, fontSize:"19px", color:"white", marginBottom:"8px" }}>Abbonamento disdetto</p>
+                  <p style={{ fontSize:"14px", color:"rgba(255,255,255,0.65)", lineHeight:1.6 }}>
+                    Puoi continuare a usare Lexyo Premium fino al
+                  </p>
+                  <p style={{ fontSize:"20px", fontWeight:900, color:"#a78bfa", marginTop:"6px" }}>{disdettaSuccesso}</p>
+                  <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.45)", marginTop:"8px" }}>Dopo quella data il tuo account tornerà al piano gratuito.</p>
+                </div>
+                <button onClick={() => { setShowGestisciAbb(false); setDisdettaConfermata(false); setDisdettaSuccesso(null); setCancelErrore(""); setCancelLoading(false); }} style={{ width:"100%", padding:"14px", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", border:"none", borderRadius:"14px", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"15px", cursor:"pointer" }}>
+                  Ho capito, grazie
+                </button>
+              </>
+            ) : !disdettaConfermata ? (
               <>
                 <div style={{ textAlign:"center", marginBottom:"20px" }}>
                   <div style={{ fontSize:"36px", marginBottom:"10px" }}>💎</div>
@@ -4382,10 +4400,10 @@ export default function Home() {
                     <p key={i} style={{ fontSize:"13px", fontWeight:600, color:"rgba(255,255,255,0.65)", marginBottom: i < 4 ? "8px" : 0 }}>{t}</p>
                   ))}
                 </div>
-                <button onClick={() => setDisdettaConfermata(true)} style={{ width:"100%", padding:"13px", background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.3)", borderRadius:"14px", color:"#f87171", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer", marginBottom:"10px" }}>
+                <button onClick={() => { setDisdettaConfermata(true); setCancelErrore(""); }} style={{ width:"100%", padding:"13px", background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.3)", borderRadius:"14px", color:"#f87171", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer", marginBottom:"10px" }}>
                   Disdici abbonamento
                 </button>
-                <button onClick={() => { setShowGestisciAbb(false); setDisdettaConfermata(false); }} style={{ width:"100%", padding:"13px", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", border:"none", borderRadius:"14px", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer" }}>
+                <button onClick={() => { setShowGestisciAbb(false); setDisdettaConfermata(false); setDisdettaSuccesso(null); setCancelErrore(""); setCancelLoading(false); }} style={{ width:"100%", padding:"13px", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", border:"none", borderRadius:"14px", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer" }}>
                   Mantieni Premium ✨
                 </button>
               </>
@@ -4404,7 +4422,12 @@ export default function Home() {
                     <p key={i} style={{ fontSize:"12px", color:"rgba(239,68,68,0.7)", fontWeight:600, marginBottom: i < 4 ? "4px" : 0 }}>✗ {t}</p>
                   ))}
                 </div>
+                {cancelErrore ? (
+                  <p style={{ fontSize:"13px", color:"#f87171", fontWeight:700, textAlign:"center", marginBottom:"12px", padding:"10px", background:"rgba(239,68,68,0.1)", borderRadius:"10px" }}>{cancelErrore}</p>
+                ) : null}
                 <button onClick={async () => {
+                  setCancelLoading(true);
+                  setCancelErrore("");
                   try {
                     const tok = await getAccessToken();
                     const r = await fetch("/api/cancel-subscription", {
@@ -4412,17 +4435,16 @@ export default function Home() {
                       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${tok}` },
                     });
                     const d = await r.json();
-                    if (d.errore) { alert("Errore: " + d.errore); return; }
-                    setProfiloUtente(prev => ({ ...prev, abbonamento_disdetto: true, abbonamento_scadenza: d.fine_periodo }));
-                    setShowGestisciAbb(false);
-                    setDisdettaConfermata(false);
+                    if (d.errore) { setCancelErrore("Errore: " + d.errore); setCancelLoading(false); return; }
                     const dataFine = d.fine_periodo ? new Date(d.fine_periodo).toLocaleDateString("it-IT") : "fine periodo";
-                    alert(`Abbonamento disdetto. Hai accesso fino al ${dataFine}.`);
-                  } catch { alert("Errore di rete. Riprova."); }
-                }} style={{ width:"100%", padding:"13px", background:"rgba(239,68,68,0.15)", border:"1px solid rgba(239,68,68,0.4)", borderRadius:"14px", color:"#f87171", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer", marginBottom:"10px" }}>
-                  Sì, disdico l'abbonamento
+                    setProfiloUtente(prev => ({ ...prev, abbonamento_disdetto: true, abbonamento_scadenza: d.fine_periodo }));
+                    setDisdettaSuccesso(dataFine);
+                  } catch { setCancelErrore("Errore di rete. Riprova."); }
+                  setCancelLoading(false);
+                }} disabled={cancelLoading} style={{ width:"100%", padding:"13px", background: cancelLoading ? "rgba(239,68,68,0.05)" : "rgba(239,68,68,0.15)", border:"1px solid rgba(239,68,68,0.4)", borderRadius:"14px", color: cancelLoading ? "rgba(248,113,113,0.5)" : "#f87171", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor: cancelLoading ? "not-allowed" : "pointer", marginBottom:"10px" }}>
+                  {cancelLoading ? "Attendere..." : "Sì, disdico l'abbonamento"}
                 </button>
-                <button onClick={() => setDisdettaConfermata(false)} style={{ width:"100%", padding:"13px", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", border:"none", borderRadius:"14px", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer" }}>
+                <button onClick={() => { setDisdettaConfermata(false); setCancelErrore(""); }} disabled={cancelLoading} style={{ width:"100%", padding:"13px", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", border:"none", borderRadius:"14px", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor: cancelLoading ? "not-allowed" : "pointer" }}>
                   No, torno indietro
                 </button>
               </>
