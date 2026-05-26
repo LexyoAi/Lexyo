@@ -14,7 +14,10 @@ export default async function handler(req, res) {
   const { data: { user }, error: authError } = await sb.auth.getUser(token);
   if (authError || !user) return res.status(401).json({ errore: "Non autorizzato" });
 
-  const priceId = process.env.STRIPE_PRICE_ID;
+  const { piano } = req.body;
+  const priceId = piano === "annuale"
+    ? process.env.STRIPE_PRICE_ID_ANNUALE
+    : process.env.STRIPE_PRICE_ID;
   if (!priceId) return res.status(500).json({ errore: "Configurazione pagamento non completata." });
 
   try {
@@ -37,7 +40,7 @@ export default async function handler(req, res) {
       success_url: "https://app.lexyo.it?pagamento=successo",
       cancel_url: "https://app.lexyo.it?pagamento=annullato",
       locale: "it",
-      metadata: { user_id: user.id, email: user.email },
+      metadata: { user_id: user.id, email: user.email, piano: piano || "mensile" },
     });
 
     res.json({ url: session.url });

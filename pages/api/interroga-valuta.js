@@ -9,7 +9,7 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { accessToken, conversazione, argomenti, materia, classe, sesso } = req.body;
+  const { accessToken, conversazione, argomenti, materia, classe, sesso, numDomande } = req.body;
   const user = await verifyAuth(accessToken);
   if (!user) return res.status(401).json({ errore: "Accesso richiesto. Effettua il login." });
   const bambino = sesso === "F" ? "bambina" : "bambino";
@@ -18,10 +18,10 @@ export default async function handler(req, res) {
   const alBambino = sesso === "F" ? "alla bambina" : "al bambino";
 
   if (!Array.isArray(conversazione)) return res.status(400).json({ errore: "conversazione non valida" });
-  const convSafe = conversazione.slice(0, 10);
+  const maxDomande = Math.min(15, Math.max(1, parseInt(numDomande) || 7));
+  const convSafe = conversazione.slice(0, maxDomande);
   const adattivita = getAdattivita(classe);
   const domandeFatte = convSafe.length;
-  const maxDomande = 7;
   const fine = domandeFatte >= maxDomande;
 
   try {
@@ -33,6 +33,7 @@ export default async function handler(req, res) {
 Valuti le risposte durante interrogazioni orali di ${materia}.
 Argomenti interrogazione: ${(argomenti || []).join(", ")}.
 Rispondi SOLO con JSON valido. Niente testo fuori dal JSON. Niente markdown. Niente backtick.
+Se una risposta è "(saltata)", NON valutarla: salta quella domanda e vai direttamente alla prossima come se non fosse stata fatta.
 Livello studente: ${adattivita}`;
 
     let userPrompt;

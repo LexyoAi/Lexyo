@@ -82,6 +82,8 @@ export default function Home() {
   const [interrogMicErrore, setInterrogMicErrore] = useState("");
   const [interrogMicOverlay, setInterrogMicOverlay] = useState(false);
   const [interrogMeseChip, setInterrogMeseChip] = useState(null);
+  const [interrogFotos, setInterrogFotos] = useState([]);
+  const [interrogNumDomande, setInterrogNumDomande] = useState(5);
   const [streak, setStreak] = useState(0);
   const [levelUpAnim, setLevelUpAnim] = useState(false);
   const [lexEvoluzione, setLexEvoluzione] = useState(null);
@@ -206,6 +208,7 @@ export default function Home() {
   const [esameInterrMateria, setEsameInterrMateria] = useState(null);
   const [esameInterrState, setEsameInterrState] = useState(null);
   const [esameInterrRisposta, setEsameInterrRisposta] = useState("");
+  const [esameInterrNumDomande, setEsameInterrNumDomande] = useState(5);
   // ── Coriandoli & record ──
   const [mostraCoriandoli, setMostraCoriandoli] = useState(false);
   const [recordGiochi, setRecordGiochi] = useState(() => {
@@ -436,8 +439,8 @@ export default function Home() {
     }
   }, []);
 
-  const avviaStripeCheckout = async () => {
-    setStripeLoading(true);
+  const avviaStripeCheckout = async (tipo = "mensile") => {
+    setStripeLoading(tipo);
     try {
       const token = await getAccessToken();
       const res = await fetch("/api/stripe-checkout", {
@@ -446,12 +449,13 @@ export default function Home() {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ piano: tipo }),
       });
       const d = await res.json();
       if (d.url) {
+        const valore = tipo === "annuale" ? 99 : 12.90;
         if (typeof fbq !== 'undefined') {
-          fbq('track', 'InitiateCheckout', {value: 12.90, currency: 'EUR'});
+          fbq('track', 'InitiateCheckout', { value: valore, currency: 'EUR' });
         }
         window.location.href = d.url;
       } else {
@@ -691,7 +695,11 @@ export default function Home() {
     storia: { label: "Storia", emoji: "📜", colore: "#f59e0b" },
     geografia: { label: "Geografia", emoji: "🌍", colore: "#0ea5e9" },
     inglese: { label: "Inglese", emoji: "🇬🇧", colore: "#8b5cf6" },
+    tecnologia: { label: "Tecnologia", emoji: "⚙️", colore: "#64748b" },
   };
+
+  const isMediaClasse = ["1M","2M","3M"].includes(figlioAttivo?.classe);
+  const MATERIE_ATTIVE = Object.entries(MATERIE).filter(([key]) => key !== "tecnologia" || isMediaClasse);
 
   const BADGE = [
     { id: "curioso", emoji: "🔍", label: "Curioso", desc: "Hai fotografato il primo esercizio!" },
@@ -1237,7 +1245,7 @@ export default function Home() {
     if (s === "ripasso_estate") { setRipassoEstateState(null); }
     if (s === "chat" && s !== screen) { setChatMsgs([]); setChatContesto(null); setChatMeseChip(null); }
     if (s === "calendario") setMeseAperto(null);
-    if (s === "interrogazione") { setInterrogFase("carica"); setInterrogArgomenti([]); setInterrogConv([]); setInterrogDomanda(""); setInterrogAudio(null); setInterrogVoto(null); setInterrogFeedback(""); setInterrogTrascrizione(""); setInterrogValutazione(""); setInterrogLexParla(false); setInterrogTopicScelto(""); setInterrogMeseChip(null); setInterrogMicErrore(""); if (window._interrogAudio) { window._interrogAudio.pause(); window._interrogAudio = null; } if (window._mediaRecorder && window._mediaRecorder.state === "recording") { try { window._mediaRecorder.stop(); } catch {} } }
+    if (s === "interrogazione") { setInterrogFase("carica"); setInterrogArgomenti([]); setInterrogConv([]); setInterrogDomanda(""); setInterrogAudio(null); setInterrogVoto(null); setInterrogFeedback(""); setInterrogTrascrizione(""); setInterrogValutazione(""); setInterrogLexParla(false); setInterrogTopicScelto(""); setInterrogMeseChip(null); setInterrogMicErrore(""); setInterrogFotos([]); setInterrogNumDomande(5); if (window._interrogAudio) { window._interrogAudio.pause(); window._interrogAudio = null; } if (window._mediaRecorder && window._mediaRecorder.state === "recording") { try { window._mediaRecorder.stop(); } catch {} } }
     if (s === "studia") { /* sub-screens reset on their own entry */ }
     if (s === "inglese") { setIngleseMese(null); }
     if (s === "inglese_vocabolario") { setIngleseFonetica(null); setIngleseFoneticaLoading(false); setIngleseVocIdx(0); setIngleseVocRisposta(null); setIngleseVocRisposte([]); setIngleseVocFinale(false); setIngleseVocSession(null); setIngleseVocStreak(0); }
@@ -1255,7 +1263,7 @@ export default function Home() {
     if (s === "esame5_matematica") { setEsameMatematica(null); setEsameLoading(false); }
     if (s === "esame5_orale") { setEsameOrale(null); setEsameLoading(false); }
     if (s === "esame5_storico") { setEsameLoading(false); }
-    if (s === "esame5_interrogazione") { setEsameInterrState(null); setEsameLoading(false); }
+    if (s === "esame5_interrogazione") { setEsameInterrState(null); setEsameLoading(false); setEsameInterrNumDomande(5); }
     if (s === "ripasso_home") { setRipassoQuiz(null); setRipassoRisposte([]); setRipassoFine(false); setRipassoLoading(false); setRipassoNuovoLivelloOverlay(false); setRipassoTransizione(false); }
     if (s === "ripasso_mappa") { setRipassoQuiz(null); setRipassoRisposte([]); setRipassoFine(false); setRipassoLoading(false); setRipassoNuovoLivelloOverlay(false); setRipassoTransizione(false); }
     if (s === "ripasso_quiz") {
@@ -1866,38 +1874,53 @@ export default function Home() {
         </div>
         )}
 
-        {/* PREMIUM */}
-        <div style={{ ...S.card, background: luce ? "linear-gradient(135deg,rgba(99,102,241,0.08),rgba(139,92,246,0.06))" : "linear-gradient(135deg,rgba(99,102,241,0.18),rgba(139,92,246,0.12))", border:"2px solid rgba(99,102,241,0.5)", position:"relative" }}>
-          <div style={{ position:"absolute", top:"-13px", left:"50%", transform:"translateX(-50%)", background:"linear-gradient(135deg,#f59e0b,#ef4444)", borderRadius:"100px", padding:"5px 18px", fontSize:"11px", fontWeight:900, whiteSpace:"nowrap", color:"white" }}>
-            🚀 PREZZO DI LANCIO
+        {/* MENSILE + ANNUALE affiancati */}
+        <div style={{ display:"flex", gap:"12px", width:"100%" }}>
+
+          {/* MENSILE */}
+          <div style={{ flex:1, background: luce ? "rgba(99,102,241,0.07)" : "rgba(99,102,241,0.15)", border:"1px solid rgba(99,102,241,0.35)", borderRadius:"20px", padding:"18px 10px", display:"flex", flexDirection:"column", alignItems:"center" }}>
+            <p style={{ fontSize:"11px", fontWeight:800, color: luce ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.5)", marginBottom:"10px", letterSpacing:"0.5px" }}>MENSILE</p>
+            <p style={{ fontSize:"28px", fontWeight:900, color: luce ? "#0a0a20" : "white", lineHeight:1, marginBottom:"2px" }}>12,90€</p>
+            <p style={{ fontSize:"11px", color: luce ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.4)", fontWeight:600, marginBottom:"20px" }}>/ mese</p>
+            <button onClick={() => avviaStripeCheckout("mensile")} disabled={!!stripeLoading} style={{ width:"100%", background:"rgba(99,102,241,0.15)", border:"1px solid rgba(99,102,241,0.4)", borderRadius:"12px", padding:"10px 6px", color: luce ? "#4f46e5" : "#a78bfa", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", cursor:"pointer", opacity: stripeLoading === "mensile" ? 0.7 : 1 }}>
+              {stripeLoading === "mensile" ? "…" : "Scegli →"}
+            </button>
           </div>
-          <div style={{ textAlign:"center", marginBottom:"16px", marginTop:"8px" }}>
-            <p style={{ fontSize:"38px", fontWeight:900, letterSpacing:"-1px", lineHeight:1, color: luce ? "#0a0a20" : "white" }}>12,90€<span style={{ fontSize:"16px", color: luce ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.4)", fontWeight:600 }}>/mese</span></p>
+
+          {/* ANNUALE */}
+          <div style={{ flex:1, background: luce ? "linear-gradient(135deg,rgba(99,102,241,0.10),rgba(139,92,246,0.07))" : "linear-gradient(135deg,rgba(99,102,241,0.22),rgba(139,92,246,0.16))", border:"2px solid #6C47FF", borderRadius:"20px", padding:"18px 10px", display:"flex", flexDirection:"column", alignItems:"center", position:"relative" }}>
+            <div style={{ position:"absolute", top:"-13px", left:"50%", transform:"translateX(-50%)", background:"linear-gradient(135deg,#6C47FF,#9B3FD4)", borderRadius:"100px", padding:"4px 12px", fontSize:"10px", fontWeight:900, color:"white", whiteSpace:"nowrap" }}>
+              ⭐ CONSIGLIATO
+            </div>
+            <p style={{ fontSize:"11px", fontWeight:800, color: luce ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.5)", marginBottom:"10px", letterSpacing:"0.5px", marginTop:"4px" }}>ANNUALE</p>
+            <p style={{ fontSize:"28px", fontWeight:900, color: luce ? "#0a0a20" : "white", lineHeight:1, marginBottom:"2px" }}>8,25€</p>
+            <p style={{ fontSize:"11px", color: luce ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.4)", fontWeight:600, marginBottom:"2px" }}>/ mese</p>
+            <p style={{ fontSize:"11px", color:"#7c3aed", fontWeight:800, marginBottom:"8px" }}>€99 / anno</p>
+            <div style={{ background:"rgba(16,185,129,0.12)", border:"1px solid rgba(16,185,129,0.35)", borderRadius:"100px", padding:"3px 10px", marginBottom:"14px" }}>
+              <p style={{ fontSize:"10px", color:"#059669", fontWeight:900 }}>Risparmia 36%</p>
+            </div>
+            <button onClick={() => avviaStripeCheckout("annuale")} disabled={!!stripeLoading} style={{ width:"100%", background:"linear-gradient(135deg,#6C47FF,#9B3FD4)", border:"none", borderRadius:"12px", padding:"10px 6px", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", cursor:"pointer", opacity: stripeLoading === "annuale" ? 0.7 : 1 }}>
+              {stripeLoading === "annuale" ? "…" : "Scegli →"}
+            </button>
           </div>
-          <div style={{ display:"flex", flexDirection:"column", gap:"6px", marginBottom:"16px" }}>
-            <p style={{ fontSize:"15px", fontWeight:800, textAlign:"center", color: luce ? "#0a0a20" : "white" }}>Sempre pronto.</p>
-            <p style={{ fontSize:"15px", fontWeight:800, textAlign:"center", color: luce ? "#0a0a20" : "white" }}>Sempre coinvolgente.</p>
-            <p style={{ fontSize:"13px", color:"#7c3aed", fontWeight:700, textAlign:"center", fontStyle:"italic" }}>Costa meno di una singola ripetizione privata al mese.</p>
-          </div>
-          <button onClick={avviaStripeCheckout} disabled={stripeLoading} style={{ ...S.btn, ...S.btnP, marginTop:"4px", opacity: stripeLoading ? 0.7 : 1 }}>
-            {stripeLoading ? "Apertura pagamento…" : "Abbonati — Offerta Lancio →"}
-          </button>
-          <div style={{ marginTop:"16px", marginBottom:"4px" }}>
-            <p style={{ fontSize:"12px", fontWeight:800, color:"#059669", textAlign:"center", marginBottom:"10px" }}>✓ Accesso completo a tutto Lexyo</p>
-            {["📸 Foto compiti + spiegazione guidata","💬 Chat con Lex AI 24/7","🗓️ Calendario con quiz interattivi","🚦 Semaforo preparazione per materia","📊 Dashboard genitore con statistiche","🎮 Giochi educativi e badge","🚫 Zero pubblicità"].map((f) => (
-              <div key={f} style={{ display:"flex", gap:"8px", marginBottom:"6px", fontSize:"13px", fontWeight:600, color: luce ? "#0a0a20" : "white" }}>
-                <span style={{ color:"#6366f1", flexShrink:0 }}>✓</span>{f}
-              </div>
-            ))}
-          </div>
-          <div style={{ marginTop:"14px", background: luce ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)", border: `1px solid ${luce ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)"}`, borderRadius:"12px", padding:"14px 16px" }}>
+
+        </div>
+
+        {/* Features comuni + nota lancio */}
+        <div style={{ ...S.card }}>
+          <p style={{ fontSize:"12px", fontWeight:800, color:"#059669", textAlign:"center", marginBottom:"10px" }}>✓ Accesso completo a tutto Lexyo</p>
+          {["📸 Foto compiti + spiegazione guidata","💬 Chat con Lex AI 24/7","🗓️ Calendario con quiz interattivi","🚦 Semaforo preparazione per materia","📊 Dashboard genitore con statistiche","🎮 Giochi educativi e badge","🚫 Zero pubblicità"].map((f) => (
+            <div key={f} style={{ display:"flex", gap:"8px", marginBottom:"6px", fontSize:"13px", fontWeight:600, color: luce ? "#0a0a20" : "white" }}>
+              <span style={{ color:"#6366f1", flexShrink:0 }}>✓</span>{f}
+            </div>
+          ))}
+          <div style={{ marginTop:"14px", background: luce ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)", border:`1px solid ${luce ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)"}`, borderRadius:"12px", padding:"14px 16px" }}>
             <p style={{ fontSize:"13px", fontWeight:800, color: luce ? "#0a0a20" : "white", textAlign:"center", marginBottom:"5px" }}>
-              🔒 Prezzo bloccato per sempre a 12,90€/mese
+              🔒 Prezzo bloccato — Offerta Lancio
             </p>
             <p style={{ fontSize:"12px", color: luce ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.4)", textAlign:"center", marginBottom:"8px", lineHeight:1.5 }}>
               Solo per chi si iscrive durante il lancio.<br/>
-              <strong style={{ color:"#ef4444" }}>Dopo il lancio: 17,99€/mese.</strong><br/>
-              <span style={{ color:"#d97706", fontWeight:700 }}>⏳ Disponibile solo per un periodo limitato.</span>
+              <strong style={{ color:"#ef4444" }}>Dopo il lancio: 17,99€/mese.</strong>
             </p>
             <p style={{ fontSize:"12px", color: luce ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.3)", textAlign:"center" }}>✅ Disdici quando vuoi — nessun vincolo</p>
           </div>
@@ -2546,7 +2569,7 @@ export default function Home() {
                 {/* Materia */}
                 <p style={{ fontSize:"10px", fontWeight:800, color: luce?"rgba(0,0,30,0.35)":"rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"8px" }}>Materia</p>
                 <div style={{ display:"flex", gap:"8px", marginBottom:"18px" }}>
-                  {Object.entries(MATERIE).map(([key, info]) => (
+                  {MATERIE_ATTIVE.map(([key, info]) => (
                     <button key={key} onClick={() => { setMateria(key); setVerificheArgomento(""); setVerificheMeseAperto(null); }} style={{ flex:1, padding:"8px 4px", borderRadius:"12px", background:materia===key?`${info.colore}22`:"rgba(255,255,255,0.04)", border:`2px solid ${materia===key?info.colore:"rgba(255,255,255,0.08)"}`, color:"white", fontFamily:"'Nunito', sans-serif", fontWeight:800, fontSize:"10px", cursor:"pointer" }}>
                       <div style={{ fontSize:"16px", marginBottom:"2px" }}>{info.emoji}</div>{info.label.split(" ")[0]}
                     </button>
@@ -2632,7 +2655,7 @@ export default function Home() {
       </div>
       {/* ── Selettore Materia ── */}
       <div style={{ display:"flex", borderBottom:"1px solid rgba(255,255,255,0.08)", background:"rgba(0,0,0,0.2)", flexShrink:0, overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
-        {Object.entries(MATERIE).map(([key, info]) => (
+        {MATERIE_ATTIVE.map(([key, info]) => (
           <button key={key} onClick={() => { setMateria(key); setFotoMeseChip(null); setFotoArgomento(""); }} style={{ flex:1, padding:"12px 4px", minHeight:"44px", background:materia===key?`${info.colore}15`:"transparent", border:"none", borderBottom:materia===key?`2px solid ${info.colore}`:"2px solid transparent", color:materia===key?"white":"rgba(255,255,255,0.4)", fontFamily:"'Nunito', sans-serif", fontWeight:800, fontSize:"11px", cursor:"pointer", whiteSpace:"nowrap", minWidth:"55px", WebkitTapHighlightColor:"transparent" }}>
             {info.emoji} {info.label.split(" ")[0]}
           </button>
@@ -2770,7 +2793,7 @@ export default function Home() {
       </div>
       {/* ── Selettore Materia Chat ── */}
       <div style={{ display:"flex", borderBottom:`1px solid ${luce?"rgba(0,0,0,0.08)":"rgba(255,255,255,0.08)"}`, background: luce ? "rgba(0,0,0,0.04)" : "rgba(0,0,0,0.2)", flexShrink:0, overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
-        {Object.entries(MATERIE).map(([key, info]) => (
+        {MATERIE_ATTIVE.map(([key, info]) => (
           <button key={key} onClick={() => { setMateria(key); setChatMeseChip(null); setChatContesto(null); setChatMsgs([]); }} style={{ flex:1, padding:"12px 4px", minHeight:"44px", background:materia===key?`${info.colore}15`:"transparent", border:"none", borderBottom:materia===key?`2px solid ${info.colore}`:"2px solid transparent", color:materia===key? luce?"#0a0a20":"white": luce?"rgba(0,0,30,0.35)":"rgba(255,255,255,0.4)", fontFamily:"'Nunito', sans-serif", fontWeight:800, fontSize:"11px", cursor:"pointer", whiteSpace:"nowrap", minWidth:"55px", WebkitTapHighlightColor:"transparent" }}>
             {info.emoji} {info.label.split(" ")[0]}
           </button>
@@ -2907,7 +2930,7 @@ export default function Home() {
         <div><p style={{ fontWeight:900, fontSize:"17px" }}>Programma Scolastico</p><p style={{ fontSize:"11px", color:t.primario, fontWeight:600 }}>{prog?.label} · Tocca un argomento per studiare</p></div>
       </div>
       <div style={{ display:"flex", borderBottom:"1px solid rgba(255,255,255,0.08)", background:"rgba(0,0,0,0.2)", flexShrink:0, overflowX:"auto" }}>
-        {Object.entries(MATERIE).map(([key,info]) => (
+        {MATERIE_ATTIVE.map(([key,info]) => (
           <button key={key} onClick={() => setMateria(key)} style={{ flex:1, padding:"11px 4px", background:materia===key?`${info.colore}15`:"transparent", border:"none", borderBottom:materia===key?`2px solid ${info.colore}`:"2px solid transparent", color:materia===key?"white":"rgba(255,255,255,0.4)", fontFamily:"'Nunito', sans-serif", fontWeight:800, fontSize:"11px", cursor:"pointer", whiteSpace:"nowrap", minWidth:"60px" }}>
             {info.emoji} {info.label.split(" ")[0]}
           </button>
@@ -3111,7 +3134,7 @@ export default function Home() {
           <div style={{ marginBottom:"14px" }}>
             <p style={{ fontSize:"10px", fontWeight:800, color:"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"8px" }}>Materia</p>
             <div style={{ display:"flex", gap:"8px" }}>
-              {Object.entries(MATERIE).map(([key, info]) => (
+              {MATERIE_ATTIVE.map(([key, info]) => (
                 <button key={key} onClick={() => setMateria(key)} style={{ flex:1, padding:"8px 4px", borderRadius:"12px", background:materia===key?`${info.colore}22`:"rgba(255,255,255,0.04)", border:`2px solid ${materia===key?info.colore:"rgba(255,255,255,0.08)"}`, color:"white", fontFamily:"'Nunito', sans-serif", fontWeight:800, fontSize:"10px", cursor:"pointer" }}>
                   <div style={{ fontSize:"16px", marginBottom:"2px" }}>{info.emoji}</div>{info.label.split(" ")[0]}
                 </button>
@@ -3293,7 +3316,7 @@ export default function Home() {
 
         {/* Selezione materia fissa */}
         <div style={{ display:"flex", gap:"8px", padding:"10px 18px", borderBottom:"1px solid rgba(255,255,255,0.06)", flexShrink:0 }}>
-          {Object.entries(MATERIE).map(([key, info]) => (
+          {MATERIE_ATTIVE.map(([key, info]) => (
             <button key={key} onClick={() => { setMateria(key); setCompitoPianoSettimana(null); }} style={{ flex:1, padding:"8px 4px", borderRadius:"12px", background:materia===key?`${info.colore}22`:"rgba(255,255,255,0.04)", border:`2px solid ${materia===key?info.colore:"rgba(255,255,255,0.08)"}`, color:"white", fontFamily:"'Nunito', sans-serif", fontWeight:800, fontSize:"10px", cursor:"pointer" }}>
               <div style={{ fontSize:"16px", marginBottom:"2px" }}>{info.emoji}</div>{info.label.split(" ")[0]}
             </button>
@@ -3792,7 +3815,7 @@ export default function Home() {
 
   // ── INTERROGAZIONE ORALE ─────────────────────────────────────────────────
   if (screen === "interrogazione") {
-    const maxDomande = 7;
+    const maxDomande = interrogNumDomande;
 
     const leggiBrowserTTS = (testo) => {
       if (!("speechSynthesis" in window)) return;
@@ -3858,24 +3881,31 @@ export default function Home() {
       } catch { alert("Errore di connessione. Riprova."); setInterrogFase("carica"); }
     };
 
-    const caricaFoto = (file) => {
+    const aggiungiPhoto = (file) => {
+      if (isTrial && !isAdmin && interrogFotos.length >= 1) { setScreen("scegli_piano"); return; }
+      if (interrogFotos.length >= 8) return;
+      compressPhoto(file, (compressed) => {
+        setInterrogFotos(prev => [...prev, compressed]);
+      }, () => { alert("Foto non valida. Riprova con un'altra foto."); });
+    };
+
+    const avviaDaFoto = async () => {
+      if (interrogFotos.length === 0) return;
       setInterrogFase("analisi");
-      compressPhoto(file, async (compressed) => {
-        try {
-          const token = await getAccessToken();
-          const res = await fetch("/api/interroga-analizza", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ photo: compressed, materia: mat.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M", nome: figlioAttivo?.nome || "", accessToken: token }),
-          });
-          const d = await res.json();
-          if (d.errore) { alert(d.errore); setInterrogFase("carica"); return; }
-          setInterrogArgomenti(d.argomenti || []);
-          setInterrogDomanda(d.domanda || "");
-          setInterrogAudio(d.audio || null);
-          setInterrogFase("domanda");
-        } catch { alert("Errore di connessione. Riprova."); setInterrogFase("carica"); }
-      }, () => { alert("Foto non valida. Riprova con un'altra foto."); setInterrogFase("carica"); });
+      try {
+        const token = await getAccessToken();
+        const res = await fetch("/api/interroga-analizza", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ photos: interrogFotos, materia: mat.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M", nome: figlioAttivo?.nome || "", accessToken: token }),
+        });
+        const d = await res.json();
+        if (d.errore) { alert(d.errore); setInterrogFase("carica"); return; }
+        setInterrogArgomenti(d.argomenti || []);
+        setInterrogDomanda(d.domanda || "");
+        setInterrogAudio(d.audio || null);
+        setInterrogFase("domanda");
+      } catch { alert("Errore di connessione. Riprova."); setInterrogFase("carica"); }
     };
 
     const avviaRicognizione = async () => {
@@ -3954,7 +3984,7 @@ export default function Home() {
         const res = await fetch("/api/interroga-valuta", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ conversazione: nuovaConv, argomenti: interrogArgomenti, materia: mat.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M", accessToken: token }),
+          body: JSON.stringify({ conversazione: nuovaConv, argomenti: interrogArgomenti, materia: mat.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M", numDomande: interrogNumDomande, accessToken: token }),
         });
         const d = await res.json();
         if (d.errore) { alert(d.errore); setInterrogFase("domanda"); return; }
@@ -4013,29 +4043,65 @@ export default function Home() {
               {/* ── Selettore Materia ── */}
               <p style={{ fontSize:"10px", fontWeight:800, color:"rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"8px" }}>📚 Materia</p>
               <div style={{ display:"flex", gap:"6px", marginBottom:"16px", overflowX:"auto", paddingBottom:"2px", WebkitOverflowScrolling:"touch" }}>
-                {Object.entries(MATERIE).map(([key, info]) => (
+                {MATERIE_ATTIVE.map(([key, info]) => (
                   <button key={key} onClick={() => { setMateria(key); setInterrogMeseChip(null); setInterrogTopicScelto(""); }} style={{ flex:"0 0 auto", padding:"10px 14px", minHeight:"56px", borderRadius:"14px", background:materia===key?`${info.colore}22`:"rgba(255,255,255,0.04)", border:`2px solid ${materia===key?info.colore:"rgba(255,255,255,0.08)"}`, color:materia===key?"white":"rgba(255,255,255,0.55)", fontFamily:"'Nunito', sans-serif", fontWeight:800, fontSize:"11px", cursor:"pointer", textAlign:"center", WebkitTapHighlightColor:"transparent" }}>
                     <div style={{ fontSize:"20px", marginBottom:"4px" }}>{info.emoji}</div>{info.label.split(" ")[0]}
                   </button>
                 ))}
               </div>
+              {/* ── Selettore numero domande ── */}
+              <p style={{ fontSize:"10px", fontWeight:800, color:"rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"8px" }}>❓ Numero domande</p>
+              <div style={{ display:"flex", gap:"8px", marginBottom:"16px" }}>
+                {[5,10,15].map(n => {
+                  const locked = (isTrial && !isAdmin) && n > 5;
+                  const sel = interrogNumDomande === n;
+                  return (
+                    <button key={n} onClick={() => { if (locked) { setScreen("scegli_piano"); return; } setInterrogNumDomande(n); }} style={{ flex:1, padding:"10px 0", borderRadius:"14px", background:sel?`${t.primario}22`:"rgba(255,255,255,0.05)", border:`2px solid ${sel?t.primario:"rgba(255,255,255,0.1)"}`, color:sel?"white":"rgba(255,255,255,0.5)", fontFamily:"'Nunito'", fontWeight:900, fontSize:"14px", cursor:"pointer", position:"relative" }}>
+                      {locked && <span style={{ position:"absolute", top:"4px", right:"6px", fontSize:"10px" }}>🔒</span>}
+                      {n}
+                    </button>
+                  );
+                })}
+              </div>
+              {/* ── Carica Foto (multi-foto) ── */}
+              {interrogFotos.length > 0 && (
+                <div style={{ marginBottom:"12px" }}>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:"8px", marginBottom:"10px" }}>
+                    {interrogFotos.map((foto, idx) => (
+                      <div key={idx} style={{ position:"relative", width:"72px", height:"72px" }}>
+                        <img src={foto} alt={`foto ${idx+1}`} style={{ width:"72px", height:"72px", borderRadius:"12px", objectFit:"cover", border:"2px solid rgba(255,255,255,0.15)" }} />
+                        <button onClick={() => setInterrogFotos(prev => prev.filter((_,i) => i !== idx))} style={{ position:"absolute", top:"-6px", right:"-6px", width:"20px", height:"20px", borderRadius:"50%", background:"#ef4444", border:"none", color:"white", fontSize:"11px", fontWeight:900, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1 }}>✕</button>
+                      </div>
+                    ))}
+                    {interrogFotos.length < 8 && (
+                      <label style={{ cursor:"pointer" }}>
+                        <div style={{ width:"72px", height:"72px", borderRadius:"12px", border:"2px dashed rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"24px", color:"rgba(255,255,255,0.35)" }}>+</div>
+                        <input type="file" accept="image/*" style={{ display:"none" }} onChange={(e) => { const f=e.target.files[0]; if(f) aggiungiPhoto(f); e.target.value=""; }} />
+                      </label>
+                    )}
+                  </div>
+                  <button onClick={avviaDaFoto} style={{ ...S.btn, background:t.gradiente, border:"none", boxShadow:`0 4px 16px ${t.glow}`, marginBottom:"4px" }}>
+                    🎤 Inizia interrogazione ({interrogFotos.length} {interrogFotos.length === 1 ? "foto" : "foto"})
+                  </button>
+                </div>
+              )}
               {/* ── Bottone Carica Foto (CTA principale) ── */}
               <div style={{ display:"flex", gap:"10px", marginBottom:"14px" }}>
                 <label style={{ flex:1, cursor:"pointer", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-                  <div style={{ background:t.gradiente, borderRadius:"18px", padding:"18px 10px", display:"flex", flexDirection:"column", alignItems:"center", gap:"8px", boxShadow:`0 6px 20px ${t.glow}`, userSelect:"none", WebkitUserSelect:"none", textAlign:"center", minHeight:"110px", justifyContent:"center" }}>
+                  <div style={{ background:interrogFotos.length===0?t.gradiente:"rgba(255,255,255,0.08)", border:interrogFotos.length===0?"none":"2px solid rgba(255,255,255,0.15)", borderRadius:"18px", padding:"18px 10px", display:"flex", flexDirection:"column", alignItems:"center", gap:"8px", boxShadow:interrogFotos.length===0?`0 6px 20px ${t.glow}`:"none", userSelect:"none", WebkitUserSelect:"none", textAlign:"center", minHeight:"110px", justifyContent:"center" }}>
                     <div style={{ fontSize:"34px" }}>📷</div>
-                    <p style={{ fontWeight:900, fontSize:"14px", color:"white", margin:0 }}>Scatta Foto</p>
+                    <p style={{ fontWeight:900, fontSize:"14px", color:"white", margin:0 }}>{interrogFotos.length===0?"Scatta Foto":"Aggiungi foto"}</p>
                     <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.75)", fontWeight:600, margin:0 }}>Apri fotocamera</p>
                   </div>
-                  <input type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={(e) => { const f=e.target.files[0]; if(f) caricaFoto(f); e.target.value=""; }} />
+                  <input type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={(e) => { const f=e.target.files[0]; if(f) aggiungiPhoto(f); e.target.value=""; }} />
                 </label>
                 <label style={{ flex:1, cursor:"pointer", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
                   <div style={{ background:"rgba(255,255,255,0.08)", border:"2px solid rgba(255,255,255,0.15)", borderRadius:"18px", padding:"18px 10px", display:"flex", flexDirection:"column", alignItems:"center", gap:"8px", userSelect:"none", WebkitUserSelect:"none", textAlign:"center", minHeight:"110px", justifyContent:"center" }}>
                     <div style={{ fontSize:"34px" }}>🖼️</div>
-                    <p style={{ fontWeight:900, fontSize:"14px", color:"white", margin:0 }}>Dalla Galleria</p>
+                    <p style={{ fontWeight:900, fontSize:"14px", color:"white", margin:0 }}>{interrogFotos.length===0?"Dalla Galleria":"Altra dalla galleria"}</p>
                     <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.75)", fontWeight:600, margin:0 }}>Scegli dalla memoria</p>
                   </div>
-                  <input type="file" accept="image/*" style={{ display:"none" }} onChange={(e) => { const f=e.target.files[0]; if(f) caricaFoto(f); e.target.value=""; }} />
+                  <input type="file" accept="image/*" style={{ display:"none" }} onChange={(e) => { const f=e.target.files[0]; if(f) aggiungiPhoto(f); e.target.value=""; }} />
                 </label>
               </div>
               {/* ── Scegli dal Programma (alternativa) ── */}
@@ -4115,6 +4181,27 @@ export default function Home() {
               <button onClick={() => { setInterrogTrascrizione(""); setInterrogFase("risposta_testo"); }} style={{ width:"100%", background:"none", border:"none", color:"rgba(255,255,255,0.3)", fontSize:"13px", fontWeight:600, cursor:"pointer", fontFamily:"'Nunito'", padding:"6px 0" }}>
                 ✏️ Preferisco scrivere
               </button>
+              {(!isTrial || isAdmin) && (
+                <button onClick={() => {
+                  const nuovaConv = [...interrogConv, { domanda: interrogDomanda, risposta: "(saltata)" }];
+                  setInterrogConv(nuovaConv);
+                  setInterrogTrascrizione("(saltata)");
+                  setInterrogValutazione("");
+                  setInterrogFase("valuta");
+                  getAccessToken().then(token => fetch("/api/interroga-valuta", {
+                    method:"POST", headers:{"Content-Type":"application/json"},
+                    body: JSON.stringify({ conversazione: nuovaConv, argomenti: interrogArgomenti, materia: mat.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M", numDomande: interrogNumDomande, accessToken: token }),
+                  }).then(r => r.json()).then(d => {
+                    if (d.errore) { alert(d.errore); setInterrogFase("domanda"); return; }
+                    setInterrogAudio(d.audio || null);
+                    setInterrogLexParla(false);
+                    if (d.completato) { setInterrogValutazione(d.valutazione || ""); setInterrogVoto(d.voto); setInterrogFeedback(d.feedbackFinale || ""); setInterrogFase("voto"); addStelle(Math.max(1, (d.voto || 5) - 4)); }
+                    else { setInterrogValutazione(""); setInterrogDomanda(d.prossimaDomanda || ""); setInterrogFase("domanda"); }
+                  }).catch(() => { alert("Errore. Riprova."); setInterrogFase("domanda"); }));
+                }} style={{ width:"100%", background:"none", border:"1px solid rgba(255,255,255,0.1)", borderRadius:"12px", padding:"10px", color:"rgba(255,255,255,0.35)", fontSize:"12px", fontWeight:700, cursor:"pointer", fontFamily:"'Nunito'", marginTop:"6px" }}>
+                  ⏭ Salta questa domanda
+                </button>
+              )}
             </div>
           )}
 
@@ -4625,7 +4712,7 @@ export default function Home() {
         <div style={{ flex:1, overflowY:"auto", padding:"14px 18px 100px" }}>
           {/* Materia selector */}
           <div style={{ display:"flex", gap:"8px", marginBottom:"14px" }}>
-            {Object.entries(MATERIE).map(([key, info]) => (
+            {MATERIE_ATTIVE.map(([key, info]) => (
               <button key={key} onClick={() => setMateria(key)} style={{ flex:1, padding:"8px 4px", borderRadius:"12px", background:materiaGioca===key?`${info.colore}22`:"rgba(255,255,255,0.04)", border:`2px solid ${materiaGioca===key?info.colore:"rgba(255,255,255,0.08)"}`, color:"white", fontFamily:"'Nunito', sans-serif", fontWeight:800, fontSize:"10px", cursor:"pointer" }}>
                 <div style={{ fontSize:"16px", marginBottom:"2px" }}>{info.emoji}</div>{info.label.split(" ")[0]}
               </button>
@@ -5559,7 +5646,7 @@ export default function Home() {
 
   // ── RIPASSO HOME ──────────────────────────────────────────────
   if (screen === "ripasso_home") {
-    const materieList = Object.entries(MATERIE);
+    const materieList = MATERIE_ATTIVE;
     const livelloStudente = ripassoXp <= 100 ? "Novizio 📖" : ripassoXp <= 300 ? "Studente ⭐" : ripassoXp <= 600 ? "Esperto 🎯" : ripassoXp <= 1000 ? "Genio 🧠" : "Maestro 🏆";
     const xpLivelloCorrente = ripassoXp <= 100 ? ripassoXp : ripassoXp <= 300 ? ripassoXp - 100 : ripassoXp <= 600 ? ripassoXp - 300 : ripassoXp <= 1000 ? ripassoXp - 600 : (ripassoXp - 1000) % 200;
     const xpLivelloMax = ripassoXp <= 100 ? 100 : ripassoXp <= 300 ? 200 : ripassoXp <= 600 ? 300 : ripassoXp <= 1000 ? 400 : 200;
@@ -6739,7 +6826,7 @@ export default function Home() {
       setEsameLoading(true);
       try {
         const token = await getAccessToken();
-        const r = await fetch("/api/esame-interrogazione", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ classe, materia: esameInterrMateria, accessToken: token }) });
+        const r = await fetch("/api/esame-interrogazione", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ classe, materia: esameInterrMateria, numDomande: esameInterrNumDomande, accessToken: token }) });
         const d = await r.json();
         if (d.errore) throw new Error(d.errore);
         setEsameInterrRisposta("");
@@ -6789,7 +6876,22 @@ export default function Home() {
               <LexChar stato="talk" size={110} />
               <div style={{ textAlign:"center", maxWidth:"320px" }}>
                 <p style={{ fontSize:"18px", fontWeight:900, marginBottom:"8px" }}>Interrogazione di {matNome}</p>
-                <p style={{ fontSize:"13px", color: luce?"rgba(0,0,30,0.55)":"rgba(255,255,255,0.55)", fontWeight:600, lineHeight:1.5 }}>Ti farò 7 domande su {matNome} per {classe}. Rispondi con parole tue, come se fosse una vera interrogazione! 💪</p>
+                <p style={{ fontSize:"13px", color: luce?"rgba(0,0,30,0.55)":"rgba(255,255,255,0.55)", fontWeight:600, lineHeight:1.5 }}>Ti farò {esameInterrNumDomande} domande su {matNome} per {classe}. Rispondi con parole tue, come se fosse una vera interrogazione! 💪</p>
+              </div>
+              <div style={{ width:"100%", maxWidth:"320px" }}>
+                <p style={{ fontSize:"11px", fontWeight:800, color: luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"8px", textAlign:"center" }}>Numero domande</p>
+                <div style={{ display:"flex", gap:"8px" }}>
+                  {[5,10,15].map(n => {
+                    const locked = (isTrial && !isAdmin) && n > 5;
+                    const sel = esameInterrNumDomande === n;
+                    return (
+                      <button key={n} onClick={() => { if (locked) { setScreen("scegli_piano"); return; } setEsameInterrNumDomande(n); }} style={{ flex:1, padding:"10px 0", borderRadius:"14px", background:sel?"rgba(108,71,255,0.25)":"rgba(255,255,255,0.05)", border:`2px solid ${sel?"#6C47FF":"rgba(255,255,255,0.1)"}`, color:sel?"white": luce?"rgba(0,0,30,0.5)":"rgba(255,255,255,0.5)", fontFamily:"'Nunito'", fontWeight:900, fontSize:"14px", cursor:"pointer", position:"relative" }}>
+                        {locked && <span style={{ position:"absolute", top:"4px", right:"6px", fontSize:"10px" }}>🔒</span>}
+                        {n}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
               <button onClick={generaDomande} disabled={esameLoading} style={{ ...S.btn, background:matBg, fontSize:"15px", padding:"14px 36px", opacity:esameLoading?0.6:1 }}>
                 {esameLoading ? "Preparo le domande…" : `Inizia interrogazione ${matEmoji}`}
