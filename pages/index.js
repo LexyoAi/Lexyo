@@ -42,6 +42,7 @@ export default function Home() {
 
   const sbloccaBloccato = isTrial && trialSbloccaUsati >= TRIAL_SBLOCCA_MAX;
   const [fotoFase, setFotoFase] = useState("carica");
+  const [fotoFotos, setFotoFotos] = useState([]);
   const [fotoMsgs, setFotoMsgs] = useState([]);
   const [fotoInput, setFotoInput] = useState("");
   const [fotoLoading, setFotoLoading] = useState(false);
@@ -1234,7 +1235,7 @@ export default function Home() {
       setScreen("scegli_piano");
       return;
     }
-    if (s === "foto") { setPhoto(null); setSbloccato(false); setFotoFase("carica"); setFotoMsgs([]); setFotoInput(""); setPhotoOriginale(null); setFotoMeseChip(null); setFotoArgomento(""); }
+    if (s === "foto") { setPhoto(null); setFotoFotos([]); setSbloccato(false); setFotoFase("carica"); setFotoMsgs([]); setFotoInput(""); setPhotoOriginale(null); setFotoMeseChip(null); setFotoArgomento(""); }
     if (s === "famiglia") setPinScreen("chiuso");
     if (s === "aggiungi_figlio") { setNomeFiglio(""); setSessoFiglio("M"); setClasseScelta(null); }
 
@@ -2702,36 +2703,65 @@ export default function Home() {
                 )}
               </div>
             )}
-            <label style={{ display:"flex", border:`2px dashed ${photo?`${t.primario}88`:`${t.secondario}44`}`, borderRadius:"18px", padding:"24px", textAlign:"center", cursor:"pointer", marginBottom:"14px", background:photo?"transparent":`${t.secondario}08`, minHeight:"170px", alignItems:"center", justifyContent:"center" }}>
-              {photo ? <img src={photo} alt="Compito" style={{ maxWidth:"100%", maxHeight:"250px", borderRadius:"12px", objectFit:"contain" }} /> : <div><div style={{ fontSize:"44px", marginBottom:"10px" }}>📷</div><p style={{ fontWeight:800, fontSize:"15px", marginBottom:"5px", color:"white" }}>{isMobile ? "Fotografa l'esercizio" : "Carica foto dell'esercizio"}</p><p style={{ fontSize:"12px", color:"rgba(255,255,255,0.4)", fontWeight:600 }}>{isMobile ? "Tocca per aprire la fotocamera" : "Clicca per scegliere una foto"}</p><p style={{ fontSize:"11px", color:"rgba(255,255,255,0.3)", fontWeight:600, marginTop:"4px" }}>🚫 Vietato fotografare persone</p></div>}
-              <input type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={(e) => { const f=e.target.files[0]; if(!f) return; compressPhoto(f,(c)=>{ setPhoto(c); setPhotoOriginale(c); }); }} />
-            </label>
-            {photo && (
-              <div style={{ display:"flex", gap:"10px" }}>
-                <button onClick={() => setPhoto(null)} style={{ ...S.btn, ...S.btnS, flex:1 }}>🔄 Cambia</button>
+            {/* ── Thumbnail foto caricate ── */}
+            {fotoFotos.length > 0 && (
+              <div style={{ marginBottom:"12px" }}>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:"8px", marginBottom:"10px" }}>
+                  {fotoFotos.map((f, idx) => (
+                    <div key={idx} style={{ position:"relative", width:"80px", height:"80px" }}>
+                      <img src={f} alt={`foto ${idx+1}`} style={{ width:"80px", height:"80px", borderRadius:"12px", objectFit:"cover", border:"2px solid rgba(255,255,255,0.15)" }} />
+                      <button onClick={() => setFotoFotos(prev => prev.filter((_,i) => i !== idx))} style={{ position:"absolute", top:"-6px", right:"-6px", width:"20px", height:"20px", borderRadius:"50%", background:"#ef4444", border:"none", color:"white", fontSize:"11px", fontWeight:900, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1 }}>✕</button>
+                    </div>
+                  ))}
+                  {fotoFotos.length < 8 && (
+                    <label style={{ cursor:"pointer" }}>
+                      <div style={{ width:"80px", height:"80px", borderRadius:"12px", border:"2px dashed rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"26px", color:"rgba(255,255,255,0.35)" }}>+</div>
+                      <input type="file" accept="image/*" style={{ display:"none" }} onChange={(e) => { const f=e.target.files[0]; if(!f) return; if(isTrial&&!isAdmin&&fotoFotos.length>=1){setScreen("scegli_piano");return;} compressPhoto(f,(c)=>setFotoFotos(prev=>[...prev,c])); e.target.value=""; }} />
+                    </label>
+                  )}
+                </div>
                 <button onClick={async () => {
                   if (isTrial && !isAdmin && trialFotoUsate >= TRIAL_FOTO_MAX) return;
+                  setPhoto(fotoFotos[0]); setPhotoOriginale(fotoFotos[0]);
                   setFotoFase("analisi_loading");
                   try {
                     const token = await getAccessToken();
-                    const res = await fetch("/api/analizza-foto", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ photo, materia:mat.label, argomento: fotoArgomento || undefined, classe:prog?.label, sesso: figlioAttivo?.sesso || "M", fase:"analisi", fingerprint: getFingerprint(), accessToken: token }) });
+                    const res = await fetch("/api/analizza-foto", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ photos: fotoFotos, materia:mat.label, argomento: fotoArgomento || undefined, classe:prog?.label, sesso: figlioAttivo?.sesso || "M", fase:"analisi", fingerprint: getFingerprint(), accessToken: token }) });
                     const d = await res.json();
                     if (d.bloccata) {
                       if (d.trial_esaurito && isTrial && !isAdmin) { localStorage.setItem("lexyo_trial_foto", String(TRIAL_FOTO_MAX)); setTrialFotoUsate(TRIAL_FOTO_MAX); }
-                      setPhoto(null); setFotoFase("carica"); setFotoMsgs([{ role:"assistant", content:d.risposta }]); return;
+                      setFotoFotos([]); setPhoto(null); setFotoFase("carica"); setFotoMsgs([{ role:"assistant", content:d.risposta }]); return;
                     }
-                    if (isTrial && !isAdmin) {
-                      const nu = trialFotoUsate + 1;
-                      localStorage.setItem("lexyo_trial_foto", String(nu));
-                      setTrialFotoUsate(nu);
-                    }
+                    if (isTrial && !isAdmin) { const nu = trialFotoUsate + 1; localStorage.setItem("lexyo_trial_foto", String(nu)); setTrialFotoUsate(nu); }
                     setFotoMsgs([{ role:"assistant", content:d.risposta }]); setFotoFase("domande");
                     addStelle(2); addBadge("curioso");
                   } catch { setFotoFase("carica"); }
-                }} style={{ ...S.btn, flex:2, background:t.gradiente, boxShadow:`0 6px 20px ${t.glow}`, border:"none" }}>✨ Analizza</button>
+                }} style={{ ...S.btn, background:t.gradiente, boxShadow:`0 6px 20px ${t.glow}`, border:"none" }}>
+                  ✨ Analizza {fotoFotos.length > 1 ? `(${fotoFotos.length} foto)` : ""}
+                </button>
               </div>
             )}
-            {isTrial && !isAdmin && <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.3)", fontWeight:700, textAlign:"center", marginTop:"10px" }}>📸 {TRIAL_FOTO_MAX - trialFotoUsate} foto rimaste nel periodo di prova</p>}
+            {/* ── Bottoni Scatta / Galleria ── */}
+            <div style={{ display:"flex", gap:"10px", marginBottom:"14px" }}>
+              <label style={{ flex:1, cursor:"pointer", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+                <div style={{ background:fotoFotos.length===0?t.gradiente:"rgba(255,255,255,0.08)", border:fotoFotos.length===0?"none":"2px solid rgba(255,255,255,0.15)", borderRadius:"18px", padding:"18px 10px", display:"flex", flexDirection:"column", alignItems:"center", gap:"8px", boxShadow:fotoFotos.length===0?`0 6px 20px ${t.glow}`:"none", userSelect:"none", WebkitUserSelect:"none", textAlign:"center", minHeight:"110px", justifyContent:"center" }}>
+                  <div style={{ fontSize:"34px" }}>📷</div>
+                  <p style={{ fontWeight:900, fontSize:"14px", color:"white", margin:0 }}>{fotoFotos.length===0?"Scatta Foto":"Aggiungi foto"}</p>
+                  <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.75)", fontWeight:600, margin:0 }}>Apri fotocamera</p>
+                </div>
+                <input type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={(e) => { const f=e.target.files[0]; if(!f) return; if(isTrial&&!isAdmin&&fotoFotos.length>=1){setScreen("scegli_piano");return;} compressPhoto(f,(c)=>setFotoFotos(prev=>[...prev,c])); e.target.value=""; }} />
+              </label>
+              <label style={{ flex:1, cursor:"pointer", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+                <div style={{ background:"rgba(255,255,255,0.08)", border:"2px solid rgba(255,255,255,0.15)", borderRadius:"18px", padding:"18px 10px", display:"flex", flexDirection:"column", alignItems:"center", gap:"8px", userSelect:"none", WebkitUserSelect:"none", textAlign:"center", minHeight:"110px", justifyContent:"center" }}>
+                  <div style={{ fontSize:"34px" }}>🖼️</div>
+                  <p style={{ fontWeight:900, fontSize:"14px", color:"white", margin:0 }}>{fotoFotos.length===0?"Dalla Galleria":"Altra dalla galleria"}</p>
+                  <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.75)", fontWeight:600, margin:0 }}>Scegli dalla memoria</p>
+                </div>
+                <input type="file" accept="image/*" style={{ display:"none" }} onChange={(e) => { const f=e.target.files[0]; if(!f) return; if(isTrial&&!isAdmin&&fotoFotos.length>=1){setScreen("scegli_piano");return;} compressPhoto(f,(c)=>setFotoFotos(prev=>[...prev,c])); e.target.value=""; }} />
+              </label>
+            </div>
+            <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.25)", fontWeight:600, textAlign:"center", marginBottom:"6px" }}>🚫 Vietato fotografare persone</p>
+            {isTrial && !isAdmin && <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.3)", fontWeight:700, textAlign:"center", marginTop:"6px" }}>📸 {TRIAL_FOTO_MAX - trialFotoUsate} analisi rimaste nel periodo di prova</p>}
           </>
         )}
         {fotoBloccata && fotoFase !== "carica" && null}

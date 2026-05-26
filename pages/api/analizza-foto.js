@@ -6,11 +6,11 @@ import { trackUsage } from "../../lib/track-usage";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-export const config = { api: { bodyParser: { sizeLimit: "10mb" } } };
+export const config = { api: { bodyParser: { sizeLimit: "30mb" } } };
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { photo, materia, classe, fase, messaggi, photoOriginale, fingerprint, accessToken, sesso } = req.body;
+  const { photo, photos, materia, classe, fase, messaggi, photoOriginale, fingerprint, accessToken, sesso } = req.body;
   const adattivita = getAdattivita(classe);
   const bambino = sesso === "F" ? "bambina" : "bambino";
   const ilBambino = sesso === "F" ? "la bambina" : "il bambino";
@@ -46,41 +46,55 @@ export default async function handler(req, res) {
     }
   }
 
-  if (!photo || !photo.startsWith("data:image/")) {
-    return res.status(400).json({ risposta: "Immagine non valida. Riprova con una foto diversa.", bloccata: true });
+  // Normalizza: accetta sia photos[] che il vecchio campo photo singolo
+  const photosList = Array.isArray(photos) && photos.length > 0 ? photos : (photo ? [photo] : []);
+  const photoMain = photosList[0] || null;
+
+  if (!photoMain || !photoMain.startsWith("data:image/")) {
+    if (fase !== "domande") {
+      return res.status(400).json({ risposta: "Immagine non valida. Riprova con una foto diversa.", bloccata: true });
+    }
   }
 
   try {
-    const match = photo.match(/^data:(image\/(?:jpeg|png|gif|webp));base64,(.+)$/);
-    if (!match) return res.status(400).json({ risposta: "Formato immagine non supportato. Usa JPG, PNG o WebP." });
-    const mediaType = match[1];
-    const base64 = match[2];
+    // Validazione prima immagine (usata nelle fasi successive)
     const MEDIA_TYPES_VALIDI = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-    if (!MEDIA_TYPES_VALIDI.includes(mediaType)) {
-      return res.status(400).json({ risposta: "Formato immagine non supportato. Usa JPG, PNG o WebP." });
+    let mediaType = null;
+    let base64 = null;
+    if (photoMain) {
+      const match = photoMain.match(/^data:(image\/(?:jpeg|png|gif|webp));base64,(.+)$/);
+      if (!match) return res.status(400).json({ risposta: "Formato immagine non supportato. Usa JPG, PNG o WebP." });
+      mediaType = match[1];
+      base64 = match[2];
+      if (!MEDIA_TYPES_VALIDI.includes(mediaType)) {
+        return res.status(400).json({ risposta: "Formato immagine non supportato. Usa JPG, PNG o WebP." });
+      }
     }
 
     // ── CONTROLLO SICUREZZA (Haiku: classificazione binaria rapida) ──────────
     if (fase === "analisi" || fase === "correzione" || fase === "compito_estivo" || fase === "compito_estivo_semplice") {
-      const check = await client.messages.create({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 10,
-        system: [{
-          type: "text",
-          text: `Sei un sistema di sicurezza per un'app scolastica. Analizza la foto e rispondi con UNA SOLA PAROLA:
+      const securityChecks = await Promise.all(photosList.map(p => {
+        const b64 = p.split(",")[1];
+        const mt = p.split(";")[0].split(":")[1];
+        return client.messages.create({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 10,
+          system: [{
+            type: "text",
+            text: `Sei un sistema di sicurezza per un'app scolastica. Analizza la foto e rispondi con UNA SOLA PAROLA:
 - "SCOLASTICO" se la foto mostra: pagine di libri, quaderni, esercizi scritti, testi scolastici, illustrazioni didattiche, ritratti storici stampati su libri, mappe, grafici, formule
 - "PERSONALE" se la foto mostra: selfie, bambini/bambine reali fotografati, persone in ambienti privati, foto di famiglia, foto non scolastiche
 Rispondi SOLO con: SCOLASTICO oppure PERSONALE`,
-          cache_control: { type: "ephemeral" }
-        }],
-        messages: [{ role: "user", content: [
-          { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
-          { type: "text", text: "Questa foto è scolastica o personale?" }
-        ]}],
-      });
+            cache_control: { type: "ephemeral" }
+          }],
+          messages: [{ role: "user", content: [
+            { type: "image", source: { type: "base64", media_type: mt, data: b64 } },
+            { type: "text", text: "Questa foto è scolastica o personale?" }
+          ]}],
+        });
+      }));
 
-      const risultato = check.content[0].text.trim().toUpperCase();
-      if (risultato.includes("PERSONALE")) {
+      if (securityChecks.some(c => c.content[0].text.trim().toUpperCase().includes("PERSONALE"))) {
         return res.json({
           risposta: "⚠️ Foto non valida\n\nPuoi caricare solo foto di:\n📚 Pagine di libri\n📝 Quaderni con esercizi\n📖 Testi scolastici\n\nNon caricare foto di persone o bambini/bambine.",
           fase: "bloccata",
@@ -91,11 +105,15 @@ Rispondi SOLO con: SCOLASTICO oppure PERSONALE`,
 
     // ── ANALISI ESERCIZIO (Sonnet: riconosce scrittura a mano) ──────────────
     if (fase === "analisi") {
+      const imageContent = photosList.map(p => ({
+        type: "image",
+        source: { type: "base64", media_type: p.split(";")[0].split(":")[1], data: p.split(",")[1] },
+      }));
       const response = await client.messages.create({
         model: "claude-sonnet-4-6",
         max_tokens: 400,
         system: [{ type: "text", text: `Sei Lexyo, insegnante di ${materia} per la ${classe} italiana.
-Guardi la foto di un esercizio. Devi:
+Guardi ${photosList.length > 1 ? `${photosList.length} foto di esercizi` : "la foto di un esercizio"}. Devi:
 1. Spiegare in modo CHIARO e SEMPLICE il tipo di esercizio e come si risolve
 2. NON dare la risposta finale
 3. Fare UNA sola domanda sul primo passo
@@ -106,8 +124,8 @@ Formato risposta:
 📖 [Spiegazione del metodo passo per passo]
 ❓ [Una domanda sul primo passo]`, cache_control: { type: "ephemeral" } }],
         messages: [{ role: "user", content: [
-          { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
-          { type: "text", text: "Analizza questo esercizio e spiegami come si fa." }
+          ...imageContent,
+          { type: "text", text: `Analizza ${photosList.length > 1 ? "questi esercizi" : "questo esercizio"} e spiegami come si fa.` }
         ]}],
       });
       if (!isPremium) await incrementTrialUsage(fingerprint, "foto");
