@@ -753,6 +753,27 @@ export default function Home() {
             setMesiGratisGuadagnati(profilo.mesi_gratis_guadagnati || 0);
             if (profilo.referral_code) setReferralCode(profilo.referral_code);
           }
+          // Referral e FB pixel per nuovi utenti Google OAuth (account creato negli ultimi 2 minuti)
+          const isNuovoGoogle = session.user.app_metadata?.provider === "google" &&
+            (Date.now() - new Date(session.user.created_at).getTime()) < 120000;
+          if (isNuovoGoogle && profilo) {
+            try {
+              const pendingRef = typeof window !== "undefined" ? localStorage.getItem("lexyo_referral_pending_google") : null;
+              if (pendingRef) {
+                const { data: referente } = await supabase.from("profili")
+                  .select("id,referral_count,mesi_gratis_guadagnati")
+                  .eq("referral_code", pendingRef)
+                  .maybeSingle();
+                if (referente && referente.id !== profilo.id) {
+                  const nuovoCount = (referente.referral_count || 0) + 1;
+                  await supabase.from("profili").update({ referral_count: nuovoCount, mesi_gratis_guadagnati: Math.floor(nuovoCount / 5) }).eq("referral_code", pendingRef);
+                }
+                localStorage.removeItem("lexyo_referral_pending_google");
+                localStorage.removeItem("lexyo_referral_code");
+              }
+            } catch {}
+            if (typeof fbq !== "undefined") fbq("track", "StartTrial", { value: 0, currency: "EUR", predicted_ltv: 12.90 });
+          }
           const giorniEffettivi = (profilo?.trial_usato === true && !isPremium) ? 0 : giorniRimasti;
           if (profilo?.trial_usato === true && !isPremium) setTrialGiorni(0);
           if (profilo?.trial_avviato === true) setTrialAvviato(true);
@@ -949,6 +970,15 @@ export default function Home() {
     if (utente) supabase.from("figli").update({ streak: nuovoStreak, ultima_attivita: new Date().toISOString() }).eq("id", figlioAttivo.id).then(() => {});
     if (nuovoStreak === 3) addBadge("streak3");
     if (nuovoStreak === 7) addBadge("streak7");
+  };
+
+  const handleGoogleLogin = async () => {
+    const ref = referralInput.trim().toUpperCase() || (typeof window !== "undefined" ? localStorage.getItem("lexyo_referral_code") : "") || "";
+    if (ref) localStorage.setItem("lexyo_referral_pending_google", ref);
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: "https://app.lexyo.it" },
+    });
   };
 
   const handleAuth = async () => {
@@ -1752,6 +1782,31 @@ export default function Home() {
             Password dimenticata?
           </button>
         )}
+        {/* Separatore */}
+        <div style={{ display:"flex", alignItems:"center", gap:"10px", margin:"4px 0" }}>
+          <div style={{ flex:1, height:"1px", background: luce ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)" }} />
+          <span style={{ fontSize:"12px", color: luce ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.35)", fontWeight:600 }}>oppure</span>
+          <div style={{ flex:1, height:"1px", background: luce ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)" }} />
+        </div>
+        {/* Google OAuth */}
+        <button onClick={handleGoogleLogin} style={{
+          ...S.btn, background:"white", color:"#3c4043",
+          display:"flex", alignItems:"center", justifyContent:"center", gap:"10px",
+          border:"1px solid rgba(0,0,0,0.15)", boxShadow:"0 2px 8px rgba(0,0,0,0.10)",
+        }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="#4285F4" d="M23.745 12.27c0-.79-.07-1.54-.19-2.27h-11.3v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/>
+            <path fill="#34A853" d="M12.255 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96h-3.98v3.09C3.515 21.3 7.565 24 12.255 24z"/>
+            <path fill="#FBBC05" d="M5.525 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62h-3.98a11.86 11.86 0 0 0 0 10.76l3.98-3.09z"/>
+            <path fill="#EA4335" d="M12.255 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C18.205 1.19 15.495 0 12.255 0c-4.69 0-8.74 2.7-10.71 6.62l3.98 3.09c.95-2.85 3.6-4.96 6.73-4.96z"/>
+          </svg>
+          Continua con Google
+        </button>
+        <p style={{ fontSize:"11px", color: luce ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.3)", textAlign:"center", fontWeight:500, lineHeight:1.5 }}>
+          Continuando accetti i{" "}
+          <a href="/termini" target="_blank" rel="noreferrer" style={{ color:"#a78bfa" }}>Termini di Servizio</a>{" "}e la{" "}
+          <a href="/privacy" target="_blank" rel="noreferrer" style={{ color:"#a78bfa" }}>Privacy Policy</a>
+        </p>
         <p style={{ ...S.gray, fontSize:"12px" }}>🔒 Nessun dato del bambino richiesto</p>
       </div>
     </div>
