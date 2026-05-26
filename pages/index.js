@@ -713,7 +713,11 @@ export default function Home() {
         if (session) {
           setUtente(session.user);
           setEmail(session.user.email);
-          const { data: figliDB } = await supabase.from("figli").select("*").eq("genitore_id", session.user.id);
+          let figliDB = null;
+          try {
+            const { data: fd } = await supabase.from("figli").select("*").eq("genitore_id", session.user.id);
+            figliDB = fd;
+          } catch (fe) { console.error("[init] figli error:", fe.message); }
           if (figliDB && figliDB.length > 0) {
             const ff = figliDB.map(f => ({ ...f, badge: f.badge || [], preparazione: f.preparazione || {} }));
             setFigli(ff);

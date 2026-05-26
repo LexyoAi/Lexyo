@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { verifyAuth } from "../../lib/verify-auth";
+import { parseJSON } from "../../lib/parse-json";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -63,10 +64,7 @@ Rispondi SOLO con JSON valido senza markdown:
       max_tokens: 2500,
       messages: [{ role: "user", content: prompt }],
     });
-    const raw = r.content[0].text.trim();
-    const start = raw.indexOf("[");
-    const end = raw.lastIndexOf("]") + 1;
-    const domande = JSON.parse(raw.slice(start, end));
+    const domande = parseJSON(r.content[0].text.trim(), "array");
     res.json({ domande });
   } catch (e) {
     console.error("trasforma-quiz error:", e.message);

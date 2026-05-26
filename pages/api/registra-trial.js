@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     || "unknown";
 
   try {
-    await supabase.from("trial_fingerprints").insert([{ ip, fingerprint, email: emailAuth }]);
+    await supabase.from("trial_fingerprints").upsert([{ ip, fingerprint, email: emailAuth }], { ignoreDuplicates: true });
   } catch (e) {
     console.error("registra-trial error:", e.message);
   }

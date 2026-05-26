@@ -20,7 +20,7 @@ export default async function handler(req, res) {
 
   if (isPremium === null) {
     return res.status(403).json({
-      risposta: "⏰ Il tuo periodo di prova gratuito è scaduto.\nAbbonati per continuare a usare Lexyo!",
+      risposta: "⏰ Accesso scaduto.\nAbbonati per continuare a usare Lexyo!",
       bloccata: true,
       trial_scaduto: true,
     });

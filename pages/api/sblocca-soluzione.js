@@ -15,7 +15,7 @@ export default async function handler(req, res) {
 
   if (isPremium === null) {
     return res.status(403).json({
-      errore: "⏰ Il tuo periodo di prova gratuito è scaduto. Abbonati per continuare!",
+      errore: "⏰ Accesso scaduto. Abbonati per continuare!",
       trial_scaduto: true,
     });
   }

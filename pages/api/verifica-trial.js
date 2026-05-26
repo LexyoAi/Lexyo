@@ -15,14 +15,22 @@ export default async function handler(req, res) {
   if (authError || !user) return res.status(401).json({ consentito: false });
 
   const { fingerprint } = req.body;
+  const ip = req.headers["x-nf-client-connection-ip"]
+    || (req.headers["x-forwarded-for"] || "").split(",")[0].trim()
+    || req.socket?.remoteAddress
+    || "unknown";
 
   try {
-    if (fingerprint) {
-      const { data: fpData } = await supabase
-        .from("trial_fingerprints")
-        .select("id")
-        .eq("fingerprint", fingerprint)
-        .limit(1);
+    if (fingerprint || (ip && ip !== "unknown")) {
+      let query = supabase.from("trial_fingerprints").select("id").limit(1);
+      if (fingerprint && ip && ip !== "unknown") {
+        query = query.or(`fingerprint.eq.${fingerprint},ip.eq.${ip}`);
+      } else if (fingerprint) {
+        query = query.eq("fingerprint", fingerprint);
+      } else {
+        query = query.eq("ip", ip);
+      }
+      const { data: fpData } = await query;
       if (fpData && fpData.length > 0) {
         return res.json({ consentito: false, motivo: "dispositivo" });
       }

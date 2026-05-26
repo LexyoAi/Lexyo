@@ -12,8 +12,9 @@ export default async function handler(req, res) {
   if (!user) return res.status(401).json({ errore: "Accesso richiesto. Effettua il login." });
 
   const adattivita = getAdattivita(classe);
+  const storicoSafe = Array.isArray(storico) ? storico.slice(0, 10) : [];
 
-  const storicoTesto = storico?.map((s, i) =>
+  const storicoTesto = storicoSafe.map((s, i) =>
     `D${i+1} [${s.materia}]: ${s.domanda}\nR: ${s.risposta}\n`
   ).join("\n") || "";
 

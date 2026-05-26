@@ -17,13 +17,14 @@ export default async function handler(req, res) {
   const alBambino = sesso === "F" ? "alla bambina" : "al bambino";
 
   if (!Array.isArray(conversazione)) return res.status(400).json({ errore: "conversazione non valida" });
+  const convSafe = conversazione.slice(0, 10);
   const adattivita = getAdattivita(classe);
-  const domandeFatte = conversazione.length;
+  const domandeFatte = convSafe.length;
   const maxDomande = 7;
   const fine = domandeFatte >= maxDomande;
 
   try {
-    const convTesto = conversazione
+    const convTesto = convSafe
       .map((c, i) => `D${i + 1}: ${c.domanda}\nR${i + 1}: ${c.risposta}`)
       .join("\n\n");
 

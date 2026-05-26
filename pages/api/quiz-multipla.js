@@ -3,7 +3,6 @@ import { getAdattivita, getDifficoltaMateria } from "../../lib/adattivita";
 import { cacheGetOrFetch, cacheAddVariant, ck } from "../../lib/cache";
 import { parseJSON } from "../../lib/parse-json";
 import { verifyAuth } from "../../lib/verify-auth";
-import { verifyPremium } from "../../lib/verify-premium";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -33,10 +32,10 @@ export default async function handler(req, res) {
   const adattivita = getAdattivita(classe);
   const difficolta = getDifficoltaMateria(classe, materia);
 
-  // Trial: forceNew ignorato, usa sempre la cache
+  // Trial: forceNew ignorato. verifyAuth ha già garantito che utenti > 3 giorni sono premium.
   if (forceNew) {
-    const isPremium = await verifyPremium(accessToken);
-    if (!isPremium) forceNew = false;
+    const giorniPassati = Math.floor((Date.now() - new Date(user.created_at).getTime()) / 86400000);
+    if (giorniPassati <= 3) forceNew = false;
   }
 
   const key = ck("quiz", classe, materia, argomento);

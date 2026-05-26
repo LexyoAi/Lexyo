@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { verifyAuth } from "../../lib/verify-auth";
+import { parseJSON } from "../../lib/parse-json";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -38,10 +39,7 @@ Rispondi SOLO con JSON valido senza markdown:
       max_tokens: 600,
       messages: [{ role: "user", content: prompt }],
     });
-    const raw = r.content[0].text.trim();
-    const start = raw.indexOf("{");
-    const end = raw.lastIndexOf("}") + 1;
-    const risposta = JSON.parse(raw.slice(start, end));
+    const risposta = parseJSON(r.content[0].text.trim());
     res.json(risposta);
   } catch (e) {
     console.error("inglese-chat error:", e.message);
