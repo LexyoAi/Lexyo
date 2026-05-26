@@ -15,6 +15,13 @@ export default async function handler(req, res) {
 
   const isPremium = await verifyPremium(accessToken);
 
+  if (isPremium === null) {
+    return res.status(403).json({
+      risposta: "⏰ Il tuo periodo di prova gratuito è scaduto.\nAbbonati per continuare a usare Lexyo!",
+      trial_scaduto: true,
+    });
+  }
+
   if (!isPremium) {
     const fp = (fingerprint && fingerprint !== "ssr") ? fingerprint : null;
     const check = await checkTrialUsage(fp, "chat");

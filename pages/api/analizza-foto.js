@@ -18,6 +18,14 @@ export default async function handler(req, res) {
 
   const isPremium = await verifyPremium(accessToken);
 
+  if (isPremium === null) {
+    return res.status(403).json({
+      risposta: "⏰ Il tuo periodo di prova gratuito è scaduto.\nAbbonati per continuare a usare Lexyo!",
+      bloccata: true,
+      trial_scaduto: true,
+    });
+  }
+
   if (!isPremium && (fase === "compito_estivo" || fase === "compito_estivo_semplice")) {
     return res.status(403).json({
       risposta: "⭐ I compiti estivi sono disponibili con l'abbonamento premium.\nAbbonati per accedere!",

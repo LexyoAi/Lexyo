@@ -55,6 +55,18 @@ export default async function handler(req, res) {
           profilo.referral_code = code;
         } catch (_) {}
       }
+
+      // Sincronizza trial_usato quando il trial scade per tempo
+      if (!profilo.trial_usato && !profilo.abbonamento_attivo && !profilo.is_admin) {
+        const giorniPassati = Math.floor((Date.now() - new Date(user.created_at).getTime()) / 86400000);
+        if (giorniPassati > 3) {
+          try {
+            await sb.from("profili").update({ trial_usato: true }).eq("email", profilo.email);
+            profilo.trial_usato = true;
+          } catch (_) {}
+        }
+      }
+
       return res.json({ profilo });
     }
 
