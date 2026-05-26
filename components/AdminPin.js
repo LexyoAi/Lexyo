@@ -79,7 +79,7 @@ export default function AdminPin({ email, onSuccess, onBack }) {
   };
 
   return (
-    <div style={{
+    <div className="dark-overlay" style={{
       position: "fixed", inset: 0,
       background: "linear-gradient(135deg, #0D0D1A, #1A0000)",
       display: "flex", flexDirection: "column", alignItems: "center",

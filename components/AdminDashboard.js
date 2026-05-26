@@ -377,7 +377,7 @@ export default function AdminDashboard({ accessToken, emailAdmin, onLogout }) {
   ];
 
   return (
-    <div style={{
+    <div className="dark-overlay" style={{
       position: "fixed", inset: 0, zIndex: 9000,
       background: "#0D0A1F",
       display: "flex", flexDirection: "column",
