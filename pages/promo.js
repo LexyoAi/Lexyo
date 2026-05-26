@@ -14,17 +14,21 @@ export default function Promo() {
   const [stickyCTA, setStickyCTA] = useState(false);
   const heroBtnRef = useRef(null);
 
-  // globals.css imposta overflow:hidden su body/html — lo sovrascriviamo per questa pagina
+  // globals.css imposta overflow:hidden e height:100% su body/html — sovrascriviamo
   useEffect(() => {
-    document.documentElement.style.overflow = "auto";
-    document.documentElement.style.height = "auto";
-    document.body.style.overflow = "auto";
-    document.body.style.height = "auto";
+    const el = document.documentElement;
+    const bd = document.body;
+    el.style.setProperty("overflow", "auto", "important");
+    el.style.setProperty("height", "auto", "important");
+    bd.style.setProperty("overflow", "auto", "important");
+    bd.style.setProperty("height", "auto", "important");
+    bd.style.setProperty("overscroll-behavior", "auto", "important");
     return () => {
-      document.documentElement.style.overflow = "";
-      document.documentElement.style.height = "";
-      document.body.style.overflow = "";
-      document.body.style.height = "";
+      el.style.removeProperty("overflow");
+      el.style.removeProperty("height");
+      bd.style.removeProperty("overflow");
+      bd.style.removeProperty("height");
+      bd.style.removeProperty("overscroll-behavior");
     };
   }, []);
 
@@ -52,6 +56,11 @@ export default function Promo() {
       </Head>
 
       <style>{`
+        html, body {
+          overflow: auto !important;
+          height: auto !important;
+          overscroll-behavior: auto !important;
+        }
         @keyframes float {
           0%, 100% { transform: translateY(0px); }
           50%       { transform: translateY(-12px); }
