@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { verifyAuth } from "../../lib/verify-auth";
+import { trackUsage } from "../../lib/track-usage";
 import { parseJSON } from "../../lib/parse-json";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -65,6 +66,7 @@ Rispondi SOLO con JSON valido senza markdown:
       messages: [{ role: "user", content: prompt }],
     });
     const domande = parseJSON(r.content[0].text.trim(), "array");
+    trackUsage("trasforma-quiz", user.email);
     res.json({ domande });
   } catch (e) {
     console.error("trasforma-quiz error:", e.message);

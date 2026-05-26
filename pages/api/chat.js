@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getAdattivita } from "../../lib/adattivita";
 import { checkTrialUsage, incrementTrialUsage } from "../../lib/trial-server";
 import { verifyPremium } from "../../lib/verify-premium";
+import { trackUsage } from "../../lib/track-usage";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -69,7 +70,7 @@ export default async function handler(req, res) {
     });
 
     if (!isPremium) await incrementTrialUsage(fingerprint, "chat");
-
+    trackUsage("chat", accessToken);
     res.json({ risposta: response.content[0].text });
   } catch (e) {
     console.error("ERRORE chat:", e.message);

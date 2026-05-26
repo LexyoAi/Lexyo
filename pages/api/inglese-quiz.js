@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { verifyAuth } from "../../lib/verify-auth";
+import { trackUsage } from "../../lib/track-usage";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -44,6 +45,7 @@ Rispondi SOLO con JSON valido senza markdown:
     const start = raw.indexOf("[");
     const end = raw.lastIndexOf("]") + 1;
     const domande = JSON.parse(raw.slice(start, end));
+    trackUsage("inglese-quiz", user.email);
     res.json({ domande });
   } catch (e) {
     console.error("inglese-quiz error:", e.message);

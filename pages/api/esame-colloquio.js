@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getAdattivita } from "../../lib/adattivita";
 import { parseJSON } from "../../lib/parse-json";
 import { verifyAuth } from "../../lib/verify-auth";
+import { trackUsage } from "../../lib/track-usage";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -24,7 +25,9 @@ export default async function handler(req, res) {
       system: [{ type: "text", text: `Sei la commissione d'esame per il colloquio orale. Bambino di ${classe}.\nConduci colloquio realistico collegando le materie tra loro.\nMaterie da coprire: Italiano, Matematica, Scienze, Storia, Geografia, Inglese.\nDomanda ${domandaNum} di 8. Adatta difficoltà a ${classe}.\nPrima valuta brevemente l'ultima risposta (1 frase incoraggiante). Poi fai la prossima domanda.\nLivello studente: ${adattivita}\nRispondi SOLO con JSON senza markdown:\n{"valutazione_precedente":"...","prossima_domanda":"...","materia":"Italiano","collegamento_spiegato":"..."}`, cache_control: { type: "ephemeral" } }],
       messages: [{ role: "user", content: `Storico:\n${storicoTesto || "Inizia il colloquio."}` }],
     });
-    return res.json(parseJSON(r.content[0].text.trim()));
+    const risultato = parseJSON(r.content[0].text.trim());
+    trackUsage("esame-colloquio", user.email);
+    return res.json(risultato);
   } catch (e) {
     console.error("ERRORE esame-colloquio:", e.message);
     return res.status(500).json({ errore: "Errore temporaneo. Riprova." });

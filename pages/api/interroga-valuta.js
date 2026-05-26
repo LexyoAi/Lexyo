@@ -3,6 +3,7 @@ import { getAdattivita } from "../../lib/adattivita";
 import { tts, VOICE_INTERROGA } from "../../lib/tts";
 import { parseJSON } from "../../lib/parse-json";
 import { verifyAuth } from "../../lib/verify-auth";
+import { trackUsage } from "../../lib/track-usage";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -55,6 +56,7 @@ JSON richiesto: {"valutazione":"commento breve ultima risposta (1-2 righe, incor
     // TTS con cache condivisa — evita ri-generazioni di frasi identiche
     const audio = await tts(dati.testo_audio || "", VOICE_INTERROGA);
 
+    trackUsage("interroga-valuta", user.email);
     if (fine) {
       res.json({
         valutazione: dati.valutazione || "",

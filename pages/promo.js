@@ -45,7 +45,7 @@ export default function Promo() {
 
   const handleCTA = () => {
     trackCTA();
-    window.location.href = "/";
+    window.location.href = "https://app.lexyo.it/?registrati=true";
   };
 
   return (

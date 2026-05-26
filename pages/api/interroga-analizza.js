@@ -4,6 +4,7 @@ import { cacheGetOrFetch, ck } from "../../lib/cache";
 import { tts, VOICE_INTERROGA } from "../../lib/tts";
 import { parseJSON } from "../../lib/parse-json";
 import { verifyAuth } from "../../lib/verify-auth";
+import { trackUsage } from "../../lib/track-usage";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -94,6 +95,7 @@ Livello studente: ${adattivita}`, cache_control: { type: "ephemeral" } }],
     const testoAudio = `${saluto}Siamo pronti per l'interrogazione, iniziamo subito! Prima domanda: ${dati.prima_domanda}`;
     const audio = await tts(testoAudio, VOICE_INTERROGA);
 
+    trackUsage("interroga-analizza", user.email);
     res.json({
       argomenti: dati.argomenti || [],
       benvenuto: dati.benvenuto || "",

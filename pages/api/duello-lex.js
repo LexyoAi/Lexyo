@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getAdattivita } from "../../lib/adattivita";
 import { parseJSON } from "../../lib/parse-json";
 import { verifyAuth } from "../../lib/verify-auth";
+import { trackUsage } from "../../lib/track-usage";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -19,7 +20,9 @@ export default async function handler(req, res) {
         system: [{ type: "text", text: `Sei Lex in DUELLO per bambini di ${classe} su "${argomento}" di ${materia}. Rispondi in modo divertente e provocatorio. Circa 2 volte su 5 dai una risposta volutamente sbagliata per rendere il gioco divertente. SOLO JSON senza markdown:\n{"risposta_lex":"risposta breve","e_sbagliata":false,"risposta_corretta":"risposta esatta e verificata","messaggio_provocatorio":"frase divertente max 10 parole"}\ne_sbagliata: true quando Lex dà una risposta sbagliata di proposito. risposta_corretta contiene sempre la risposta vera indipendentemente da e_sbagliata.\nLivello: ${adattivita}`, cache_control: { type: "ephemeral" } }],
         messages: [{ role: "user", content: `Il bambino ti ha chiesto: "${domanda}"` }],
       });
-      return res.json(parseJSON(r.content[0].text.trim()));
+      const dRisposta = parseJSON(r.content[0].text.trim());
+      trackUsage("duello-lex", user.email);
+      return res.json(dRisposta);
     } catch (e) {
       console.error("ERRORE [duello-lex risposta]:", e.message);
       return res.status(500).json({ errore: "Errore temporaneo. Riprova." });

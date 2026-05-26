@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getAdattivita } from "../../lib/adattivita";
 import { parseJSON } from "../../lib/parse-json";
 import { verifyAuth } from "../../lib/verify-auth";
+import { trackUsage } from "../../lib/track-usage";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -30,7 +31,9 @@ export default async function handler(req, res) {
       system: [{ type: "text", text: `Sei Lex, correttore esperto per l'Esame di Stato italiano. Valuta in modo dettagliato ma incoraggiante per bambini di ${classe}.\nRispondi SOLO con JSON senza markdown:\n{"voto_finale":7,"voti":{"aderenza":7,"ortografia":8,"struttura":7,"stile":6},"punti_forza":["...","..."],"errori":[{"sezione":"ortografia","errore":"...","spiegazione":"..."}],"consigli":["...","...","..."],"messaggio_incoraggiamento":"..."}`, cache_control: { type: "ephemeral" } }],
       messages: [{ role: "user", content: userContent }],
     });
-    return res.json(parseJSON(r.content[0].text));
+    const esitoIta = parseJSON(r.content[0].text);
+    trackUsage("esame-correggi-italiano", user.email);
+    return res.json(esitoIta);
   } catch (e) {
     console.error("ERRORE esame-correggi-italiano:", e.message);
     return res.status(500).json({ errore: "Errore temporaneo. Riprova." });

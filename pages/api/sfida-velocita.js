@@ -3,6 +3,7 @@ import { getAdattivita, getDifficoltaMateria } from "../../lib/adattivita";
 import { cacheGetOrFetch, cacheAddVariant, ck } from "../../lib/cache";
 import { parseJSON } from "../../lib/parse-json";
 import { verifyAuth } from "../../lib/verify-auth";
+import { trackUsage } from "../../lib/track-usage";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MAX_VARIANTS = 6;
@@ -49,11 +50,13 @@ opzioneA è SEMPRE la risposta corretta.`, cache_control: { type: "ephemeral" } 
     if (forceNew) {
       const data = await genera();
       await cacheAddVariant(key, data, MAX_VARIANTS, TTL);
+      trackUsage("sfida-velocita", user.email);
       res.setHeader("X-Cache", "FORCE_NEW");
       return res.json({ domande: data });
     }
 
     const { data: dati, hit } = await cacheGetOrFetch(key, genera, MAX_VARIANTS, TTL);
+    trackUsage("sfida-velocita", user.email);
     res.setHeader("X-Cache", hit ? "HIT" : "MISS");
     res.json({ domande: dati });
   } catch (e) {

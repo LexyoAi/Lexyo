@@ -3,6 +3,7 @@ import { getAdattivita, getDifficoltaMateria } from "../../lib/adattivita";
 import { cacheGetOrFetch, cacheAddVariant, ck } from "../../lib/cache";
 import { parseJSON } from "../../lib/parse-json";
 import { verifyAuth } from "../../lib/verify-auth";
+import { trackUsage } from "../../lib/track-usage";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -76,11 +77,13 @@ IMPORTANTE: opzioni[corretta] deve essere identico a risposta_corretta.`, cache_
     if (forceNew) {
       const data = await genera();
       await cacheAddVariant(key, data, MAX_VARIANTS, TTL);
+      trackUsage("quiz-multipla", user.email);
       res.setHeader("X-Cache", "FORCE_NEW");
       return res.json(data);
     }
 
     const { data: dati, hit } = await cacheGetOrFetch(key, genera, MAX_VARIANTS, TTL);
+    trackUsage("quiz-multipla", user.email);
     res.setHeader("X-Cache", hit ? "HIT" : "MISS");
     res.json(dati);
   } catch (e) {

@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getAdattivita } from "../../lib/adattivita";
 import { checkTrialUsage, incrementTrialUsage } from "../../lib/trial-server";
 import { verifyPremium } from "../../lib/verify-premium";
+import { trackUsage } from "../../lib/track-usage";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -110,6 +111,7 @@ Formato risposta:
         ]}],
       });
       if (!isPremium) await incrementTrialUsage(fingerprint, "foto");
+      trackUsage("analizza-foto", accessToken);
       return res.json({ risposta: response.content[0].text, fase: "domande" });
     }
 
@@ -191,6 +193,7 @@ Livello studente: ${adattivita}`, cache_control: { type: "ephemeral" } }],
         ],
       });
       if (!isPremium) await incrementTrialUsage(fingerprint, "foto");
+      trackUsage("analizza-foto", accessToken);
       return res.json({ risposta: response.content[0].text, fase: "corretto" });
     }
 

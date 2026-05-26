@@ -5,6 +5,8 @@ import PROGRAMMA from "../data/programma";
 import COMPITI_ESTIVI from "../data/compiti_estivi";
 import PROGRAMMA_INGLESE from "../data/programma_inglese";
 import Landing from "./landing";
+import AdminPin from "../components/AdminPin";
+import AdminDashboard from "../components/AdminDashboard";
 
 export default function Home() {
   const [screen, setScreen] = useState("splash");
@@ -131,6 +133,7 @@ export default function Home() {
   const [stripeLoading, setStripeLoading] = useState(false);
   const [pagamentoFlash, setPagamentoFlash] = useState(null); // "successo" | "annullato" | null
   const [profiloUtente, setProfiloUtente] = useState(null);
+  const [accessToken, setAccessToken] = useState("");
   const [nuovaPassword, setNuovaPassword] = useState("");
   const [nuovaPasswordError, setNuovaPasswordError] = useState("");
   const [nuovaPasswordSuccess, setNuovaPasswordSuccess] = useState(false);
@@ -713,6 +716,7 @@ export default function Home() {
         if (session) {
           setUtente(session.user);
           setEmail(session.user.email);
+          setAccessToken(session.access_token || "");
           let figliDB = null;
           try {
             const { data: fd } = await supabase.from("figli").select("*").eq("genitore_id", session.user.id);
@@ -759,17 +763,29 @@ export default function Home() {
             setScreen("home");
           }
         } else {
-          setScreen("landing");
+          const params = new URLSearchParams(window.location.search);
+          if (params.get("registrati") === "true") {
+            setAuthMode("register");
+            setScreen("login");
+          } else {
+            setScreen("landing");
+          }
         }
       } catch (e) {
-        setScreen("landing");
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("registrati") === "true") {
+          setAuthMode("register");
+          setScreen("login");
+        } else {
+          setScreen("landing");
+        }
       }
     };
     init();
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") { setScreen("reset_password"); return; }
-      if (session) { setUtente(session.user); setEmail(session.user.email); }
-      else { setUtente(null); }
+      if (session) { setUtente(session.user); setEmail(session.user.email); setAccessToken(session.access_token || ""); }
+      else { setUtente(null); setAccessToken(""); }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -2023,6 +2039,22 @@ export default function Home() {
   );
 
 
+
+  if (screen === "admin_pin") return (
+    <AdminPin
+      email={email}
+      onSuccess={() => setScreen("admin_dashboard")}
+      onBack={() => setScreen("home")}
+    />
+  );
+
+  if (screen === "admin_dashboard") return (
+    <AdminDashboard
+      accessToken={accessToken}
+      emailAdmin={email}
+      onLogout={() => setScreen("home")}
+    />
+  );
 
   if (screen === "home" && !figlioAttivo) return null;
 
@@ -4369,6 +4401,17 @@ export default function Home() {
             ))}
           </div>
         </div>
+
+        {/* ── Bottone Admin (solo per ADMIN_EMAIL) ── */}
+        {isAdmin && (
+          <div style={{ marginTop:"12px", display:"flex", justifyContent:"center" }}>
+            <button onClick={() => setScreen("admin_pin")} style={{
+              background:"rgba(255,0,0,0.08)", border:"1px solid rgba(255,0,0,0.2)",
+              borderRadius:"10px", padding:"7px 16px",
+              color:"#ff4444", fontSize:"12px", fontWeight:700, cursor:"pointer",
+            }}>⚙️ Admin</button>
+          </div>
+        )}
       </div>
 
       {/* Modale gestione abbonamento */}
