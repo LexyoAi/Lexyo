@@ -160,6 +160,7 @@ Livello studente: ${adattivita}`, cache_control: { type: "ephemeral" } }],
           { type: "text", text: "Analizza e svolgi questo compito estivo." }
         ]}],
       });
+      trackUsage("analizza-foto", accessToken);
       return res.json({ risposta: response.content[0].text, fase: "compito_risposta" });
     }
 

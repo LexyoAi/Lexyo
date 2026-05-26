@@ -70,7 +70,7 @@ export default function AdminPin({ email, onSuccess, onBack }) {
     if (stato === "ok")     return "#00cc44";
     if (stato === "errore") return "#ff2222";
     if (stato === "loading") return "#6C47FF";
-    return "#ff4444";
+    return "#6C47FF";
   };
 
   const borderCircolo = (i) => {

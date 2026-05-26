@@ -3,6 +3,7 @@ import { getAdattivita, getDifficoltaMateria } from "../../lib/adattivita";
 import { cacheGetOrFetch, ck } from "../../lib/cache";
 import { parseJSON } from "../../lib/parse-json";
 import { verifyAuth } from "../../lib/verify-auth";
+import { trackUsage } from "../../lib/track-usage";
 
 function fixCorrettaIndex(domande) {
   return domande.map(d => {
@@ -55,6 +56,7 @@ Rispondi SOLO con JSON valido:
       return parsed;
     }, MAX_VARIANTS, TTL);
 
+    trackUsage("ripasso-genera", user.email);
     res.setHeader("X-Cache", hit ? "HIT" : "MISS");
     res.json(dati);
   } catch (e) {

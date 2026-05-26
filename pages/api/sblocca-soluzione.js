@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { checkTrialUsage, incrementTrialUsage } from "../../lib/trial-server";
 import { verifyPremium } from "../../lib/verify-premium";
+import { trackUsage } from "../../lib/track-usage";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -56,6 +57,7 @@ export default async function handler(req, res) {
     });
 
     if (!isPremium) await incrementTrialUsage(fingerprint, "sblocca");
+    trackUsage("sblocca-soluzione", accessToken);
     res.json({ risposta: response.content[0].text });
   } catch (e) {
     console.error("ERRORE SOLUZIONE:", e.message);

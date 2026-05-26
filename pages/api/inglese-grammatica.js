@@ -1,5 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { verifyAuth } from "../../lib/verify-auth";
+import { trackUsage } from "../../lib/track-usage";
+import { parseJSON } from "../../lib/parse-json";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -35,10 +37,8 @@ Rispondi SOLO con JSON valido senza markdown:
       max_tokens: 1500,
       messages: [{ role: "user", content: prompt }],
     });
-    const raw = r.content[0].text.trim();
-    const start = raw.indexOf("[");
-    const end = raw.lastIndexOf("]") + 1;
-    const esercizi = JSON.parse(raw.slice(start, end));
+    const esercizi = parseJSON(r.content[0].text.trim(), "array");
+    trackUsage("inglese-grammatica", user.email);
     res.json({ esercizi });
   } catch (e) {
     console.error("inglese-grammatica error:", e.message);

@@ -3,6 +3,7 @@ import { getAdattivita } from "../../lib/adattivita";
 import { parseJSON } from "../../lib/parse-json";
 import { cacheGetOrFetch, ck } from "../../lib/cache";
 import { verifyAuth } from "../../lib/verify-auth";
+import { trackUsage } from "../../lib/track-usage";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MAX_VARIANTS = 3;
@@ -27,6 +28,7 @@ export default async function handler(req, res) {
       });
       return parseJSON(r.content[0].text.trim());
     }, MAX_VARIANTS, TTL);
+    trackUsage("esame-interrogazione", user.email);
     res.setHeader("X-Cache", hit ? "HIT" : "MISS");
     return res.json(data);
   } catch (e) {

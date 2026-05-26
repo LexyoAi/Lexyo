@@ -14,11 +14,13 @@ export default async function handler(req, res) {
   const { data: { user }, error: authError } = await supabase.auth.getUser(token);
   if (authError || !user) return res.status(401).json({ consentito: false });
 
-  const { fingerprint } = req.body;
-  const ip = req.headers["x-nf-client-connection-ip"]
+  const rawFingerprint = req.body?.fingerprint;
+  const rawIp = req.headers["x-nf-client-connection-ip"]
     || (req.headers["x-forwarded-for"] || "").split(",")[0].trim()
     || req.socket?.remoteAddress
     || "unknown";
+  const fingerprint = typeof rawFingerprint === "string" && /^[a-z0-9]{1,60}$/.test(rawFingerprint) ? rawFingerprint : null;
+  const ip = typeof rawIp === "string" && /^[\d.:a-fA-F]{1,45}$/.test(rawIp) ? rawIp : null;
 
   try {
     if (fingerprint || (ip && ip !== "unknown")) {

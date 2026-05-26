@@ -977,7 +977,7 @@ export default function Home() {
     if (ref) localStorage.setItem("lexyo_referral_pending_google", ref);
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: "https://app.lexyo.it" },
+      options: { redirectTo: typeof window !== "undefined" ? window.location.origin : "https://app.lexyo.it" },
     });
   };
 

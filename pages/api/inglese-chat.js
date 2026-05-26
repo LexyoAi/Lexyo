@@ -16,29 +16,26 @@ export default async function handler(req, res) {
     .map(m => `${m.ruolo === "lex" ? "Lex" : "Bambino"}: ${m.testo}`)
     .join("\n");
 
-  const prompt = `Sei Lex, professore di inglese simpatico e incoraggiante per bambini italiani di ${classe || "elementare"}.
+  const systemText = `Sei Lex, professore di inglese simpatico e incoraggiante per bambini italiani di ${classe || "elementare"}.
 Argomento conversazione: ${argomento || "inglese generale"}
-Storico conversazione:
-${storicoTesto}
-Ultima risposta del bambino: "${messaggio}"
-
 Il tuo compito:
 1. Correggi gli errori grammaticali nella risposta del bambino in modo gentile (se presenti)
 2. Spiega brevemente l'errore in italiano (max 1 frase)
 3. Rispondi in inglese semplice adatto a ${classe || "elementare"}
 4. Fai una nuova domanda per continuare la conversazione
 5. Se il bambino scrive in italiano aiutalo a tradurre in inglese
-
 Sii sempre incoraggiante — celebra ogni tentativo.
-
 Rispondi SOLO con JSON valido senza markdown:
 {"correzione":"testo correzione in italiano oppure null","risposta_inglese":"risposta in inglese + domanda","traduzione":"traduzione italiana della risposta"}`;
+
+  const userContent = `Storico conversazione:\n${storicoTesto}\n\nUltima risposta del bambino: "${messaggio}"`;
 
   try {
     const r = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 600,
-      messages: [{ role: "user", content: prompt }],
+      system: [{ type: "text", text: systemText, cache_control: { type: "ephemeral" } }],
+      messages: [{ role: "user", content: userContent }],
     });
     const risposta = parseJSON(r.content[0].text.trim());
     trackUsage("inglese-chat", user.email);

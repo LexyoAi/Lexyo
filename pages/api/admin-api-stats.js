@@ -18,7 +18,8 @@ export default async function handler(req, res) {
     const { data: rows } = await sb
       .from("api_usage")
       .select("endpoint,costo_stimato,user_email,created_at")
-      .gte("created_at", da30gg);
+      .gte("created_at", da30gg)
+      .order("created_at", { ascending: true });
 
     if (!rows) return res.json({ costoMese: 0, chiamateTotali: 0, topEndpoint: [], topUtenti: [], costoMedioUtente: 0, proiezioneMese: 0 });
 
@@ -55,7 +56,7 @@ export default async function handler(req, res) {
 
     // Proiezione fine mese
     const giornoPrimoRecord = rows.length > 0
-      ? new Date(rows[rows.length - 1].created_at)
+      ? new Date(rows[0].created_at)
       : new Date();
     const giorniCoperti = Math.max(1, Math.ceil((Date.now() - giornoPrimoRecord.getTime()) / 86400000));
     const costoGiornaliero = costoMese / giorniCoperti;

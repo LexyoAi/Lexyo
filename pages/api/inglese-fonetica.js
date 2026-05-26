@@ -1,5 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { verifyAuth } from "../../lib/verify-auth";
+import { trackUsage } from "../../lib/track-usage";
+import { parseJSON } from "../../lib/parse-json";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -21,10 +23,8 @@ Rispondi SOLO con JSON valido senza markdown: [{"parola":"...","fonetica":"..."}
       max_tokens: 600,
       messages: [{ role: "user", content: prompt }],
     });
-    const raw = r.content[0].text.trim();
-    const start = raw.indexOf("[");
-    const end = raw.lastIndexOf("]") + 1;
-    const risultato = JSON.parse(raw.slice(start, end));
+    const risultato = parseJSON(r.content[0].text.trim(), "array");
+    trackUsage("inglese-fonetica", user.email);
     res.json({ fonetica: risultato });
   } catch (e) {
     console.error("inglese-fonetica error:", e.message);

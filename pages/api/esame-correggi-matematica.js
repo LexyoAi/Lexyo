@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getAdattivita } from "../../lib/adattivita";
 import { parseJSON } from "../../lib/parse-json";
 import { verifyAuth } from "../../lib/verify-auth";
+import { trackUsage } from "../../lib/track-usage";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 export const config = { api: { bodyParser: { sizeLimit: "10mb" } } };
@@ -29,6 +30,7 @@ export default async function handler(req, res) {
       system: [{ type: "text", text: `Sei Lex, correttore per Esame di Stato. Valuta procedimento e risposta del bambino di ${classe}. Spiega errori in modo semplice.\nRispondi SOLO con JSON senza markdown:\n{"corretta":true,"voto":8,"spiegazione_errore":"...","procedimento_corretto":"...","incoraggiamento":"..."}`, cache_control: { type: "ephemeral" } }],
       messages: [{ role: "user", content: userContent }],
     });
+    trackUsage("esame-correggi-matematica", user.email);
     return res.json(parseJSON(r.content[0].text));
   } catch (e) {
     console.error("ERRORE esame-correggi-matematica:", e.message);
