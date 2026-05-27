@@ -69,6 +69,10 @@ export default function Home() {
   const fotoEndRef = useRef(null);
   const quizEndRef = useRef(null);
   const ingleseChatEndRef = useRef(null);
+  const prefetchQuizRef = useRef(null);
+  const prefetchQuizKeyRef = useRef("");
+  const prefetchRipassoRef = useRef(null);
+  const prefetchRipassoKeyRef = useRef("");
   const [interrogFase, setInterrogFase] = useState("carica");
   const [interrogArgomenti, setInterrogArgomenti] = useState([]);
   const [interrogConv, setInterrogConv] = useState([]);
@@ -1268,7 +1272,7 @@ export default function Home() {
     if (s === "ripasso_home") { setRipassoQuiz(null); setRipassoRisposte([]); setRipassoFine(false); setRipassoLoading(false); setRipassoNuovoLivelloOverlay(false); setRipassoTransizione(false); }
     if (s === "ripasso_mappa") { setRipassoQuiz(null); setRipassoRisposte([]); setRipassoFine(false); setRipassoLoading(false); setRipassoNuovoLivelloOverlay(false); setRipassoTransizione(false); }
     if (s === "ripasso_quiz") {
-      setRipassoQuiz(null); setRipassoRisposte([]); setRipassoFine(false); setRipassoScore(0); setRipassoScoreAnim(0); setRipassoNuovoLivelloOverlay(false); setRipassoLexMsg("");
+      setRipassoQuiz(null); setRipassoRisposte([]); setRipassoFine(false); setRipassoScore(0); setRipassoScoreAnim(0); setRipassoNuovoLivelloOverlay(false); setRipassoLexMsg(""); setRipassoLoading(false);
       setRipassoTransizione(true);
       setTimeout(() => { setScreen("ripasso_quiz"); setRipassoTransizione(false); }, 400);
       return;
@@ -1439,24 +1443,60 @@ export default function Home() {
           contesto: chatContesto,
           fingerprint: getFingerprint(),
           accessToken: token,
+          stream: true,
         }),
       });
-      const d = await res.json();
-      if (d.trial_esaurito) {
-        localStorage.setItem("lexyo_trial_chat", String(TRIAL_CHAT_MAX));
-        setTrialChatUsate(TRIAL_CHAT_MAX);
-        setChatMsgs((prev) => [...prev, { role: "assistant", text: "Hai esaurito i messaggi chat per oggi. Torna domani oppure abbonati per chat illimitata! 🔒" }]);
-      } else {
-        if (isTrial && !isAdmin) {
-          const nu = trialChatUsate + 1;
-          localStorage.setItem("lexyo_trial_chat", String(nu));
-          setTrialChatUsate(nu);
+
+      if (!res.ok) {
+        const d = await res.json();
+        if (d.trial_esaurito) {
+          localStorage.setItem("lexyo_trial_chat", String(TRIAL_CHAT_MAX));
+          setTrialChatUsate(TRIAL_CHAT_MAX);
+          setChatMsgs((prev) => [...prev, { role: "assistant", text: "Hai esaurito i messaggi chat per oggi. Abbonati per chat illimitata! 🔒" }]);
+        } else {
+          setChatMsgs((prev) => [...prev, { role: "assistant", text: d.risposta || "Errore temporaneo. Riprova!" }]);
         }
-        setChatMsgs((prev) => [...prev, { role: "assistant", text: d.risposta }]);
-        addStelle(1);
+        setChatLoading(false);
+        return;
       }
-    } catch { setChatMsgs((prev) => [...prev, { role: "assistant", text: "Connessione persa! Riprova 🔄" }]); }
-    setChatLoading(false);
+
+      setChatMsgs((prev) => [...prev, { role: "assistant", text: "" }]);
+      setChatLoading(false);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      let accumulated = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const json = JSON.parse(line.slice(6));
+            if (json.t) {
+              accumulated += json.t;
+              setChatMsgs((prev) => [...prev.slice(0, -1), { role: "assistant", text: accumulated }]);
+            }
+            if (json.done) {
+              if (isTrial && !isAdmin) {
+                const nu = trialChatUsate + 1;
+                localStorage.setItem("lexyo_trial_chat", String(nu));
+                setTrialChatUsate(nu);
+              }
+              addStelle(1);
+            }
+          } catch {}
+        }
+      }
+    } catch {
+      setChatMsgs((prev) => [...prev, { role: "assistant", text: "Connessione persa! Riprova 🔄" }]);
+      setChatLoading(false);
+    }
   };
 
   const sbloccaSol = async () => {
@@ -4773,7 +4813,22 @@ export default function Home() {
                     {(tuttiMesi[giocaMeseAperto]?.temi || []).map(t => {
                       const sel = giocaArgomento === t;
                       return (
-                        <button key={t} className="chip-tema" onClick={() => setGiocaArgomento(sel ? "" : t)} style={{ padding:"10px 16px", borderRadius:"14px", background:sel?"rgba(99,102,241,0.22)":"rgba(255,255,255,0.07)", border:`2px solid ${sel?"#6366f1":"rgba(255,255,255,0.1)"}`, color:sel?"white":"rgba(255,255,255,0.75)", fontSize:"13px" }}>
+                        <button key={t} className="chip-tema" onClick={() => {
+                          const newVal = sel ? "" : t;
+                          setGiocaArgomento(newVal);
+                          if (newVal) {
+                            const pKey = `${materia}:${newVal}`;
+                            prefetchQuizKeyRef.current = pKey;
+                            prefetchQuizRef.current = null;
+                            getAccessToken().then(tk =>
+                              fetch("/api/quiz-multipla", { method:"POST", headers:{"Content-Type":"application/json"},
+                                body: JSON.stringify({ materia: MATERIE[materia]?.label, classe: prog?.label, argomento: newVal, accessToken: tk }) })
+                              .then(r => r.json())
+                              .then(d => { if (d.domande?.length && prefetchQuizKeyRef.current === pKey) prefetchQuizRef.current = d; })
+                              .catch(() => {})
+                            );
+                          }
+                        }} style={{ padding:"10px 16px", borderRadius:"14px", background:sel?"rgba(99,102,241,0.22)":"rgba(255,255,255,0.07)", border:`2px solid ${sel?"#6366f1":"rgba(255,255,255,0.1)"}`, color:sel?"white":"rgba(255,255,255,0.75)", fontSize:"13px" }}>
                           {sel && <span style={{ marginRight:"5px" }}>✅</span>}{t}
                         </button>
                       );
@@ -5186,6 +5241,15 @@ export default function Home() {
   // ── QUIZ A RISPOSTA MULTIPLA ─────────────────────────────────
   if (screen === "quiz_mc") {
     const avviaQuizMC = async (forceNew = false) => {
+      const pKey = `${materia}:${giocaArgomento}`;
+      if (!forceNew && prefetchQuizRef.current && prefetchQuizKeyRef.current === pKey) {
+        const d = prefetchQuizRef.current;
+        prefetchQuizRef.current = null;
+        setMcQuiz(d.domande || []);
+        setMcRisposte([]);
+        setMcFine(false);
+        return;
+      }
       setMcLoading(true);
       try {
         const token = await getAccessToken();
@@ -5879,7 +5943,7 @@ export default function Home() {
 
                   return (
                     <div key={idx} style={{ position:"absolute", top:`${nodoTop}px`, ...(isDestra ? { right:"6%" } : { left:"6%" }), zIndex:5 }}>
-                      <button disabled={bloccato} onClick={() => { if(bloccato) return; setLivelloRipasso(idx); setRipassoLexMappaTop(ncy(idx)); goScreen("ripasso_quiz"); }}
+                      <button disabled={bloccato} onClick={() => { if(bloccato) return; setLivelloRipasso(idx); setRipassoLexMappaTop(ncy(idx)); const pKey = `${materiaRipasso}:${idx}`; prefetchRipassoKeyRef.current = pKey; prefetchRipassoRef.current = null; const argom = temi[idx] || ""; if (argom) { getAccessToken().then(tk => fetch("/api/ripasso-genera", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ materia: info.label, classe: prog?.label, argomento: argom, sesso: figlioAttivo?.sesso || "M", accessToken: tk }) }).then(r => r.json()).then(d => { if (d.domande?.length && prefetchRipassoKeyRef.current === pKey) prefetchRipassoRef.current = d; }).catch(() => {})); } goScreen("ripasso_quiz"); }}
                         style={{ background:"none", border:"none", cursor:bloccato?"not-allowed":"pointer", fontFamily:"'Nunito', sans-serif", padding:0, opacity:bloccato?0.38:1, display:"flex", flexDirection:isDestra?"row":"row-reverse", alignItems:"center", gap:"10px" }}>
 
                         {/* Cerchio nodo */}
@@ -5926,6 +5990,20 @@ export default function Home() {
     const argomentoCorrente = temi[livelloRipasso] || "";
 
     const avviaRipassoQuiz = async () => {
+      const pKey = `${materiaRipasso}:${livelloRipasso}`;
+      if (prefetchRipassoRef.current && prefetchRipassoKeyRef.current === pKey) {
+        const d = prefetchRipassoRef.current;
+        prefetchRipassoRef.current = null;
+        const domandeMescolate = d.domande.map(dom => {
+          const testoCorretto = dom.opzioni[dom.corretta];
+          const shuffled = [...dom.opzioni].sort(() => Math.random() - 0.5);
+          return { ...dom, opzioni: shuffled, corretta: shuffled.indexOf(testoCorretto) };
+        });
+        setRipassoQuiz(domandeMescolate);
+        setRipassoRisposte([]);
+        setRipassoFine(false);
+        return;
+      }
       setRipassoLoading(true);
       try {
         const token = await getAccessToken();
@@ -6234,13 +6312,14 @@ export default function Home() {
 
   // ── TEMA DI ITALIANO ─────────────────────────────────────────
   if (screen === "esame5_italiano") {
-    const classe = "3ª media";
+    const classe = prog?.label || "3ª Media";
     const it = esameItaliano || {};
 
     const generaTracce = async () => {
       setEsameLoading(true);
       try {
-        const r = await fetch("/api/esame-tracce", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ classe }) });
+        const token = await getAccessToken();
+        const r = await fetch("/api/esame-tracce", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ classe, accessToken: token }) });
         const d = await r.json();
         if (d.errore) throw new Error(d.errore);
         setEsameItaliano({ fase:"scegli_traccia", tracce: d.tracce || [] });
@@ -6254,7 +6333,8 @@ export default function Home() {
       if (it.modalita === "scrivi" && !it.testo?.trim()) return alert("Scrivi il tema.");
       setEsameLoading(true);
       try {
-        const body = { classe, traccia: it.traccia.testo_traccia, testo: it.testo || null, foto: it.foto || null };
+        const token = await getAccessToken();
+        const body = { classe, traccia: it.traccia.testo_traccia, testo: it.testo || null, foto: it.foto || null, accessToken: token };
         const r = await fetch("/api/esame-correggi-italiano", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body) });
         const d = await r.json();
         if (d.errore) throw new Error(d.errore);
@@ -6441,7 +6521,7 @@ export default function Home() {
 
   // ── MATEMATICA E SCIENZE ──────────────────────────────────────
   if (screen === "esame5_matematica") {
-    const classe = "3ª media";
+    const classe = prog?.label || "3ª Media";
     const mat = esameMatematica || {};
 
     const generaProva = async (tipo) => {
@@ -6465,8 +6545,9 @@ export default function Home() {
       if (!risposta.trim() && !foto) return alert("Inserisci una risposta o fotografa i calcoli.");
       setEsameMatematica(prev => ({ ...prev, correzioni: { ...prev.correzioni, [idx]: { loading: true } } }));
       try {
+        const corrToken = await getAccessToken();
         const r = await fetch("/api/esame-correggi-matematica", { method:"POST", headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({ classe, problema: prob.testo, risposta_corretta: prob.risposta_corretta, risposta, foto }) });
+          body: JSON.stringify({ classe, problema: prob.testo, risposta_corretta: prob.risposta_corretta, risposta, foto, accessToken: corrToken }) });
         const d = await r.json();
         if (d.errore) throw new Error(d.errore);
         setEsameMatematica(prev => ({ ...prev, correzioni: { ...prev.correzioni, [idx]: { ...d, loading: false } } }));
@@ -6595,7 +6676,7 @@ export default function Home() {
 
   // ── COLLOQUIO ORALE ───────────────────────────────────────────
   if (screen === "esame5_orale") {
-    const classe = "3ª media";
+    const classe = prog?.label || "3ª Media";
     const or = esameOrale || {};
     const TOTALE_DOMANDE = 8;
 
@@ -6846,7 +6927,7 @@ export default function Home() {
 
   // ── INTERROGAZIONE (Storia / Geografia / Inglese) ────────────────────────
   if (screen === "esame5_interrogazione") {
-    const classe = "3ª media";
+    const classe = prog?.label || "3ª Media";
     const matNome = { storia:"Storia", geografia:"Geografia", inglese:"Inglese" }[esameInterrMateria] || "";
     const matEmoji = { storia:"📜", geografia:"🌍", inglese:"🇬🇧" }[esameInterrMateria] || "📚";
     const matBg = { storia:"linear-gradient(145deg,#FF9500,#E06000)", geografia:"linear-gradient(145deg,#00CC66,#008844)", inglese:"linear-gradient(145deg,#6C47FF,#4A00CC)" }[esameInterrMateria] || "linear-gradient(145deg,#666,#333)";

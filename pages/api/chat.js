@@ -8,7 +8,7 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const { messages, materia, classe, contesto, fingerprint, accessToken, sesso } = req.body;
+  const { messages, materia, classe, contesto, fingerprint, accessToken, sesso, stream: doStream } = req.body;
   const bambino = sesso === "F" ? "bambina" : "bambino";
   const ilBambino = sesso === "F" ? "la bambina" : "il bambino";
   const delBambino = sesso === "F" ? "della bambina" : "del bambino";
@@ -57,23 +57,39 @@ export default async function handler(req, res) {
     content: String(m.content ?? "").slice(0, 2000),
   }));
 
-  try {
-    const response = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: isEstivo ? 600 : 450,
-      system: [{
-        type: "text",
-        text: systemText,
-        cache_control: { type: "ephemeral" }
-      }],
-      messages: safeMessages,
-    });
+  const msgParams = {
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: isEstivo ? 600 : 450,
+    system: [{ type: "text", text: systemText, cache_control: { type: "ephemeral" } }],
+    messages: safeMessages,
+  };
 
+  try {
+    if (doStream) {
+      res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+      res.setHeader("Cache-Control", "no-cache, no-transform");
+      res.setHeader("Connection", "keep-alive");
+      res.setHeader("X-Accel-Buffering", "no");
+      if (typeof res.flushHeaders === "function") res.flushHeaders();
+
+      const stream = client.messages.stream(msgParams);
+      for await (const text of stream.textStream) {
+        res.write(`data: ${JSON.stringify({ t: text })}\n\n`);
+      }
+      if (!isPremium) await incrementTrialUsage(fingerprint, "chat");
+      trackUsage("chat", accessToken);
+      res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+      res.end();
+      return;
+    }
+
+    const response = await client.messages.create(msgParams);
     if (!isPremium) await incrementTrialUsage(fingerprint, "chat");
     trackUsage("chat", accessToken);
     res.json({ risposta: response.content[0].text });
   } catch (e) {
     console.error("ERRORE chat:", e.message);
-    res.status(500).json({ risposta: "Errore temporaneo. Riprova!" });
+    if (!res.headersSent) res.status(500).json({ risposta: "Errore temporaneo. Riprova!" });
+    else res.end();
   }
 }
