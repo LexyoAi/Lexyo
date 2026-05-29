@@ -26,8 +26,9 @@ Rispondi SOLO con JSON valido, nessun testo aggiuntivo:
     messages: [{ role: "user", content: prompt }],
   });
 
-  const raw = response.content[0].text.trim().replace(/^```json\n?/, "").replace(/\n?```$/, "");
-  return JSON.parse(raw);
+  const raw = response.content[0].text.trim();
+  const jsonMatch = raw.match(/\[[\s\S]*\]/);
+  return JSON.parse(jsonMatch ? jsonMatch[0] : raw.replace(/^```json\n?/, "").replace(/\n?```$/, ""));
 }
 
 async function generaQuaderno(classe, giorno) {
@@ -45,8 +46,9 @@ Rispondi SOLO con JSON valido, nessun testo aggiuntivo:
     messages: [{ role: "user", content: prompt }],
   });
 
-  const raw = response.content[0].text.trim().replace(/^```json\n?/, "").replace(/\n?```$/, "");
-  return JSON.parse(raw);
+  const raw = response.content[0].text.trim();
+  const jsonMatch = raw.match(/\{[\s\S]*\}/);
+  return JSON.parse(jsonMatch ? jsonMatch[0] : raw.replace(/^```json\n?/, "").replace(/\n?```$/, ""));
 }
 
 export default async function handler(req, res) {

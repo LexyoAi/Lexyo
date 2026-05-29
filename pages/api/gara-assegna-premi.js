@@ -47,8 +47,13 @@ export default async function handler(req, res) {
         });
 
         if (!preview) {
+          // Calcola scadenza partendo dalla scadenza esistente (non la sovrascriviamo se più lunga)
+          const { data: profiloEsistente } = await sb.from("profili").select("abbonamento_scadenza").ilike("email", utente.user_email).maybeSingle();
           const oggi = new Date();
-          const scadenza = new Date(oggi);
+          const baseData = profiloEsistente?.abbonamento_scadenza && new Date(profiloEsistente.abbonamento_scadenza) > oggi
+            ? new Date(profiloEsistente.abbonamento_scadenza)
+            : oggi;
+          const scadenza = new Date(baseData);
           scadenza.setDate(scadenza.getDate() + giorni);
 
           await sb.from("profili").update({

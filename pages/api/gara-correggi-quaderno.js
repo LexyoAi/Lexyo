@@ -56,9 +56,21 @@ Rispondi SOLO con JSON valido, nessun testo extra:
     let risultato;
     try {
       const raw = response.content[0].text.trim();
-      risultato = JSON.parse(raw.replace(/^```json\n?/, "").replace(/\n?```$/, ""));
+      // Tenta estrazione JSON anche se Claude aggiunge testo extra
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      const jsonStr = jsonMatch ? jsonMatch[0] : raw.replace(/^```json\n?/, "").replace(/\n?```$/, "");
+      risultato = JSON.parse(jsonStr);
+      // Validazione campi obbligatori
+      if (typeof risultato.errori_trovati !== "number") risultato.errori_trovati = 0;
+      if (typeof risultato.punti !== "number" || risultato.punti < 0 || risultato.punti > 20) {
+        risultato.punti = risultato.errori_trovati === 0 ? 20 : risultato.errori_trovati <= 2 ? 15 : risultato.errori_trovati <= 4 ? 10 : 5;
+      }
+      if (!risultato.correzione) risultato.correzione = "Esercizio valutato.";
+      if (!risultato.incoraggiamento) risultato.incoraggiamento = "Continua così! 🌟";
     } catch {
-      risultato = { errori_trovati: 2, punti: 15, correzione: "Buon lavoro! Hai svolto l'esercizio.", incoraggiamento: "Continua così! 🌟" };
+      // Fallback solo se JSON completamente non parsabile — logghiamo per debug
+      console.error("gara-correggi-quaderno: JSON parse fallito, risposta Claude:", response.content[0]?.text?.slice(0, 200));
+      risultato = { errori_trovati: 3, punti: 10, correzione: "Non è stato possibile analizzare l'esercizio. Riprova con una foto più chiara.", incoraggiamento: "Fai del tuo meglio! 💪" };
     }
 
     const oggi = new Date().toISOString().split("T")[0];

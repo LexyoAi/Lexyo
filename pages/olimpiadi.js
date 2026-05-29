@@ -96,10 +96,44 @@ export default function OlimpiadiLanding() {
 
     const params = new URLSearchParams(window.location.search);
     const p = params.get("pagamento"), piano = params.get("piano");
-    if (p === "successo")    { setPagamentoMsg("successo");    setShowModal(true); setPianoScelto("olimpiadi"); window.history.replaceState({},"","/olimpiadi"); if (typeof fbq!=="undefined") fbq("track","Purchase",{value:4.99,currency:"EUR"}); }
-    else if (p==="abbonamento") { setPagamentoMsg("abbonamento"); setShowModal(true); setPianoScelto("abbonato"); window.history.replaceState({},"","/olimpiadi"); }
-    else if (p==="annullato")   { setPagamentoMsg("annullato"); window.history.replaceState({},"","/olimpiadi"); }
-    else if (piano && ["mensile","annuale"].includes(piano)) { setPianoScelto(piano); setShowModal(true); window.history.replaceState({},"","/olimpiadi"); }
+    if (p === "successo") {
+      window.history.replaceState({},"","/olimpiadi");
+      if (typeof fbq!=="undefined") fbq("track","Purchase",{value:4.99,currency:"EUR"});
+      // Polling: aspetta che il webhook Stripe crei l'iscrizione nel DB
+      let attempts = 0;
+      const poll = async () => {
+        attempts++;
+        try {
+          const { data:{ session:s } } = await supabase.auth.getSession();
+          if (!s) { if (attempts < 12) setTimeout(poll, 2500); return; }
+          const r = await fetch("/api/gara-verifica-accesso", { method:"POST", headers:{ "Content-Type":"application/json", Authorization:`Bearer ${s.access_token}` } });
+          const d = await r.json();
+          if (d.iscrizione && d.iscrizione.pagamento_confermato) {
+            // Iscrizione trovata — mostra solo il messaggio, nessun form
+            setIscrizione(d.iscrizione);
+            setAccesso(d);
+            setPagamentoMsg("successo");
+            return;
+          }
+        } catch {}
+        if (attempts < 12) setTimeout(poll, 2500);
+        else setPagamentoMsg("successo_attivazione"); // fallback: mostra messaggio generico
+      };
+      setPagamentoMsg("successo_caricamento");
+      setTimeout(poll, 2000);
+    } else if (p==="abbonamento") {
+      setPagamentoMsg("abbonamento");
+      setShowModal(true);
+      setPianoScelto("abbonato");
+      window.history.replaceState({},"","/olimpiadi");
+    } else if (p==="annullato") {
+      setPagamentoMsg("annullato");
+      window.history.replaceState({},"","/olimpiadi");
+    } else if (piano && ["mensile","annuale"].includes(piano)) {
+      setPianoScelto(piano);
+      setShowModal(true);
+      window.history.replaceState({},"","/olimpiadi");
+    }
 
     if (typeof fbq!=="undefined") fbq("track","ViewContent",{content_name:"Olimpiadi"});
     return () => subscription.unsubscribe();
@@ -210,9 +244,45 @@ export default function OlimpiadiLanding() {
         .ol-pulse { animation:pulse-btn 2s ease-in-out infinite; }
         .ol-float { animation:float 3.5s ease-in-out infinite; }
         .ol-fade  { animation:fadeUp 0.5s ease forwards; }
+        @keyframes spin { to { transform:rotate(360deg); } }
       `}</style>
 
       <div className="ol-wrap">
+
+        {/* ─── BANNER STATO PAGAMENTO (fuori modal, visibile nella pagina) ─── */}
+        {pagamentoMsg === "successo_caricamento" && (
+          <div style={{ background:"linear-gradient(135deg,rgba(108,71,255,0.95),rgba(155,63,212,0.95))", padding:"14px 20px", display:"flex", alignItems:"center", justifyContent:"center", gap:12, color:"white" }}>
+            <div style={{ width:20, height:20, borderRadius:"50%", border:"3px solid rgba(255,255,255,0.4)", borderTopColor:"white", animation:"spin 1s linear infinite" }} />
+            <p style={{ fontWeight:800, fontSize:14, margin:0 }}>Pagamento ricevuto — stiamo attivando la tua iscrizione...</p>
+          </div>
+        )}
+        {pagamentoMsg === "successo_attivazione" && (
+          <div style={{ background:"rgba(245,158,11,0.15)", borderBottom:"1px solid rgba(245,158,11,0.4)", padding:"14px 20px", display:"flex", alignItems:"center", gap:12 }}>
+            <span style={{ fontSize:22 }}>⏳</span>
+            <div>
+              <p style={{ fontWeight:900, fontSize:14, color:"#92400e", margin:0 }}>Pagamento ricevuto!</p>
+              <p style={{ fontSize:12, color:"#92400e", fontWeight:600, margin:"3px 0 0" }}>L'iscrizione verrà attivata entro 1-2 minuti. Ricarica la pagina tra poco.</p>
+            </div>
+          </div>
+        )}
+        {pagamentoMsg === "successo" && iscrizione && (
+          <div style={{ background:"rgba(16,185,129,0.12)", borderBottom:"1px solid rgba(16,185,129,0.35)", padding:"14px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+              <span style={{ fontSize:22 }}>✅</span>
+              <div>
+                <p style={{ fontWeight:900, fontSize:14, color:"#059669", margin:0 }}>Sei iscritto alle Olimpiadi!</p>
+                <p style={{ fontSize:12, color:"#065f46", fontWeight:600, margin:"3px 0 0" }}>Nickname: <strong>{iscrizione.nickname}</strong> · Gara inizia il {new Date(iscrizione.data_inizio_gara).toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long"})}</p>
+              </div>
+            </div>
+            <a href="/" style={{ background:"linear-gradient(135deg,#10b981,#059669)", color:"white", padding:"9px 16px", borderRadius:10, fontWeight:800, fontSize:13, textDecoration:"none", whiteSpace:"nowrap", flexShrink:0 }}>Vai all'app →</a>
+          </div>
+        )}
+        {pagamentoMsg === "annullato" && (
+          <div style={{ background:"rgba(239,68,68,0.08)", borderBottom:"1px solid rgba(239,68,68,0.25)", padding:"12px 20px", display:"flex", alignItems:"center", gap:10 }}>
+            <span style={{ fontSize:20 }}>❌</span>
+            <p style={{ fontWeight:700, fontSize:14, color:"#dc2626", margin:0 }}>Pagamento annullato. Riprova quando vuoi.</p>
+          </div>
+        )}
 
         {/* ─── HEADER ─── */}
         <header style={{ background:"white", borderBottom:"1px solid rgba(108,71,255,0.1)", padding:"12px 20px", display:"flex", justifyContent:"space-between", alignItems:"center", position:"sticky", top:0, zIndex:100 }}>

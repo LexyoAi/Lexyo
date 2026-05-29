@@ -9002,7 +9002,12 @@ export default function Home() {
             <div>
               <label style={{ display:"block", width:"100%", padding:"20px", background:"linear-gradient(135deg,#6C47FF,#9B3FD4)", borderRadius:"18px", textAlign:"center", cursor:"pointer", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"17px", boxShadow:"0 6px 20px rgba(108,71,255,0.4)" }}>
                 📸 Scatta foto del quaderno
-                <input type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={e => { if (e.target.files?.[0]) correggiGaraQuaderno(e.target.files[0]); }} />
+                <input type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={e => {
+                  const f = e.target.files?.[0];
+                  if (!f) return;
+                  if (f.size > 10 * 1024 * 1024) { alert("La foto è troppo grande (max 10MB). Riprova con una foto più piccola."); e.target.value=""; return; }
+                  correggiGaraQuaderno(f);
+                }} />
               </label>
               <button onClick={() => { setGaraSessioneRisultato({ punteggio_quiz: garaPunteggiSessione, punteggio_quaderno: 0 }); setScreen("gara_risultato"); }} style={{ ...S.btn, ...S.btnS, marginTop:12, fontSize:"13px" }}>
                 Salta quaderno (0 punti)
