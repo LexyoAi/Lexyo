@@ -2,6 +2,9 @@ import { createClient } from "@supabase/supabase-js";
 
 const getSupabase = () => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
+// Data fissa di fine Olimpiadi — tutti gli iscritti hanno accesso fino a questa data
+const DATA_FINE_OLIMPIADI = "2026-07-20";
+
 function getNextMonday(fromDate) {
   const d = new Date(fromDate);
   const day = d.getDay();
@@ -47,8 +50,6 @@ export default async function handler(req, res) {
     if (nickExist) return res.status(400).json({ errore: "Nickname già in uso" });
 
     const dataInizio = getNextMonday(new Date());
-    const dataFine = new Date(dataInizio);
-    dataFine.setDate(dataFine.getDate() + 21);
 
     const { data: iscrizione, error } = await sb.from("gara_iscrizioni").insert({
       user_email: user.email,
@@ -57,7 +58,7 @@ export default async function handler(req, res) {
       abbonato_gratis: true,
       pagamento_confermato: false,
       data_inizio_gara: dataInizio,
-      data_fine_gara: dataFine.toISOString().split("T")[0],
+      data_fine_gara: DATA_FINE_OLIMPIADI,
     }).select().single();
 
     if (error) throw error;

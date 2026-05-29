@@ -6,6 +6,9 @@ const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.
 
 export const config = { api: { bodyParser: false } };
 
+// Data fissa di fine Olimpiadi — tutti gli iscritti hanno accesso fino a questa data
+const DATA_FINE_OLIMPIADI = "2026-07-20";
+
 function getRawBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
@@ -27,9 +30,6 @@ function getNextMonday(fromDate) {
 async function creaIscrizioneOlimpiadi(user_email, classe, nickname, stripe_payment_id) {
   try {
     const dataInizio = getNextMonday(new Date());
-    const dataFine = new Date(dataInizio);
-    dataFine.setDate(dataFine.getDate() + 21);
-    const dataFineStr = dataFine.toISOString().split("T")[0];
 
     const { data: existing } = await supabase
       .from("gara_iscrizioni")
@@ -42,7 +42,7 @@ async function creaIscrizioneOlimpiadi(user_email, classe, nickname, stripe_paym
         pagamento_confermato: true,
         stripe_payment_id,
         data_inizio_gara: dataInizio,
-        data_fine_gara: dataFineStr,
+        data_fine_gara: DATA_FINE_OLIMPIADI,
       }).eq("user_email", user_email);
     } else {
       await supabase.from("gara_iscrizioni").insert({
@@ -50,7 +50,7 @@ async function creaIscrizioneOlimpiadi(user_email, classe, nickname, stripe_paym
         pagamento_confermato: true,
         stripe_payment_id,
         data_inizio_gara: dataInizio,
-        data_fine_gara: dataFineStr,
+        data_fine_gara: DATA_FINE_OLIMPIADI,
       });
     }
   } catch (e) {
@@ -82,8 +82,6 @@ export default async function handler(req, res) {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
       const { user_email, classe, nickname, tipo } = session.metadata || {};
-
-      // Solo pagamenti olimpiadi one-time (non abbonamenti)
       if (tipo === "olimpiadi" && user_email && classe && nickname) {
         await creaIscrizioneOlimpiadi(user_email, classe, nickname, session.id);
       }

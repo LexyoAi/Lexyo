@@ -33,7 +33,7 @@ export default async function handler(req, res) {
               currency: "eur",
               product_data: {
                 name: "Olimpiadi dello Studio — Lexyo",
-                description: "Partecipazione alle Olimpiadi dello Studio · 15 giorni",
+                description: "Partecipazione alle Olimpiadi dello Studio · Valido fino al 20 luglio 2026",
               },
               unit_amount: 499,
             },

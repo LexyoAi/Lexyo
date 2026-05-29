@@ -8515,7 +8515,7 @@ export default function Home() {
     const PIANI_APP = [
       {
         id: "olimpiadi", titolo: "Solo Olimpiadi", badge: "Partecipa alla sfida",
-        prezzo: "4,99€", sub: "Una tantum · 15 giorni",
+        prezzo: "4,99€", sub: "Una tantum · Valido fino al 20 luglio 2026",
         bg: "linear-gradient(145deg,#FFB800,#FF6B00)", colore: "#FF6B00",
         features: ["✅ Olimpiadi dello Studio", "✅ Classifica nazionale", "✅ 10 sessioni lun-ven", "❌ Resto dell'app non incluso"],
         cta: "Partecipa alle Olimpiadi →",
