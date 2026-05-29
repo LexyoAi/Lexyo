@@ -117,6 +117,20 @@ export default function OlimpiadiLanding() {
   const [nicknameCheckTimer, setNicknameCheckTimer] = useState(null);
   const channelRef = useRef(null);
 
+  // Sblocca scroll — globals.css ha overflow:hidden per l'app, qui serve scroll normale
+  useEffect(() => {
+    document.body.style.overflow = "auto";
+    document.body.style.height = "auto";
+    document.documentElement.style.overflow = "auto";
+    document.documentElement.style.height = "auto";
+    return () => {
+      document.body.style.overflow = "";
+      document.body.style.height = "";
+      document.documentElement.style.overflow = "";
+      document.documentElement.style.height = "";
+    };
+  }, []);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) setUtente(session.user);
@@ -322,10 +336,120 @@ export default function OlimpiadiLanding() {
             )}
           </div>
 
+          {/* COME FUNZIONA */}
+          <div style={{ margin: "24px 16px 0" }}>
+            <p style={{ fontWeight: 900, fontSize: 20, marginBottom: 6 }}>📖 Come funzionano le Olimpiadi</p>
+            <p style={{ fontSize: 14, color: "rgba(0,0,0,0.55)", fontWeight: 600, marginBottom: 16, lineHeight: 1.6 }}>
+              Le Olimpiadi dello Studio sono una competizione nazionale di preparazione scolastica per bambini delle elementari e medie. Ogni giorno, dal lunedì al venerdì, tuo figlio affronta una sessione di studio con quiz e esercizi. Chi accumula più punti sale in classifica e vince premi reali.
+            </p>
+
+            {/* Struttura sessione */}
+            <div style={{ background: "white", borderRadius: 20, padding: "18px", marginBottom: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", border: "1px solid rgba(108,71,255,0.1)" }}>
+              <p style={{ fontWeight: 900, fontSize: 15, marginBottom: 12 }}>🗓️ Struttura di ogni sessione</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {[
+                  { emoji: "🧠", giorno: "Lunedì · Martedì · Mercoledì", desc: "20 quiz a risposta multipla + 1 esercizio sul quaderno da fotografare" },
+                  { emoji: "📝", giorno: "Giovedì", desc: "20 quiz a risposta multipla (solo quiz, nessun quaderno)" },
+                  { emoji: "🚀", giorno: "Venerdì", desc: "30 quiz a risposta multipla — la sfida della settimana!" },
+                  { emoji: "😴", giorno: "Sabato · Domenica", desc: "Riposo — nessuna sessione nel weekend" },
+                ].map((r, i) => (
+                  <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                    <span style={{ fontSize: 22, flexShrink: 0 }}>{r.emoji}</span>
+                    <div>
+                      <p style={{ fontWeight: 800, fontSize: 13, color: "#6C47FF", margin: "0 0 2px" }}>{r.giorno}</p>
+                      <p style={{ fontSize: 13, color: "rgba(0,0,0,0.6)", fontWeight: 600, margin: 0, lineHeight: 1.5 }}>{r.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Come si calcolano i punti */}
+            <div style={{ background: "white", borderRadius: 20, padding: "18px", marginBottom: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", border: "1px solid rgba(108,71,255,0.1)" }}>
+              <p style={{ fontWeight: 900, fontSize: 15, marginBottom: 12 }}>⚡ Come si guadagnano i punti</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {[
+                  { label: "Risposta corretta in meno di 10 secondi", punti: "10 punti", colore: "#10b981" },
+                  { label: "Risposta corretta in meno di 30 secondi", punti: "7 punti", colore: "#f59e0b" },
+                  { label: "Risposta corretta oltre 30 secondi", punti: "5 punti", colore: "#6366f1" },
+                  { label: "Risposta sbagliata o tempo scaduto", punti: "0 punti", colore: "#ef4444" },
+                  { label: "Esercizio quaderno senza errori", punti: "20 punti", colore: "#10b981" },
+                  { label: "Esercizio quaderno con 1-2 errori", punti: "15 punti", colore: "#f59e0b" },
+                  { label: "Esercizio quaderno con 3-4 errori", punti: "10 punti", colore: "#6366f1" },
+                  { label: "Esercizio quaderno con 5+ errori", punti: "5 punti", colore: "#ef4444" },
+                ].map((r, i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: i < 7 ? 8 : 0, borderBottom: i < 7 ? "1px solid rgba(0,0,0,0.05)" : "none" }}>
+                    <p style={{ fontSize: 13, color: "rgba(0,0,0,0.65)", fontWeight: 600, margin: 0, flex: 1, paddingRight: 8, lineHeight: 1.4 }}>{r.label}</p>
+                    <p style={{ fontSize: 14, fontWeight: 900, color: r.colore, margin: 0, whiteSpace: "nowrap" }}>{r.punti}</p>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: 12, background: "rgba(108,71,255,0.06)", borderRadius: 12, padding: "10px 14px" }}>
+                <p style={{ fontSize: 12, color: "#6C47FF", fontWeight: 700, margin: 0 }}>💡 Rispondi il più veloce possibile — la velocità fa la differenza!</p>
+              </div>
+            </div>
+
+            {/* Materie */}
+            <div style={{ background: "white", borderRadius: 20, padding: "18px", marginBottom: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", border: "1px solid rgba(108,71,255,0.1)" }}>
+              <p style={{ fontWeight: 900, fontSize: 15, marginBottom: 12 }}>📚 Materie coinvolte</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {[
+                  { materia: "Matematica", pct: "30%", colore: "#6366f1" },
+                  { materia: "Italiano", pct: "25%", colore: "#ec4899" },
+                  { materia: "Scienze", pct: "20%", colore: "#10b981" },
+                  { materia: "Storia", pct: "15%", colore: "#f59e0b" },
+                  { materia: "Geografia", pct: "10%", colore: "#0ea5e9" },
+                ].map((m, i) => (
+                  <div key={i} style={{ background: `${m.colore}15`, border: `1.5px solid ${m.colore}40`, borderRadius: 20, padding: "6px 14px", display: "flex", alignItems: "center", gap: 6 }}>
+                    <p style={{ fontSize: 13, fontWeight: 800, color: m.colore, margin: 0 }}>{m.materia}</p>
+                    <p style={{ fontSize: 11, color: `${m.colore}99`, fontWeight: 700, margin: 0 }}>{m.pct}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Timeline */}
+            <div style={{ background: "white", borderRadius: 20, padding: "18px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", border: "1px solid rgba(108,71,255,0.1)" }}>
+              <p style={{ fontWeight: 900, fontSize: 15, marginBottom: 12 }}>📅 Come funziona la gara</p>
+              {[
+                { n: "1", titolo: "Ti iscrivi e scegli il nickname", desc: "Il tuo nickname è pubblico in classifica. Il nome reale non viene mai mostrato." },
+                { n: "2", titolo: "La gara inizia il primo lunedì", desc: "Dal lunedì successivo all'iscrizione parti con la Settimana 1." },
+                { n: "3", titolo: "10 sessioni in 2 settimane", desc: "5 giorni × 2 settimane = 10 sessioni totali. Solo lun-ven, nessuna nel weekend." },
+                { n: "4", titolo: "Classifica live e premi", desc: "La classifica si aggiorna in tempo reale. Il 20 luglio vengono assegnati i premi." },
+              ].map(s => (
+                <div key={s.n} style={{ display: "flex", gap: 14, marginBottom: 14, alignItems: "flex-start" }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,#6C47FF,#9B3FD4)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 900, fontSize: 15, flexShrink: 0 }}>{s.n}</div>
+                  <div>
+                    <p style={{ fontWeight: 900, fontSize: 14, margin: "0 0 3px" }}>{s.titolo}</p>
+                    <p style={{ fontSize: 13, color: "rgba(0,0,0,0.55)", fontWeight: 600, margin: 0, lineHeight: 1.5 }}>{s.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* PREMI */}
+          <div style={{ margin: "24px 16px 0" }}>
+            <p style={{ fontWeight: 900, fontSize: 20, marginBottom: 14 }}>🎁 I premi</p>
+            <div style={{ background: "white", borderRadius: 20, overflow: "hidden", boxShadow: "0 2px 12px rgba(0,0,0,0.08)", border: "1px solid rgba(108,71,255,0.1)" }}>
+              {PREMI.map((p, i) => (
+                <div key={i} style={{ padding: "14px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", background: p.bg, borderBottom: i < PREMI.length - 1 ? "1px solid rgba(0,0,0,0.06)" : "none" }}>
+                  <p style={{ fontWeight: 900, fontSize: 16, margin: 0, color: p.colore }}>{p.pos}</p>
+                  <p style={{ fontWeight: 700, fontSize: 14, margin: 0, color: "#0a0a20" }}>{p.premio}</p>
+                </div>
+              ))}
+              <div style={{ padding: "12px 18px", background: "rgba(108,71,255,0.04)" }}>
+                <p style={{ fontSize: 12, color: "rgba(0,0,0,0.45)", fontWeight: 700, margin: "0 0 4px", textAlign: "center" }}>Classifica separata per ogni anno scolastico</p>
+                <p style={{ fontSize: 11, color: "rgba(0,0,0,0.35)", fontWeight: 600, margin: 0, textAlign: "center" }}>I premi consistono in estensioni gratuite dell'abbonamento Lexyo</p>
+              </div>
+            </div>
+          </div>
+
           {/* 3 PIANI */}
           {!isIscrittoOlimpiadi && (
             <div style={{ margin: "24px 16px 0" }}>
-              <p style={{ fontWeight: 900, fontSize: 18, marginBottom: 14 }}>💳 Scegli il tuo piano</p>
+              <p style={{ fontWeight: 900, fontSize: 20, marginBottom: 4 }}>💳 Scegli il tuo piano</p>
+              <p style={{ fontSize: 14, color: "rgba(0,0,0,0.5)", fontWeight: 600, marginBottom: 16 }}>Partecipa con 4,99€ oppure abbonati a Lexyo e le Olimpiadi sono incluse gratis.</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 {PIANI.map(piano => (
                   <div key={piano.id} style={{ background: piano.bg, borderRadius: 22, padding: "20px", boxShadow: "0 6px 20px rgba(0,0,0,0.25)", position: "relative", overflow: "hidden" }}>
@@ -356,42 +480,7 @@ export default function OlimpiadiLanding() {
             </div>
           )}
 
-          {/* COME FUNZIONA */}
-          <div style={{ margin: "24px 16px 0" }}>
-            <p style={{ fontWeight: 900, fontSize: 18, marginBottom: 14 }}>📖 Come funziona</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {[
-                { n: "1", titolo: "Scegli il tuo piano", desc: "4,99€ solo per le Olimpiadi, oppure abbonati a Lexyo e partecipi gratis" },
-                { n: "2", titolo: "Studia ogni giorno", desc: "Dal lunedì al venerdì: quiz a risposta multipla + esercizi sul quaderno" },
-                { n: "3", titolo: "Scala la classifica", desc: "Rispondi veloce per più punti. La classifica si aggiorna in tempo reale" },
-                { n: "4", titolo: "Vinci premi", desc: "I top 10 per classe vincono mesi di Lexyo Premium completamente gratis" },
-              ].map(s => (
-                <div key={s.n} style={{ background: "white", borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", border: "1px solid rgba(108,71,255,0.1)" }}>
-                  <div style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg,#6C47FF,#9B3FD4)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 900, fontSize: 16, flexShrink: 0 }}>{s.n}</div>
-                  <div>
-                    <p style={{ fontWeight: 900, fontSize: 15, margin: "0 0 4px" }}>{s.titolo}</p>
-                    <p style={{ fontSize: 13, color: "rgba(0,0,0,0.55)", fontWeight: 600, margin: 0, lineHeight: 1.5 }}>{s.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
 
-          {/* PREMI */}
-          <div style={{ margin: "24px 16px 0" }}>
-            <p style={{ fontWeight: 900, fontSize: 18, marginBottom: 14 }}>🎁 I premi</p>
-            <div style={{ background: "white", borderRadius: 20, overflow: "hidden", boxShadow: "0 2px 12px rgba(0,0,0,0.08)", border: "1px solid rgba(108,71,255,0.1)" }}>
-              {PREMI.map((p, i) => (
-                <div key={i} style={{ padding: "13px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", background: p.bg, borderBottom: i < PREMI.length - 1 ? "1px solid rgba(0,0,0,0.06)" : "none" }}>
-                  <p style={{ fontWeight: 900, fontSize: 15, margin: 0, color: p.colore }}>{p.pos}</p>
-                  <p style={{ fontWeight: 700, fontSize: 14, margin: 0, color: "#0a0a20" }}>{p.premio}</p>
-                </div>
-              ))}
-              <div style={{ padding: "10px 18px", background: "rgba(108,71,255,0.04)" }}>
-                <p style={{ fontSize: 11, color: "rgba(0,0,0,0.4)", fontWeight: 700, margin: 0, textAlign: "center" }}>Classifica separata per ogni anno scolastico</p>
-              </div>
-            </div>
-          </div>
 
           {/* CLASSIFICA */}
           <div style={{ margin: "24px 16px 0" }}>
