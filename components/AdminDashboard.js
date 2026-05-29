@@ -491,6 +491,20 @@ function TabGara({ accessToken }) {
       ))}
 
       <div style={{ display:"flex", flexDirection:"column", gap:10, marginTop:6 }}>
+        <button onClick={async () => {
+          try {
+            const r = await callAdmin("admin-test-gara", accessToken);
+            const msg = Object.entries(r.risultati).map(([k,v]) =>
+              k === "env_vars"
+                ? `ENV:\n${Object.entries(v).map(([ek,ev])=>`  ${ek}: ${ev}`).join("\n")}`
+                : `${k}: ${v}`
+            ).join("\n\n");
+            alert("🔍 DIAGNOSTICA:\n\n" + msg);
+          } catch(e) { alert("Errore diagnostica: " + e.message); }
+        }} style={{ padding:"10px 16px", borderRadius:12, background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.2)", color:"rgba(255,255,255,0.7)", fontWeight:700, fontSize:13, cursor:"pointer" }}>
+          🔍 Diagnostica (esegui prima di generare quiz)
+        </button>
+
         <button onClick={generaQuiz} disabled={genLoading} style={{ padding:"13px 16px", borderRadius:12, background: genLoading ? "rgba(108,71,255,0.3)" : "linear-gradient(135deg,#6C47FF,#9B3FD4)", border:"none", color:"white", fontWeight:800, fontSize:14, cursor: genLoading ? "default" : "pointer" }}>
           {genLoading ? `⏳ ${genProgress.step}/${genProgress.totale} — Generazione...` : "🎯 Genera quiz Olimpiadi per tutte le classi"}
         </button>
@@ -512,7 +526,16 @@ function TabGara({ accessToken }) {
             ) : (
               <>
                 <p style={{ color:"#10b981", fontWeight:800, fontSize:13, margin:"0 0 4px" }}>✅ Completato! Generati {genResult.quiz_generati} quiz.</p>
-                {genResult.errori?.length > 0 && <p style={{ color:"#f59e0b", fontSize:12, margin:0 }}>⚠️ {genResult.errori.length} errori — riprova la generazione per i giorni mancanti.</p>}
+                {genResult.errori?.length > 0 && (
+                  <div style={{ marginTop:8 }}>
+                    <p style={{ color:"#f59e0b", fontSize:12, margin:"0 0 6px", fontWeight:800 }}>⚠️ {genResult.errori.length} errori:</p>
+                    <div style={{ maxHeight:150, overflowY:"auto", background:"rgba(0,0,0,0.2)", borderRadius:8, padding:"8px 10px" }}>
+                      {genResult.errori.map((e, i) => (
+                        <p key={i} style={{ color:"#fca5a5", fontSize:11, margin:"0 0 4px", fontFamily:"monospace", lineHeight:1.4 }}>{e}</p>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>
