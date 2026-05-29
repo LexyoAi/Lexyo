@@ -229,9 +229,28 @@ export default function OlimpiadiLanding() {
         </header>
 
         {/* ─── HERO ─── */}
-        <section style={{ background:"linear-gradient(160deg,#2D1B69 0%,#1A1040 100%)", padding:"64px 20px 72px", textAlign:"center", color:"white" }}>
-          <div style={{ display:"inline-block", background:"rgba(255,215,0,0.15)", border:"1px solid rgba(255,215,0,0.4)", borderRadius:50, padding:"7px 18px", fontSize:13, fontWeight:700, color:ORO, marginBottom:24 }}>
-            🏅 Edizione 2026 · Iscrizioni aperte
+        <section style={{ background:"linear-gradient(160deg,#2D1B69 0%,#1A1040 100%)", padding:"48px 20px 72px", textAlign:"center", color:"white" }}>
+
+          {/* TITOLO EVENTO — massima visibilità */}
+          <div style={{ marginBottom:32 }}>
+            <div style={{ display:"inline-flex", alignItems:"center", gap:10, background:"linear-gradient(135deg,rgba(255,215,0,0.2),rgba(255,183,0,0.1))", border:"1.5px solid rgba(255,215,0,0.5)", borderRadius:16, padding:"10px 22px", marginBottom:16 }}>
+              <span style={{ fontSize:22 }}>🏅</span>
+              <div style={{ textAlign:"left" }}>
+                <p style={{ fontSize:10, fontWeight:800, color:"rgba(255,215,0,0.7)", margin:0, textTransform:"uppercase", letterSpacing:"2px" }}>Prima edizione nazionale</p>
+                <p style={{ fontSize:"clamp(18px,5vw,26px)", fontWeight:900, color:ORO, margin:0, lineHeight:1.1, letterSpacing:"-0.3px" }}>Olimpiadi dello Studio 2026</p>
+              </div>
+            </div>
+
+            {/* Linea divisore decorativa */}
+            <div style={{ display:"flex", alignItems:"center", gap:12, maxWidth:340, margin:"0 auto 20px" }}>
+              <div style={{ flex:1, height:1, background:"linear-gradient(90deg,transparent,rgba(255,215,0,0.4))" }} />
+              <span style={{ fontSize:12, color:"rgba(255,215,0,0.5)", fontWeight:700, whiteSpace:"nowrap" }}>per elementari e medie</span>
+              <div style={{ flex:1, height:1, background:"linear-gradient(90deg,rgba(255,215,0,0.4),transparent)" }} />
+            </div>
+          </div>
+
+          <div style={{ display:"inline-block", background:"rgba(255,215,0,0.12)", border:"1px solid rgba(255,215,0,0.35)", borderRadius:50, padding:"6px 16px", fontSize:12, fontWeight:700, color:ORO, marginBottom:20 }}>
+            📅 Iscrizioni aperte · Valido fino al 20 luglio 2026
           </div>
 
           <h1 style={{ fontSize:"clamp(28px,8vw,50px)", fontWeight:900, lineHeight:1.15, marginBottom:16, letterSpacing:"-0.5px" }}>
@@ -240,7 +259,7 @@ export default function OlimpiadiLanding() {
           </h1>
 
           <p style={{ fontSize:"clamp(16px,4vw,20px)", color:"rgba(255,255,255,0.75)", marginBottom:10, fontWeight:600, maxWidth:480, margin:"0 auto 16px" }}>
-            Le Olimpiadi dello Studio mettono tuo figlio a confronto con i bambini di tutta Italia. Ogni giorno, per 2 settimane.
+            La prima competizione nazionale di preparazione scolastica. Ogni giorno quiz e esercizi — la classifica è pubblica e in tempo reale.
           </p>
 
           <div style={{ display:"flex", gap:16, justifyContent:"center", flexWrap:"wrap", marginBottom:36 }}>
