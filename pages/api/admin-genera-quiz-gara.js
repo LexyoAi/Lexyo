@@ -8,47 +8,72 @@ const getSupabase = () => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, pro
 const GIORNI = ["lunedi", "martedi", "mercoledi", "giovedi", "venerdi"];
 const GIORNI_CON_QUADERNO = ["lunedi", "martedi", "mercoledi"];
 
+// Estrai JSON array dalla risposta di Claude, anche se contiene testo extra
+function parseJsonArray(testo) {
+  const t = testo.trim();
+  // Prova prima il match diretto dell'array
+  const match = t.match(/\[[\s\S]*\]/);
+  if (match) {
+    try { return JSON.parse(match[0]); } catch {}
+  }
+  // Prova rimuovendo backtick markdown
+  const clean = t.replace(/^```json\s*/i, "").replace(/\s*```$/, "").trim();
+  return JSON.parse(clean);
+}
+
+function parseJsonObject(testo) {
+  const t = testo.trim();
+  const match = t.match(/\{[\s\S]*\}/);
+  if (match) {
+    try { return JSON.parse(match[0]); } catch {}
+  }
+  const clean = t.replace(/^```json\s*/i, "").replace(/\s*```$/, "").trim();
+  return JSON.parse(clean);
+}
+
 async function generaQuiz(classe, settimana, giorno, numDomande) {
-  const prompt = `Sei un esperto professore italiano. Genera quiz per le Olimpiadi dello Studio per bambini di ${classe}.
-Settimana ${settimana}, Giorno ${giorno}.
-Genera esattamente ${numDomande} domande a risposta multipla.
+  const prompt = `Sei un esperto professore italiano. Genera esattamente ${numDomande} domande a risposta multipla per le Olimpiadi dello Studio per bambini di ${classe}. Settimana ${settimana}, Giorno ${giorno}.
 Mix materie: matematica (30%), italiano (25%), scienze (20%), storia (15%), geografia (10%).
-Difficoltà appropriata per ${classe}.
-Domande non banali — richiedono studio reale.
-Risposte sbagliate plausibili.
-Opzioni mescolate — risposta corretta non sempre prima.
-Rispondi SOLO con JSON valido, nessun testo aggiuntivo:
-[{"domanda": "string", "opzioni": ["string","string","string","string"], "risposta_corretta": 0, "materia": "string", "tipo": "quiz"}]`;
+Difficolta appropriata per ${classe}. Domande non banali. Risposte sbagliate plausibili. Risposta corretta in posizione casuale.
+Rispondi SOLO con un array JSON valido e completo. Nessun testo prima o dopo:
+[{"domanda":"string","opzioni":["A","B","C","D"],"risposta_corretta":0,"materia":"string","tipo":"quiz"}]`;
 
   const response = await anthropic.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 4000,
+    max_tokens: 8000,
     messages: [{ role: "user", content: prompt }],
   });
 
-  const raw = response.content[0].text.trim();
-  const jsonMatch = raw.match(/\[[\s\S]*\]/);
-  return JSON.parse(jsonMatch ? jsonMatch[0] : raw.replace(/^```json\n?/, "").replace(/\n?```$/, ""));
+  const testo = response.content[0].text;
+  const stopReason = response.stop_reason;
+
+  // Se Claude si è fermato per max_tokens, il JSON è troncato
+  if (stopReason === "max_tokens") {
+    throw new Error(`Risposta troncata (max_tokens raggiunto). Riprova.`);
+  }
+
+  const arr = parseJsonArray(testo);
+  if (!Array.isArray(arr) || arr.length === 0) {
+    throw new Error(`JSON non valido o array vuoto. Risposta: ${testo.slice(0, 100)}`);
+  }
+  return arr;
 }
 
 async function generaQuaderno(classe, giorno) {
   const materie = ["matematica", "italiano", "scienze"];
   const materia = materie[GIORNI_CON_QUADERNO.indexOf(giorno)] || "matematica";
 
-  const prompt = `Genera 1 esercizio pratico di ${materia} per bambini di ${classe}.
-L'esercizio deve essere svolto sul quaderno e fotografato. Deve richiedere 10-15 minuti.
-Rispondi SOLO con JSON valido, nessun testo aggiuntivo:
-{"testo_esercizio": "string", "materia": "${materia}", "tipo": "quaderno", "soluzione_modello": "string"}`;
+  const prompt = `Genera 1 esercizio pratico di ${materia} per bambini di ${classe}. Deve essere svolto sul quaderno e fotografato. Deve richiedere 10-15 minuti.
+Rispondi SOLO con oggetto JSON valido, nessun testo:
+{"testo_esercizio":"string","materia":"${materia}","tipo":"quaderno","soluzione_modello":"string"}`;
 
   const response = await anthropic.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 800,
+    max_tokens: 1000,
     messages: [{ role: "user", content: prompt }],
   });
 
-  const raw = response.content[0].text.trim();
-  const jsonMatch = raw.match(/\{[\s\S]*\}/);
-  return JSON.parse(jsonMatch ? jsonMatch[0] : raw.replace(/^```json\n?/, "").replace(/\n?```$/, ""));
+  return parseJsonObject(response.content[0].text);
 }
 
 export default async function handler(req, res) {
@@ -57,7 +82,6 @@ export default async function handler(req, res) {
   const admin = await verifyAdmin(req);
   if (!admin) return res.status(403).json({ errore: "Accesso negato" });
 
-  // Genera UNA classe + UNA settimana per chiamata (evita timeout Netlify)
   const { classe, settimana } = req.body;
   if (!classe || !settimana) {
     return res.status(400).json({ errore: "Parametri 'classe' e 'settimana' obbligatori" });
@@ -71,7 +95,7 @@ export default async function handler(req, res) {
     for (let giornoIdx = 0; giornoIdx < GIORNI.length; giornoIdx++) {
       const giorno = GIORNI[giornoIdx];
       const giornoNumero = giornoIdx + 1;
-      const numDomande = giorno === "venerdi" ? 30 : 20;
+      const numDomande = giorno === "venerdi" ? 20 : 15; // Ridotto per evitare troncamento
 
       // Quiz a risposta multipla
       try {
@@ -83,14 +107,14 @@ export default async function handler(req, res) {
           tipo: "quiz",
           domanda: q.domanda,
           opzioni: q.opzioni,
-          risposta_corretta: q.risposta_corretta,
+          risposta_corretta: Number(q.risposta_corretta),
           materia: q.materia,
         }));
         const { error } = await sb.from("gara_quiz").insert(rows);
-        if (error) throw error;
+        if (error) throw new Error(`DB: ${error.message}`);
         quiz_generati += rows.length;
       } catch (e) {
-        errori.push(`Quiz ${giorno}: ${e.message}`);
+        errori.push(`Quiz ${classe} sett.${settimana} ${giorno}: ${e.message}`);
       }
 
       // Esercizio quaderno (lun/mar/mer)
@@ -106,10 +130,10 @@ export default async function handler(req, res) {
             materia: es.materia,
             testo_esercizio_quaderno: es.testo_esercizio,
           });
-          if (error) throw error;
+          if (error) throw new Error(`DB: ${error.message}`);
           quiz_generati++;
         } catch (e) {
-          errori.push(`Quaderno ${giorno}: ${e.message}`);
+          errori.push(`Quaderno ${classe} sett.${settimana} ${giorno}: ${e.message}`);
         }
       }
     }
