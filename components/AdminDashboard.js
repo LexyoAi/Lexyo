@@ -365,6 +365,7 @@ function TabGara({ accessToken }) {
   const [loading, setLoading]         = useState(true);
   const [genLoading, setGenLoading]   = useState(false);
   const [genResult, setGenResult]     = useState(null);
+  const [genProgress, setGenProgress] = useState({ step: 0, totale: 0, corrente: "" });
   const [prPreview, setPrPreview]     = useState(null);
   const [prLoading, setPrLoading]     = useState(false);
   const [prAssegnati, setPrAssegnati] = useState(null);
@@ -401,13 +402,30 @@ function TabGara({ accessToken }) {
   useEffect(() => { caricaStats(); }, []);
 
   async function generaQuiz() {
-    if (!confirm("Generare quiz per tutte le classi? Questo potrebbe richiedere diversi minuti.")) return;
+    if (!confirm("Genera quiz per tutte le classi?\nFarà 12 chiamate sequenziali (6 classi × 2 settimane).\nNon chiudere la pagina.")) return;
     setGenLoading(true);
     setGenResult(null);
-    try {
-      const r = await callAdmin("admin-genera-quiz-gara", accessToken);
-      setGenResult(r);
-    } catch (e) { setGenResult({ errore: e.message }); }
+
+    const combinazioni = [];
+    for (const c of CLASSI_GARA) for (const s of [1, 2]) combinazioni.push({ classe: c, settimana: s });
+
+    let totaleGenerati = 0;
+    const tuttiErrori = [];
+
+    for (let i = 0; i < combinazioni.length; i++) {
+      const { classe, settimana } = combinazioni[i];
+      setGenProgress({ step: i + 1, totale: combinazioni.length, corrente: `${classe.replace("ª_","ª ")} — Settimana ${settimana}` });
+      try {
+        const r = await callAdmin("admin-genera-quiz-gara", accessToken, { classe, settimana });
+        totaleGenerati += r.quiz_generati || 0;
+        if (r.errori?.length) tuttiErrori.push(...r.errori);
+      } catch (e) {
+        tuttiErrori.push(`${classe} sett.${settimana}: ${e.message}`);
+      }
+    }
+
+    setGenResult({ success: true, quiz_generati: totaleGenerati, errori: tuttiErrori });
+    setGenProgress({ step: 0, totale: 0, corrente: "" });
     setGenLoading(false);
   }
 
@@ -474,15 +492,28 @@ function TabGara({ accessToken }) {
 
       <div style={{ display:"flex", flexDirection:"column", gap:10, marginTop:6 }}>
         <button onClick={generaQuiz} disabled={genLoading} style={{ padding:"13px 16px", borderRadius:12, background: genLoading ? "rgba(108,71,255,0.3)" : "linear-gradient(135deg,#6C47FF,#9B3FD4)", border:"none", color:"white", fontWeight:800, fontSize:14, cursor: genLoading ? "default" : "pointer" }}>
-          {genLoading ? "⏳ Generazione in corso..." : "🎯 Genera quiz Olimpiadi per tutte le classi"}
+          {genLoading ? `⏳ ${genProgress.step}/${genProgress.totale} — Generazione...` : "🎯 Genera quiz Olimpiadi per tutte le classi"}
         </button>
+
+        {genLoading && genProgress.totale > 0 && (
+          <div style={{ background:"rgba(108,71,255,0.1)", borderRadius:12, padding:"12px 14px", border:"1px solid rgba(108,71,255,0.3)" }}>
+            <p style={{ color:"rgba(255,255,255,0.7)", fontSize:12, margin:"0 0 8px" }}>{genProgress.corrente}</p>
+            <div style={{ height:6, background:"rgba(255,255,255,0.1)", borderRadius:6, overflow:"hidden" }}>
+              <div style={{ height:"100%", width:`${(genProgress.step / genProgress.totale) * 100}%`, background:"linear-gradient(90deg,#6C47FF,#9B3FD4)", borderRadius:6, transition:"width 0.4s ease" }} />
+            </div>
+            <p style={{ color:"rgba(255,255,255,0.4)", fontSize:11, margin:"6px 0 0" }}>Non chiudere questa pagina</p>
+          </div>
+        )}
 
         {genResult && (
           <div style={{ background: genResult.errore ? "rgba(239,68,68,0.1)" : "rgba(16,185,129,0.1)", borderRadius:12, padding:"12px 14px", border:`1px solid ${genResult.errore ? "rgba(239,68,68,0.3)" : "rgba(16,185,129,0.3)"}` }}>
             {genResult.errore ? (
               <p style={{ color:"#ef4444", fontWeight:800, fontSize:13, margin:0 }}>Errore: {genResult.errore}</p>
             ) : (
-              <p style={{ color:"#10b981", fontWeight:800, fontSize:13, margin:0 }}>✅ Generati {genResult.quiz_generati} quiz. {genResult.errori?.length ? `(${genResult.errori.length} errori)` : ""}</p>
+              <>
+                <p style={{ color:"#10b981", fontWeight:800, fontSize:13, margin:"0 0 4px" }}>✅ Completato! Generati {genResult.quiz_generati} quiz.</p>
+                {genResult.errori?.length > 0 && <p style={{ color:"#f59e0b", fontSize:12, margin:0 }}>⚠️ {genResult.errori.length} errori — riprova la generazione per i giorni mancanti.</p>}
+              </>
             )}
           </div>
         )}

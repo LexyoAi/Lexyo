@@ -5,12 +5,11 @@ import { verifyAdmin } from "../../lib/verify-admin-api";
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const getSupabase = () => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
-const CLASSI = ["3ª_elementare", "4ª_elementare", "5ª_elementare", "1ª_media", "2ª_media", "3ª_media"];
 const GIORNI = ["lunedi", "martedi", "mercoledi", "giovedi", "venerdi"];
 const GIORNI_CON_QUADERNO = ["lunedi", "martedi", "mercoledi"];
 
-async function generaQuizClaudeQuiz(classe, settimana, giorno, numDomande) {
-  const prompt = `Sei un esperto professore italiano. Genera quiz per la gara Gran Premio Studio per bambini di ${classe}.
+async function generaQuiz(classe, settimana, giorno, numDomande) {
+  const prompt = `Sei un esperto professore italiano. Genera quiz per le Olimpiadi dello Studio per bambini di ${classe}.
 Settimana ${settimana}, Giorno ${giorno}.
 Genera esattamente ${numDomande} domande a risposta multipla.
 Mix materie: matematica (30%), italiano (25%), scienze (20%), storia (15%), geografia (10%).
@@ -31,14 +30,12 @@ Rispondi SOLO con JSON valido, nessun testo aggiuntivo:
   return JSON.parse(raw);
 }
 
-async function generaEsercizioQuaderno(classe, giorno) {
+async function generaQuaderno(classe, giorno) {
   const materie = ["matematica", "italiano", "scienze"];
-  const materiaIdx = ["lunedi", "martedi", "mercoledi"].indexOf(giorno);
-  const materia = materie[materiaIdx] || "matematica";
+  const materia = materie[GIORNI_CON_QUADERNO.indexOf(giorno)] || "matematica";
 
   const prompt = `Genera 1 esercizio pratico di ${materia} per bambini di ${classe}.
-L'esercizio deve essere svolto sul quaderno e fotografato.
-Deve richiedere 10-15 minuti.
+L'esercizio deve essere svolto sul quaderno e fotografato. Deve richiedere 10-15 minuti.
 Rispondi SOLO con JSON valido, nessun testo aggiuntivo:
 {"testo_esercizio": "string", "materia": "${materia}", "tipo": "quaderno", "soluzione_modello": "string"}`;
 
@@ -58,74 +55,66 @@ export default async function handler(req, res) {
   const admin = await verifyAdmin(req);
   if (!admin) return res.status(403).json({ errore: "Accesso negato" });
 
-  const { classi_da_generare, settimane_da_generare } = req.body;
-  const classiTarget = classi_da_generare || CLASSI;
-  const settimaneTarget = settimane_da_generare || [1, 2];
+  // Genera UNA classe + UNA settimana per chiamata (evita timeout Netlify)
+  const { classe, settimana } = req.body;
+  if (!classe || !settimana) {
+    return res.status(400).json({ errore: "Parametri 'classe' e 'settimana' obbligatori" });
+  }
 
   const sb = getSupabase();
   let quiz_generati = 0;
   const errori = [];
 
   try {
-    for (const classe of classiTarget) {
-      for (const settimana of settimaneTarget) {
-        for (let giornoIdx = 0; giornoIdx < GIORNI.length; giornoIdx++) {
-          const giorno = GIORNI[giornoIdx];
-          const giornoNumero = giornoIdx + 1;
-          const numDomande = giorno === "venerdi" ? 30 : 20;
+    for (let giornoIdx = 0; giornoIdx < GIORNI.length; giornoIdx++) {
+      const giorno = GIORNI[giornoIdx];
+      const giornoNumero = giornoIdx + 1;
+      const numDomande = giorno === "venerdi" ? 30 : 20;
 
-          try {
-            const quiz = await generaQuizClaudeQuiz(classe, settimana, giorno, numDomande);
+      // Quiz a risposta multipla
+      try {
+        const quiz = await generaQuiz(classe, settimana, giorno, numDomande);
+        const rows = quiz.map(q => ({
+          classe, settimana,
+          giorno_settimana: giorno,
+          giorno_numero: giornoNumero,
+          tipo: "quiz",
+          domanda: q.domanda,
+          opzioni: q.opzioni,
+          risposta_corretta: q.risposta_corretta,
+          materia: q.materia,
+        }));
+        const { error } = await sb.from("gara_quiz").insert(rows);
+        if (error) throw error;
+        quiz_generati += rows.length;
+      } catch (e) {
+        errori.push(`Quiz ${giorno}: ${e.message}`);
+      }
 
-            const quizRows = quiz.map(q => ({
-              classe,
-              settimana,
-              giorno_settimana: giorno,
-              giorno_numero: giornoNumero,
-              tipo: "quiz",
-              domanda: q.domanda,
-              opzioni: q.opzioni,
-              risposta_corretta: q.risposta_corretta,
-              materia: q.materia,
-            }));
-
-            const { error: errQ } = await sb.from("gara_quiz").insert(quizRows);
-            if (errQ) throw errQ;
-            quiz_generati += quizRows.length;
-          } catch (e) {
-            errori.push(`Quiz ${classe} settimana ${settimana} ${giorno}: ${e.message}`);
-          }
-
-          if (GIORNI_CON_QUADERNO.includes(giorno)) {
-            try {
-              const esercizio = await generaEsercizioQuaderno(classe, giorno);
-
-              const { error: errE } = await sb.from("gara_quiz").insert({
-                classe,
-                settimana,
-                giorno_settimana: giorno,
-                giorno_numero: giornoNumero,
-                tipo: "quaderno",
-                domanda: esercizio.testo_esercizio,
-                materia: esercizio.materia,
-                testo_esercizio_quaderno: esercizio.testo_esercizio,
-              });
-              if (errE) throw errE;
-              quiz_generati++;
-            } catch (e) {
-              errori.push(`Quaderno ${classe} settimana ${settimana} ${giorno}: ${e.message}`);
-            }
-          }
-
-          // Breve pausa per non sovraccaricare l'API
-          await new Promise(r => setTimeout(r, 500));
+      // Esercizio quaderno (lun/mar/mer)
+      if (GIORNI_CON_QUADERNO.includes(giorno)) {
+        try {
+          const es = await generaQuaderno(classe, giorno);
+          const { error } = await sb.from("gara_quiz").insert({
+            classe, settimana,
+            giorno_settimana: giorno,
+            giorno_numero: giornoNumero,
+            tipo: "quaderno",
+            domanda: es.testo_esercizio,
+            materia: es.materia,
+            testo_esercizio_quaderno: es.testo_esercizio,
+          });
+          if (error) throw error;
+          quiz_generati++;
+        } catch (e) {
+          errori.push(`Quaderno ${giorno}: ${e.message}`);
         }
       }
     }
 
-    return res.json({ success: true, quiz_generati, errori });
+    return res.json({ success: true, quiz_generati, errori, classe, settimana });
   } catch (e) {
     console.error("admin-genera-quiz-gara error:", e.message);
-    return res.status(500).json({ errore: "Errore server", dettaglio: e.message });
+    return res.status(500).json({ errore: e.message });
   }
 }
