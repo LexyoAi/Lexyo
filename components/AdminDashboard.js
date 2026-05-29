@@ -359,6 +359,174 @@ function TabGestione({ accessToken, emailAdmin }) {
   );
 }
 
+// ── Tab: Gara ─────────────────────────────────────────────────────────────────
+function TabGara({ accessToken }) {
+  const [stats, setStats]             = useState(null);
+  const [loading, setLoading]         = useState(true);
+  const [genLoading, setGenLoading]   = useState(false);
+  const [genResult, setGenResult]     = useState(null);
+  const [prPreview, setPrPreview]     = useState(null);
+  const [prLoading, setPrLoading]     = useState(false);
+  const [prAssegnati, setPrAssegnati] = useState(null);
+
+  const CLASSI_GARA = ["3ª_elementare","4ª_elementare","5ª_elementare","1ª_media","2ª_media","3ª_media"];
+  const oggi = new Date();
+  const dopoFineGara = oggi >= new Date("2026-07-20");
+
+  async function caricaStats() {
+    setLoading(true);
+    try {
+      const sb_url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const promises = CLASSI_GARA.map(c =>
+        fetch("/api/gara-classifica", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ classe: c }) }).then(r => r.json())
+      );
+      const risultati = await Promise.all(promises);
+
+      const r = await fetch("/api/admin-stats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      });
+      const d = await r.json();
+
+      const iscritti_per_classe = {};
+      CLASSI_GARA.forEach((c, i) => {
+        iscritti_per_classe[c] = (risultati[i].classifica || []).length;
+      });
+      const totale_iscritti = Object.values(iscritti_per_classe).reduce((a, b) => a + b, 0);
+
+      setStats({ iscritti_per_classe, totale_iscritti, top3: risultati.map((r, i) => ({ classe: CLASSI_GARA[i], top3: (r.classifica || []).slice(0, 3) })) });
+    } catch (e) { console.error(e); } finally { setLoading(false); }
+  }
+
+  useEffect(() => { caricaStats(); }, []);
+
+  async function generaQuiz() {
+    if (!confirm("Generare quiz per tutte le classi? Questo potrebbe richiedere diversi minuti.")) return;
+    setGenLoading(true);
+    setGenResult(null);
+    try {
+      const r = await callAdmin("admin-genera-quiz-gara", accessToken);
+      setGenResult(r);
+    } catch (e) { setGenResult({ errore: e.message }); }
+    setGenLoading(false);
+  }
+
+  async function previewPremi() {
+    setPrLoading(true);
+    try {
+      const r = await callAdmin("gara-assegna-premi", accessToken, { preview: true });
+      setPrPreview(r.preview || []);
+    } catch (e) { alert("Errore: " + e.message); }
+    setPrLoading(false);
+  }
+
+  async function assegnaPremi() {
+    if (!confirm("Assegnare i premi finali? Questa azione è IRREVERSIBILE.")) return;
+    setPrLoading(true);
+    try {
+      const r = await callAdmin("gara-assegna-premi", accessToken, { preview: false });
+      setPrAssegnati(r.premi_assegnati);
+      setPrPreview(null);
+    } catch (e) { alert("Errore: " + e.message); }
+    setPrLoading(false);
+  }
+
+  async function esportaCSV() {
+    try {
+      const r = await fetch("/api/gara-classifica", { method:"POST", headers:{"Content-Type":"application/json","Authorization":`Bearer ${accessToken}`}, body: JSON.stringify({ classe: "all" }) });
+      alert("Export disponibile direttamente da Supabase Dashboard → gara_iscrizioni → Export CSV");
+    } catch {}
+  }
+
+  if (loading) return <p style={{ textAlign:"center", color:"rgba(255,255,255,0.4)", marginTop:40 }}>Caricamento...</p>;
+
+  return (
+    <div style={{ padding:"16px 14px 32px" }}>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
+        <StatCard label="🏅 Iscritti Olimpiadi" valore={stats?.totale_iscritti || 0} colore="#FFB800" grande />
+        <StatCard label="💰 Ricavi stimati" valore={`€${((stats?.totale_iscritti || 0) * 4.99).toFixed(2)}`} colore="#22c55e" grande />
+      </div>
+
+      <p style={{ fontSize:12, fontWeight:800, color:"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"1px", marginBottom:10 }}>Iscritti per classe</p>
+      <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:14, padding:"12px 14px", marginBottom:16, border:"1px solid rgba(255,255,255,0.08)" }}>
+        {CLASSI_GARA.map(c => (
+          <div key={c} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+            <p style={{ fontSize:13, color:"rgba(255,255,255,0.7)", margin:0 }}>{c.replace("ª_","ª ").replace("_"," ")}</p>
+            <p style={{ fontSize:14, fontWeight:900, color:"#FFB800", margin:0 }}>{stats?.iscritti_per_classe?.[c] || 0}</p>
+          </div>
+        ))}
+      </div>
+
+      <p style={{ fontSize:12, fontWeight:800, color:"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"1px", marginBottom:10 }}>Top 3 per classe</p>
+      {(stats?.top3 || []).map(({ classe, top3 }) => (
+        <div key={classe} style={{ background:"rgba(255,255,255,0.04)", borderRadius:14, padding:"12px 14px", marginBottom:10, border:"1px solid rgba(255,255,255,0.08)" }}>
+          <p style={{ fontSize:12, fontWeight:800, color:"rgba(255,255,255,0.5)", marginBottom:8 }}>{classe.replace("ª_","ª ").replace("_"," ")}</p>
+          {top3.length === 0 ? (
+            <p style={{ fontSize:12, color:"rgba(255,255,255,0.3)", margin:0 }}>Nessun iscritto</p>
+          ) : top3.map((u, i) => (
+            <div key={i} style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+              <p style={{ fontSize:13, color:"white", margin:0 }}>{["🥇","🥈","🥉"][i]} {u.nickname}</p>
+              <p style={{ fontSize:13, fontWeight:800, color:"#FFB800", margin:0 }}>{u.punteggio} pt</p>
+            </div>
+          ))}
+        </div>
+      ))}
+
+      <div style={{ display:"flex", flexDirection:"column", gap:10, marginTop:6 }}>
+        <button onClick={generaQuiz} disabled={genLoading} style={{ padding:"13px 16px", borderRadius:12, background: genLoading ? "rgba(108,71,255,0.3)" : "linear-gradient(135deg,#6C47FF,#9B3FD4)", border:"none", color:"white", fontWeight:800, fontSize:14, cursor: genLoading ? "default" : "pointer" }}>
+          {genLoading ? "⏳ Generazione in corso..." : "🎯 Genera quiz Olimpiadi per tutte le classi"}
+        </button>
+
+        {genResult && (
+          <div style={{ background: genResult.errore ? "rgba(239,68,68,0.1)" : "rgba(16,185,129,0.1)", borderRadius:12, padding:"12px 14px", border:`1px solid ${genResult.errore ? "rgba(239,68,68,0.3)" : "rgba(16,185,129,0.3)"}` }}>
+            {genResult.errore ? (
+              <p style={{ color:"#ef4444", fontWeight:800, fontSize:13, margin:0 }}>Errore: {genResult.errore}</p>
+            ) : (
+              <p style={{ color:"#10b981", fontWeight:800, fontSize:13, margin:0 }}>✅ Generati {genResult.quiz_generati} quiz. {genResult.errori?.length ? `(${genResult.errori.length} errori)` : ""}</p>
+            )}
+          </div>
+        )}
+
+        {!prPreview && !prAssegnati && (
+          <button onClick={previewPremi} disabled={!dopoFineGara || prLoading} style={{ padding:"13px 16px", borderRadius:12, background: !dopoFineGara ? "rgba(255,255,255,0.06)" : "linear-gradient(135deg,#FFB800,#FF6B00)", border: !dopoFineGara ? "1px solid rgba(255,255,255,0.15)" : "none", color: !dopoFineGara ? "rgba(255,255,255,0.4)" : "white", fontWeight:800, fontSize:14, cursor: !dopoFineGara ? "not-allowed" : "pointer" }}>
+            {!dopoFineGara ? "🏅 Assegna premi Olimpiadi (attivo dopo il 20 luglio)" : prLoading ? "Caricamento..." : "🏅 Preview premi finali Olimpiadi"}
+          </button>
+        )}
+
+        {prPreview && (
+          <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:14, padding:"14px", border:"1px solid rgba(255,255,255,0.1)" }}>
+            <p style={{ fontWeight:800, fontSize:13, marginBottom:10 }}>Preview premi ({prPreview.length} vincitori):</p>
+            <div style={{ maxHeight:200, overflowY:"auto" }}>
+              {prPreview.slice(0,15).map((p, i) => (
+                <div key={i} style={{ display:"flex", justifyContent:"space-between", marginBottom:6, fontSize:12 }}>
+                  <span style={{ color:"rgba(255,255,255,0.7)" }}>{p.posizione}° {p.nickname} ({p.classe.split("_")[0]})</span>
+                  <span style={{ color:"#FFB800", fontWeight:800 }}>{p.giorni}gg</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ display:"flex", gap:8, marginTop:12 }}>
+              <button onClick={() => setPrPreview(null)} style={{ flex:1, padding:"10px", borderRadius:10, background:"rgba(255,255,255,0.08)", border:"none", color:"white", fontWeight:700, cursor:"pointer" }}>Annulla</button>
+              <button onClick={assegnaPremi} disabled={prLoading} style={{ flex:2, padding:"10px", borderRadius:10, background:"linear-gradient(135deg,#FFB800,#FF6B00)", border:"none", color:"white", fontWeight:800, cursor:"pointer" }}>
+                {prLoading ? "Assegnazione..." : "✅ Conferma e assegna premi"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {prAssegnati !== null && (
+          <div style={{ background:"rgba(16,185,129,0.1)", borderRadius:12, padding:"12px", border:"1px solid rgba(16,185,129,0.3)" }}>
+            <p style={{ color:"#10b981", fontWeight:800, fontSize:13, margin:0 }}>✅ Premi assegnati a {prAssegnati} utenti!</p>
+          </div>
+        )}
+
+        <button onClick={esportaCSV} style={{ padding:"13px 16px", borderRadius:12, background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.15)", color:"rgba(255,255,255,0.7)", fontWeight:800, fontSize:14, cursor:"pointer" }}>
+          📥 Export CSV iscritti (via Supabase)
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Main AdminDashboard ───────────────────────────────────────────────────────
 export default function AdminDashboard({ accessToken, emailAdmin, onLogout }) {
   const [tab, setTab] = useState("panoramica");
@@ -374,6 +542,7 @@ export default function AdminDashboard({ accessToken, emailAdmin, onLogout }) {
     { id: "utenti",     label: "👥",  titolo: "Utenti" },
     { id: "api",        label: "📈",  titolo: "API & Costi" },
     { id: "gestione",   label: "⚙️",  titolo: "Gestione" },
+    { id: "gara",       label: "🏆",  titolo: "Gara" },
   ];
 
   return (
@@ -434,6 +603,7 @@ export default function AdminDashboard({ accessToken, emailAdmin, onLogout }) {
         {tab === "utenti"     && <TabUtenti     accessToken={accessToken} />}
         {tab === "api"        && <TabApi        accessToken={accessToken} />}
         {tab === "gestione"   && <TabGestione   accessToken={accessToken} emailAdmin={emailAdmin} />}
+        {tab === "gara"       && <TabGara       accessToken={accessToken} />}
       </div>
     </div>
   );

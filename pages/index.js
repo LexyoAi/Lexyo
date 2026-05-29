@@ -259,6 +259,34 @@ export default function Home() {
   const [ingleseVocSession, setIngleseVocSession] = useState(null);
   const [ingleseVocStreak, setIngleseVocStreak] = useState(0);
 
+  // ── Olimpiadi dello Studio ──
+  const [garaIscrizione, setGaraIscrizione] = useState(null);
+  const [garaAccesso, setGaraAccesso] = useState(null);
+  const [garaTab, setGaraTab] = useState("sessione");
+  const [garaSessione, setGaraSessione] = useState(null);
+  const [garaSessioneLoading, setGaraSessioneLoading] = useState(false);
+  const [garaQuizIdx, setGaraQuizIdx] = useState(0);
+  const [garaTimer, setGaraTimer] = useState(30);
+  const [garaRispostaData, setGaraRispostaData] = useState(null);
+  const [garaPunteggiSessione, setGaraPunteggiSessione] = useState(0);
+  const [garaFlashRisposta, setGaraFlashRisposta] = useState(null); // "corretto"|"sbagliato"
+  const [garaRisultatoQuiz, setGaraRisultatoQuiz] = useState(null);
+  const [garaSessioneRisultato, setGaraSessioneRisultato] = useState(null);
+  const [garaClassifica, setGaraClassifica] = useState([]);
+  const [garaClassificaClasse, setGaraClassificaClasse] = useState(null);
+  const [garaNickname, setGaraNickname] = useState("");
+  const [garaNicknameOk, setGaraNicknameOk] = useState(null);
+  const [garaNicknameTimer, setGaraNicknameTimer] = useState(null);
+  const [garaClasseScelta, setGaraClasseScelta] = useState(null);
+  const [garaLoading, setGaraLoading] = useState(false);
+  const [garaQuaderno, setGaraQuaderno] = useState(null);
+  const [garaQuadernoLoading, setGaraQuadernoLoading] = useState(false);
+  const [garaQuadernoRisultato, setGaraQuadernoRisultato] = useState(null);
+  const [garaSessStoricoList, setGaraSessStoricoList] = useState([]);
+  const [garaSessioniList, setGaraSessioniList] = useState([]);
+  const garaTimerRef = useRef(null);
+  const garaStartRef = useRef(null);
+
   const isAdmin = profiloUtente?.is_admin === true;
   const trialScaduto = isTrial && !isAdmin && trialGiorni === 0;
 
@@ -471,6 +499,206 @@ export default function Home() {
       alert("Errore di connessione. Riprova.");
       setStripeLoading(false);
     }
+  };
+
+  // ── Olimpiadi dello Studio — funzioni ────────────────────────────────────────────
+  const caricaGaraIscrizione = async () => {
+    if (!utente) return;
+    try {
+      const token = await getAccessToken();
+      if (!token) return;
+      const r = await fetch("/api/gara-verifica-accesso", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      });
+      const d = await r.json();
+      setGaraAccesso(d);
+      if (d.iscrizione) {
+        setGaraIscrizione(d.iscrizione);
+        setGaraClassificaClasse(d.iscrizione.classe);
+      }
+    } catch {}
+  };
+
+  const caricaGaraSessioneOggi = async () => {
+    setGaraSessioneLoading(true);
+    try {
+      const token = await getAccessToken();
+      const r = await fetch("/api/gara-sessione-oggi", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      });
+      const d = await r.json();
+      setGaraSessione(d);
+    } catch {}
+    setGaraSessioneLoading(false);
+  };
+
+  const caricaGaraClassifica = async (classe) => {
+    try {
+      const r = await fetch("/api/gara-classifica", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ classe }),
+      });
+      const d = await r.json();
+      setGaraClassifica(d.classifica || []);
+    } catch {}
+  };
+
+  const checkGaraNickname = (val) => {
+    setGaraNickname(val);
+    setGaraNicknameOk(null);
+    if (garaNicknameTimer) clearTimeout(garaNicknameTimer);
+    if (val.length < 3) return;
+    const t = setTimeout(async () => {
+      try {
+        const { data } = await supabase.from("gara_iscrizioni").select("id").eq("nickname", val).maybeSingle();
+        setGaraNicknameOk(data ? false : true);
+      } catch { setGaraNicknameOk(null); }
+    }, 600);
+    setGaraNicknameTimer(t);
+  };
+
+  const iscriviGaraGratis = async () => {
+    if (!garaNickname || !garaNicknameOk || !garaClasseScelta) return;
+    setGaraLoading(true);
+    try {
+      const token = await getAccessToken();
+      const r = await fetch("/api/gara-iscrivi-gratis", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ nickname: garaNickname, classe: garaClasseScelta }),
+      });
+      const d = await r.json();
+      if (d.success) {
+        setGaraIscrizione(d.iscrizione);
+        setGaraAccesso({ accesso: true, tipo: "abbonato", iscrizione: d.iscrizione });
+        setScreen("olimpiadi_home");
+      } else {
+        alert(d.errore || "Errore. Riprova.");
+      }
+    } catch { alert("Errore di connessione."); }
+    setGaraLoading(false);
+  };
+
+  const avviaCheckoutAbbonamento = async (tipo) => {
+    if (typeof fbq !== "undefined") fbq("track", "InitiateCheckout", { value: tipo === "annuale" ? 99 : 12.90, currency: "EUR" });
+    setGaraLoading(true);
+    try {
+      const token = await getAccessToken();
+      const r = await fetch("/api/olimpiadi-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ tipo }),
+      });
+      const d = await r.json();
+      if (d.url) window.location.href = d.url;
+      else { alert(d.errore || "Errore Stripe"); setGaraLoading(false); }
+    } catch { alert("Errore di connessione."); setGaraLoading(false); }
+  };
+
+  const iscriviGaraPagamento = async () => {
+    if (!garaNickname || !garaNicknameOk || !garaClasseScelta) return;
+    if (typeof fbq !== "undefined") fbq("track", "InitiateCheckout", { value: 4.99, currency: "EUR" });
+    setGaraLoading(true);
+    try {
+      const token = await getAccessToken();
+      const r = await fetch("/api/olimpiadi-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ tipo: "olimpiadi", nickname: garaNickname, classe: garaClasseScelta }),
+      });
+      const d = await r.json();
+      if (d.url) window.location.href = d.url;
+      else { alert(d.errore || "Errore Stripe"); setGaraLoading(false); }
+    } catch { alert("Errore di connessione."); setGaraLoading(false); }
+  };
+
+  const avviaGaraQuiz = async () => {
+    if (!garaSessione?.quiz?.length) return;
+    setGaraQuizIdx(0);
+    setGaraPunteggiSessione(0);
+    setGaraFlashRisposta(null);
+    setGaraRisultatoQuiz(null);
+    setGaraTimer(30);
+    setScreen("gara_quiz");
+  };
+
+  const rispondiGaraQuiz = async (rispostaIdx) => {
+    if (garaRispostaData !== null) return;
+    clearInterval(garaTimerRef.current);
+    const tempoImpiegato = 30 - garaTimer;
+    setGaraRispostaData(rispostaIdx);
+    const quiz = garaSessione.quiz[garaQuizIdx];
+    const token = await getAccessToken();
+    try {
+      const r = await fetch("/api/gara-salva-risposta", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ quiz_id: quiz.id, risposta_data: rispostaIdx, tempo_risposta_secondi: tempoImpiegato, giorno_numero: garaSessione.giorno_numero }),
+      });
+      const d = await r.json();
+      setGaraRisultatoQuiz(d);
+      setGaraPunteggiSessione(p => p + (d.punti_guadagnati || 0));
+      setGaraFlashRisposta(d.corretta ? "corretto" : "sbagliato");
+      if (d.corretta && garaIscrizione) {
+        setGaraIscrizione(prev => ({ ...prev, punteggio_totale: d.punteggio_totale_aggiornato }));
+      }
+    } catch {}
+    setTimeout(() => {
+      setGaraFlashRisposta(null);
+      setGaraRispostaData(null);
+      setGaraRisultatoQuiz(null);
+      const prossimo = garaQuizIdx + 1;
+      if (prossimo >= garaSessione.quiz.length) {
+        if (garaSessione.esercizio_quaderno) {
+          setGaraQuaderno(garaSessione.esercizio_quaderno);
+          setScreen("gara_quaderno");
+        } else {
+          const storico = garaSessStoricoList;
+          setGaraSessioneRisultato({ punteggio_quiz: garaPunteggiSessione + (garaRisultatoQuiz?.punti_guadagnati || 0), punteggio_quaderno: 0 });
+          setScreen("gara_risultato");
+        }
+      } else {
+        setGaraQuizIdx(prossimo);
+        setGaraTimer(30);
+      }
+    }, 1800);
+  };
+
+  const correggiGaraQuaderno = (file) => {
+    setGaraQuadernoLoading(true);
+    const canvas = document.createElement("canvas");
+    const img = document.createElement("img");
+    const r = new FileReader();
+    r.onload = (ev) => {
+      img.onload = async () => {
+        const MAX = 800;
+        let w = img.width, h = img.height;
+        if (w > MAX) { h = h * MAX / w; w = MAX; }
+        if (h > MAX) { w = w * MAX / h; h = MAX; }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        const foto_base64 = canvas.toDataURL("image/jpeg", 0.7);
+        try {
+          const token = await getAccessToken();
+          const res = await fetch("/api/gara-correggi-quaderno", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ foto_base64, testo_esercizio: garaQuaderno.testo_esercizio_quaderno || garaQuaderno.domanda, classe: garaIscrizione.classe, giorno_numero: garaSessione.giorno_numero }),
+          });
+          const d = await res.json();
+          setGaraQuadernoRisultato(d);
+          setGaraIscrizione(prev => ({ ...prev, punteggio_totale: d.punteggio_totale_aggiornato }));
+          setGaraSessioneRisultato({ punteggio_quiz: garaPunteggiSessione, punteggio_quaderno: d.punti });
+          setTimeout(() => setScreen("gara_risultato"), 2500);
+        } catch { alert("Errore correzione. Riprova."); }
+        setGaraQuadernoLoading(false);
+      };
+      img.src = ev.target.result;
+    };
+    r.readAsDataURL(file);
   };
 
   // ── Trasforma Lex — funzioni ──────────────────────────────────────────────
@@ -692,6 +920,13 @@ export default function Home() {
     "2M": { label: "2ª Media", emoji: "🔥", colore: "#ef4444" },
     "3M": { label: "3ª Media", emoji: "🚀", colore: "#6366f1" },
   };
+
+  const CLASSI_GARA_MAP = {
+    "3ª_elementare": "3ª Elementare", "4ª_elementare": "4ª Elementare",
+    "5ª_elementare": "5ª Elementare", "1ª_media": "1ª Media",
+    "2ª_media": "2ª Media", "3ª_media": "3ª Media",
+  };
+  const CLASSI_GARA_KEYS = Object.keys(CLASSI_GARA_MAP);
 
   const MATERIE = {
     matematica: { label: "Matematica", emoji: "🔢", colore: "#6366f1" },
@@ -957,6 +1192,29 @@ export default function Home() {
   useEffect(() => {
     if (screen === "home" && !figlioAttivo) setScreen("aggiungi_figlio");
   }, [screen, figlioAttivo]);
+
+  // Carica dati gara quando l'utente è loggato
+  useEffect(() => {
+    if (utente && !garaIscrizione) caricaGaraIscrizione();
+  }, [utente]);
+
+  // Timer quiz gara
+  useEffect(() => {
+    if (screen !== "gara_quiz" || garaRispostaData !== null) return;
+    if (garaTimer <= 0) {
+      rispondiGaraQuiz(-1); // timeout = risposta sbagliata
+      return;
+    }
+    garaTimerRef.current = setTimeout(() => setGaraTimer(t => t - 1), 1000);
+    return () => clearTimeout(garaTimerRef.current);
+  }, [screen, garaTimer, garaRispostaData]);
+
+  // Carica classifica gara quando si apre il tab
+  useEffect(() => {
+    if (screen === "olimpiadi_home" && garaIscrizione) {
+      caricaGaraClassifica(garaIscrizione.classe);
+    }
+  }, [screen, garaIscrizione?.classe]);
 
   useEffect(() => {
     if (screen === "trasforma_lex") caricaTrasforma();
@@ -1233,7 +1491,7 @@ export default function Home() {
     r.readAsDataURL(file);
   };
 
-  const SCREENS_LIBERE_TRIAL = ["home","famiglia","scegli_piano","badge","landing","login","scegli_figlio","abbonamento_confermato"];
+  const SCREENS_LIBERE_TRIAL = ["home","famiglia","scegli_piano","badge","landing","login","scegli_figlio","abbonamento_confermato","olimpiadi_piani","olimpiadi_iscrizione","olimpiadi_home"];
   const goScreen = (s) => {
     if (trialScaduto && !SCREENS_LIBERE_TRIAL.includes(s)) {
       setScreen("scegli_piano");
@@ -1277,6 +1535,9 @@ export default function Home() {
       setTimeout(() => { setScreen("ripasso_quiz"); setRipassoTransizione(false); }, 400);
       return;
     }
+    if (s === "olimpiadi_home") { setGaraTab("sessione"); caricaGaraSessioneOggi(); }
+    if (s === "olimpiadi_iscrizione") { setGaraNickname(""); setGaraNicknameOk(null); setGaraQuadernoRisultato(null); }
+    if (s === "olimpiadi_piani") { setGaraLoading(false); }
     setScreen(s);
   };
 
@@ -2475,6 +2736,41 @@ export default function Home() {
             <div className="card-depth" />
           </button>
         )}
+
+        {/* ── CARD GRAN PREMIO STUDIO ── */}
+        {(() => {
+          const fineGara = new Date("2026-07-21");
+          const oggi20 = new Date();
+          if (oggi20 > fineGara) return null;
+          const isIscrittoOlimpiadi = garaIscrizione && (garaIscrizione.pagamento_confermato || garaIscrizione.abbonato_gratis);
+          const isAbbonato = piano === "premium" || isAdmin;
+          const isAbbStatoNonIscr = isAbbonato && !isIscrittoOlimpiadi;
+          const destinazione = isIscrittoOlimpiadi ? "olimpiadi_home" : isAbbStatoNonIscr ? "olimpiadi_iscrizione" : "olimpiadi_piani";
+          return (
+            <button className="hcard" onClick={() => goScreen(destinazione)} style={{ width:"100%", marginBottom:"14px", padding:"0", borderRadius:"22px", background:"linear-gradient(145deg,#FFB800,#FF6B00)", boxShadow:"0 6px 18px rgba(255,107,0,0.4), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", cursor:"pointer", "--card-border":"linear-gradient(135deg,#FFE500,#FF3D00)" }}>
+              <div className="card-shine" />
+              <div className="card-depth" />
+              <div className="card-content" style={{ padding:"18px 20px", display:"flex", alignItems:"center", gap:"14px" }}>
+                <div style={{ fontSize:"36px", lineHeight:1, flexShrink:0 }}>🏅</div>
+                <div style={{ flex:1 }}>
+                  <p style={{ fontSize:"15px", fontWeight:900, color:"#111", marginBottom:"3px" }}>Olimpiadi dello Studio</p>
+                  {isIscrittoOlimpiadi ? (
+                    <p style={{ fontSize:"11px", fontWeight:800, color:"rgba(0,0,0,0.6)" }}>#{garaIscrizione.posizione_classifica || "—"} — {garaIscrizione.nickname}</p>
+                  ) : isAbbStatoNonIscr ? (
+                    <p style={{ fontSize:"11px", fontWeight:800, color:"rgba(0,0,0,0.6)" }}>Sei abbonato — partecipa gratis!</p>
+                  ) : (
+                    <p style={{ fontSize:"11px", fontWeight:800, color:"rgba(0,0,0,0.6)" }}>Scopri quanto è preparato tuo figlio a livello nazionale</p>
+                  )}
+                </div>
+                <div style={{ background:"rgba(0,0,0,0.15)", borderRadius:"20px", padding:"4px 12px", textAlign:"center", flexShrink:0 }}>
+                  <p style={{ fontSize:"10px", fontWeight:900, color:"#111", margin:0, whiteSpace:"nowrap" }}>
+                    {isIscrittoOlimpiadi ? (garaSessione?.sessione_completata ? "✅ Completata oggi" : "Sessione ⚡") : isAbbStatoNonIscr ? "Incluso ✅" : "Da 4,99€ · 2026"}
+                  </p>
+                </div>
+              </div>
+            </button>
+          );
+        })()}
 
         <button onClick={() => goScreen("famiglia")} style={{ width:"100%", padding:"16px 20px", borderRadius:"18px", background: luce ? "rgba(108,71,255,0.12)" : "rgba(108,71,255,0.22)", border:"2px solid rgba(108,71,255,0.5)", color: luce ? "#0a0a20" : "white", fontFamily:"'Nunito'", textAlign:"left", cursor:"pointer", display:"flex", alignItems:"center", gap:"14px", marginBottom:"16px", boxShadow:"0 2px 12px rgba(108,71,255,0.2)" }}>
           <span style={{ fontSize:"26px" }}>📊</span>
@@ -4512,6 +4808,40 @@ export default function Home() {
           );
         })}
         <button onClick={() => goScreen("aggiungi_figlio")} style={{ ...S.btn, ...S.btnS, marginBottom:"16px" }}>+ Aggiungi Figlio/a</button>
+
+        {/* ── SEZIONE GRAN PREMIO STUDIO (visibile se iscritto) ── */}
+        {garaIscrizione && (garaIscrizione.pagamento_confermato || garaIscrizione.abbonato_gratis) && (() => {
+          const isc = garaIscrizione;
+          const oggiStr = new Date().toISOString().split("T")[0];
+          const gOggi = new Date().getDay();
+          const sessioneDisponibile = gOggi >= 1 && gOggi <= 5 && isc.data_inizio_gara && oggiStr >= isc.data_inizio_gara && (!isc.data_fine_gara || oggiStr <= isc.data_fine_gara);
+          return (
+            <div style={{ ...S.card, background:"rgba(255,183,0,0.1)", border:"1.5px solid rgba(255,183,0,0.4)", marginBottom:"14px" }}>
+              <p style={{ fontWeight:900, fontSize:"16px", marginBottom:"12px" }}>🏅 Olimpiadi dello Studio</p>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:12 }}>
+                {[
+                  { label:"Posizione", valore:`#${isc.posizione_classifica||"—"}`, colore:"#FFB800" },
+                  { label:"Punteggio", valore:`${isc.punteggio_totale||0} pt`, colore:"#6C47FF" },
+                  { label:"Nickname", valore:isc.nickname, colore:"#f59e0b" },
+                  { label:"Classe", valore:CLASSI_GARA_MAP[isc.classe]||isc.classe, colore:"#10b981" },
+                ].map(k => (
+                  <div key={k.label} style={{ background:"rgba(255,255,255,0.07)", borderRadius:"10px", padding:"8px", textAlign:"center" }}>
+                    <p style={{ fontSize:"15px", fontWeight:900, color:k.colore, margin:"0 0 2px" }}>{k.valore}</p>
+                    <p style={{ fontSize:"9px", color:"rgba(255,255,255,0.4)", fontWeight:700, margin:0, textTransform:"uppercase", letterSpacing:"0.5px" }}>{k.label}</p>
+                  </div>
+                ))}
+              </div>
+              <div style={{ background: sessioneDisponibile?"rgba(16,185,129,0.15)":"rgba(255,255,255,0.06)", borderRadius:"10px", padding:"8px 12px", marginBottom:12, border: sessioneDisponibile?"1px solid rgba(16,185,129,0.3)":"none" }}>
+                <p style={{ fontSize:"12px", fontWeight:800, color: sessioneDisponibile?"#10b981":"rgba(255,255,255,0.5)", margin:0 }}>
+                  {sessioneDisponibile ? "✅ Sessione disponibile oggi!" : gOggi===0||gOggi===6 ? "😴 Weekend — riposati!" : isc.data_inizio_gara && oggiStr < isc.data_inizio_gara ? `⏳ Inizia il ${new Date(isc.data_inizio_gara).toLocaleDateString("it-IT")}` : "Gara completata"}
+                </p>
+              </div>
+              <button onClick={() => goScreen("olimpiadi_home")} style={{ width:"100%", padding:"12px", borderRadius:"12px", background:"linear-gradient(135deg,#FFB800,#FF6B00)", border:"none", color:"#111", fontFamily:"'Nunito'", fontWeight:900, fontSize:"14px", cursor:"pointer" }}>
+                Vai alla gara →
+              </button>
+            </div>
+          );
+        })()}
 
         <div style={{ ...S.card, background:piano==="trial"&&!isAdmin?"rgba(245,158,11,0.1)":isAdmin?"rgba(16,185,129,0.1)":"rgba(124,58,237,0.15)", border:`1px solid ${piano==="trial"&&!isAdmin?"rgba(245,158,11,0.3)":isAdmin?"rgba(16,185,129,0.3)":"rgba(124,58,237,0.4)"}` }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
@@ -8172,6 +8502,571 @@ export default function Home() {
             <button onClick={inviaMessaggio} disabled={ingleseChatLoading || !ingleseChatInput.trim()} style={{ width:"48px", height:"48px", borderRadius:"14px", background: ingleseChatLoading || !ingleseChatInput.trim() ? "rgba(245,158,11,0.3)" : "linear-gradient(135deg,#f59e0b,#d97706)", border:"none", fontSize:"20px", cursor: ingleseChatLoading ? "default" : "pointer", flexShrink:0 }}>→</button>
           </div>
         )}
+      </div>
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // OLIMPIADI DELLO STUDIO — SCHERMATE
+  // ══════════════════════════════════════════════════════════════
+
+  // ── Schermata Scegli Piano ────────────────────────────────────
+  if (screen === "olimpiadi_piani") {
+    const PIANI_APP = [
+      {
+        id: "olimpiadi", titolo: "Solo Olimpiadi", badge: "Partecipa alla sfida",
+        prezzo: "4,99€", sub: "Una tantum · 15 giorni",
+        bg: "linear-gradient(145deg,#FFB800,#FF6B00)", colore: "#FF6B00",
+        features: ["✅ Olimpiadi dello Studio", "✅ Classifica nazionale", "✅ 10 sessioni lun-ven", "❌ Resto dell'app non incluso"],
+        cta: "Partecipa alle Olimpiadi →",
+      },
+      {
+        id: "mensile", titolo: "Mensile", badge: "⭐ Più popolare",
+        prezzo: "12,90€/mese", sub: "3 giorni gratis · Cancelli quando vuoi",
+        bg: "linear-gradient(145deg,#6C47FF,#9B3FD4)", colore: "#6C47FF",
+        features: ["✅ Tutto Lexyo incluso", "✅ Olimpiadi incluse gratis", "✅ Foto, quiz, interrogazioni", "✅ Inglese con Lex"],
+        cta: "Inizia gratis 3 giorni →",
+      },
+      {
+        id: "annuale", titolo: "Annuale", badge: "🏆 Miglior valore",
+        prezzo: "99€/anno", sub: "Equivale a 8,25€/mese",
+        bg: "linear-gradient(145deg,#00C070,#00A855)", colore: "#00A855",
+        features: ["✅ Tutto Lexyo incluso", "✅ Olimpiadi incluse gratis", "✅ Tutte le funzioni", "✅ Risparmia 56€"],
+        cta: "Abbonati annuale →",
+      },
+    ];
+    return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <Head><title>Lexyo — Olimpiadi dello Studio</title></Head>
+        <div style={S.hdr}>
+          <button onClick={() => goScreen("home")} style={S.back}>←</button>
+          <div>
+            <p style={{ fontWeight:900, fontSize:"17px", margin:0 }}>🏅 Olimpiadi dello Studio</p>
+            <p style={{ fontSize:"11px", color: luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.4)", fontWeight:600 }}>Scegli il tuo piano</p>
+          </div>
+        </div>
+        <div style={{ flex:1, overflowY:"auto", padding:"16px 16px 24px" }}>
+          <p style={{ fontSize:"14px", fontWeight:700, color: luce?"rgba(0,0,30,0.6)":"rgba(255,255,255,0.6)", marginBottom:16, textAlign:"center", lineHeight:1.6 }}>Scopri quanto è preparato tuo figlio a livello nazionale</p>
+          {PIANI_APP.map(piano => (
+            <div key={piano.id} className="hcard" style={{ width:"100%", marginBottom:"14px", borderRadius:"22px", background:piano.bg, boxShadow:"0 6px 18px rgba(0,0,0,0.3), inset 0 -3px 0 rgba(0,0,0,0.15)", padding:"20px 18px", "--card-border":"none", position:"relative", overflow:"hidden", boxSizing:"border-box" }}>
+              <div className="card-shine" />
+              <div style={{ position:"absolute", top:-20, right:-20, width:80, height:80, borderRadius:"50%", background:"rgba(255,255,255,0.07)", pointerEvents:"none" }} />
+              <div style={{ position:"relative", zIndex:3 }}>
+                <div style={{ display:"inline-block", background:"rgba(0,0,0,0.18)", borderRadius:"20px", padding:"3px 12px", fontSize:11, fontWeight:800, color:"white", marginBottom:10, border:"1px solid rgba(255,255,255,0.2)" }}>{piano.badge}</div>
+                <p style={{ fontSize:24, fontWeight:900, color:"white", margin:"0 0 4px" }}>{piano.prezzo}</p>
+                <p style={{ fontSize:12, color:"rgba(255,255,255,0.75)", fontWeight:700, margin:"0 0 12px" }}>{piano.sub}</p>
+                <div style={{ display:"flex", flexDirection:"column", gap:4, marginBottom:14 }}>
+                  {piano.features.map((f, i) => <p key={i} style={{ fontSize:12, fontWeight:700, color: f.startsWith("✅")?"white":"rgba(255,255,255,0.45)", margin:0 }}>{f}</p>)}
+                </div>
+                <button
+                  onClick={() => {
+                    if (piano.id === "olimpiadi") goScreen("olimpiadi_iscrizione");
+                    else avviaCheckoutAbbonamento(piano.id);
+                  }}
+                  disabled={garaLoading}
+                  style={{ width:"100%", background:"rgba(255,255,255,0.18)", border:"2px solid rgba(255,255,255,0.3)", borderRadius:"14px", padding:"13px", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"14px", cursor: garaLoading ? "default" : "pointer", opacity: garaLoading ? 0.6 : 1 }}
+                >
+                  {garaLoading ? "..." : piano.cta}
+                </button>
+              </div>
+            </div>
+          ))}
+          <p style={{ fontSize:"11px", color: luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.35)", textAlign:"center", fontWeight:600, lineHeight:1.5 }}>Pagamento sicuro via Stripe · Nessuna carta per il trial mensile</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Schermata Iscrizione ──────────────────────────────────────
+  if (screen === "olimpiadi_iscrizione") {
+    const classePresel = CLASSI_GARA_KEYS.find(k => {
+      const m = { "3E":"3ª_elementare","4E":"4ª_elementare","5E":"5ª_elementare","1M":"1ª_media","2M":"2ª_media","3M":"3ª_media" };
+      return m[figlioAttivo?.classe] === k;
+    }) || CLASSI_GARA_KEYS[0];
+    if (!garaClasseScelta) setGaraClasseScelta(classePresel);
+
+    const isAbbonato = garaAccesso?.puoPartecipareGratis;
+    const nickValido = /^[a-zA-Z0-9À-ÿ]{3,20}$/.test(garaNickname);
+
+    return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <Head><title>Lexyo — Iscriviti alla Gara</title></Head>
+        <div style={S.hdr}>
+          <button onClick={() => goScreen("home")} style={S.back}>←</button>
+          <div><p style={{ fontWeight:900, fontSize:"17px" }}>🏅 Olimpiadi dello Studio</p><p style={{ fontSize:"11px", color:"rgba(255,255,255,0.4)", fontWeight:600 }}>Iscrizione</p></div>
+        </div>
+        <div style={{ flex:1, overflowY:"auto", padding:"20px 18px" }}>
+
+          <p style={{ fontSize:"12px", fontWeight:800, color: luce?"rgba(0,0,30,0.45)":"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px" }}>Seleziona la classe</p>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:"20px" }}>
+            {CLASSI_GARA_KEYS.map(k => (
+              <button key={k} onClick={() => setGaraClasseScelta(k)} style={{ padding:"10px 6px", borderRadius:"12px", background: garaClasseScelta===k ? "rgba(108,71,255,0.15)" : luce?"rgba(0,0,0,0.04)":"rgba(255,255,255,0.06)", border:`2px solid ${garaClasseScelta===k?"#6C47FF":"transparent"}`, fontFamily:"'Nunito'", fontWeight:800, fontSize:"12px", cursor:"pointer", color: luce?"#0a0a20":"white" }}>
+                {CLASSI_GARA_MAP[k]}
+              </button>
+            ))}
+          </div>
+
+          <p style={{ fontSize:"12px", fontWeight:800, color: luce?"rgba(0,0,30,0.45)":"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"8px" }}>Scegli il tuo nickname</p>
+          <div style={{ position:"relative", marginBottom:"6px" }}>
+            <input
+              value={garaNickname}
+              onChange={e => checkGaraNickname(e.target.value.replace(/[^a-zA-Z0-9À-ÿ]/g,"").slice(0,20))}
+              placeholder="Il tuo nickname (3-20 caratteri)"
+              style={{ ...S.inp, paddingRight:"44px" }}
+            />
+            {garaNicknameOk === true && <span style={{ position:"absolute", right:14, top:"50%", transform:"translateY(-50%)", fontSize:18 }}>✅</span>}
+            {garaNicknameOk === false && <span style={{ position:"absolute", right:14, top:"50%", transform:"translateY(-50%)", fontSize:18 }}>❌</span>}
+          </div>
+          {garaNicknameOk === false && <p style={{ fontSize:"12px", color:"#dc2626", fontWeight:700, marginBottom:"6px" }}>Nickname già in uso. Scegline un altro.</p>}
+          {garaNickname.length >= 3 && <p style={{ fontSize:"12px", color: luce?"rgba(0,0,30,0.5)":"rgba(255,255,255,0.5)", fontWeight:600, marginBottom:"16px" }}>Apparirai in classifica come: <strong>{garaNickname}</strong></p>}
+          <p style={{ fontSize:"11px", color: luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.35)", fontWeight:600, marginBottom:"20px", lineHeight:1.5 }}>⚠️ Nessun dato personale · Niente parolacce · Max 20 caratteri</p>
+
+          {isAbbonato ? (
+            <div>
+              <div style={{ background:"rgba(16,185,129,0.12)", borderRadius:"14px", padding:"14px 16px", marginBottom:"16px", border:"1px solid rgba(16,185,129,0.35)" }}>
+                <p style={{ fontWeight:900, fontSize:"15px", color:"#059669", margin:0 }}>🎉 Sei abbonato! Partecipi gratis.</p>
+              </div>
+              <button onClick={iscriviGaraGratis} disabled={!garaNicknameOk || garaLoading} style={{ ...S.btn, background: !garaNicknameOk||garaLoading?"rgba(16,185,129,0.4)":"linear-gradient(135deg,#10b981,#059669)", opacity: !garaNicknameOk||garaLoading?0.6:1 }}>
+                {garaLoading ? "Iscrizione..." : "Conferma iscrizione →"}
+              </button>
+            </div>
+          ) : (
+            <div>
+              <div style={{ background:"rgba(255,183,0,0.1)", borderRadius:"14px", padding:"14px 16px", marginBottom:"16px", border:"1px solid rgba(255,183,0,0.35)" }}>
+                <p style={{ fontWeight:900, fontSize:"22px", color:"#d97706", margin:"0 0 6px" }}>4,99€</p>
+                <p style={{ fontSize:"13px", color: luce?"rgba(0,0,0,0.6)":"rgba(255,255,255,0.6)", fontWeight:600, margin:0 }}>Pagamento unico · Gara completa (10 sessioni) · Classifica live · Premi reali</p>
+              </div>
+              <button onClick={iscriviGaraPagamento} disabled={!garaNicknameOk || garaLoading} style={{ ...S.btn, ...S.btnP, opacity: !garaNicknameOk||garaLoading?0.5:1 }}>
+                {garaLoading ? "Reindirizzamento..." : "🏆 Paga e partecipa — 4,99€"}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Schermata Home Gara ────────────────────────────────────────
+  if (screen === "olimpiadi_home") {
+    const GARA_TABS = [
+      { id:"sessione", label:"🎯 Oggi" },
+      { id:"classifica", label:"🏆 Classifica" },
+      { id:"risultati", label:"📊 Miei risultati" },
+      { id:"regole", label:"📋 Regole" },
+    ];
+    const isc = garaIscrizione;
+    const oggi = new Date();
+    const gOggi = oggi.getDay();
+    const isGiornoLavorativo = gOggi >= 1 && gOggi <= 5;
+
+    return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <Head><title>Lexyo — Olimpiadi dello Studio</title></Head>
+        <div style={{ ...S.hdr, flexDirection:"column", alignItems:"flex-start", gap:4, paddingBottom:"10px" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:12, width:"100%" }}>
+            <button onClick={() => goScreen("home")} style={S.back}>←</button>
+            <div style={{ flex:1 }}>
+              <p style={{ fontWeight:900, fontSize:"17px", margin:0 }}>🏅 Olimpiadi dello Studio</p>
+            </div>
+            {isc && <div style={{ background:"linear-gradient(135deg,#FFB800,#FF6B00)", borderRadius:"20px", padding:"4px 14px" }}>
+              <p style={{ fontSize:"12px", fontWeight:900, color:"#111", margin:0, whiteSpace:"nowrap" }}>#{isc.posizione_classifica||"—"} · {isc.nickname}</p>
+            </div>}
+          </div>
+        </div>
+
+        <div style={{ display:"flex", borderBottom:`1px solid ${luce?"rgba(0,0,0,0.07)":"rgba(255,255,255,0.07)"}`, background: luce?"white":"rgba(26,27,58,0.98)", flexShrink:0, overflowX:"auto" }}>
+          {GARA_TABS.map(t => (
+            <button key={t.id} onClick={() => setGaraTab(t.id)} style={{ flex:1, minWidth:"80px", padding:"11px 6px", border:"none", background:"transparent", borderBottom: garaTab===t.id?`2px solid #FFB800`:"2px solid transparent", color: garaTab===t.id?(luce?"#0a0a20":"white"):luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.4)", fontFamily:"'Nunito'", fontWeight:800, fontSize:"11px", cursor:"pointer", whiteSpace:"nowrap" }}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ flex:1, overflowY:"auto", padding:"18px 16px" }}>
+
+          {garaTab === "sessione" && (() => {
+            if (!isc) return <p style={{ textAlign:"center", padding:24, color: luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.4)" }}>Caricamento...</p>;
+            const inizio = isc.data_inizio_gara;
+            const oggiStr = new Date().toISOString().split("T")[0];
+            const garaInizaita = inizio && oggiStr >= inizio;
+            const garaTerminata = isc.data_fine_gara && oggiStr > isc.data_fine_gara;
+
+            if (garaTerminata) return (
+              <div style={{ textAlign:"center", padding:"40px 20px" }}>
+                <p style={{ fontSize:"40px" }}>🏆</p>
+                <p style={{ fontWeight:900, fontSize:"20px", marginBottom:8 }}>Gara terminata!</p>
+                <p style={{ color: luce?"rgba(0,0,30,0.5)":"rgba(255,255,255,0.5)", fontWeight:700 }}>La classifica finale sarà pubblicata il 20 luglio.</p>
+              </div>
+            );
+
+            if (!garaInizaita) return (
+              <div style={{ textAlign:"center", padding:"40px 20px" }}>
+                <p style={{ fontSize:"40px" }}>⏳</p>
+                <p style={{ fontWeight:900, fontSize:"18px", marginBottom:8 }}>La tua gara inizia il</p>
+                <p style={{ fontSize:"22px", fontWeight:900, color:"#FFB800" }}>{new Date(inizio).toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long"})}</p>
+                <p style={{ color: luce?"rgba(0,0,30,0.5)":"rgba(255,255,255,0.5)", fontWeight:700, marginTop:8 }}>Preparati — studia ogni giorno!</p>
+              </div>
+            );
+
+            if (!isGiornoLavorativo) return (
+              <div style={{ textAlign:"center", padding:"40px 20px" }}>
+                <p style={{ fontSize:"40px" }}>😴</p>
+                <p style={{ fontWeight:900, fontSize:"18px", marginBottom:8 }}>Oggi è weekend!</p>
+                <p style={{ color: luce?"rgba(0,0,30,0.5)":"rgba(255,255,255,0.5)", fontWeight:700 }}>Le sessioni sono dal lunedì al venerdì. Riposati e torna lunedì!</p>
+              </div>
+            );
+
+            if (garaSessione?.sessione_completata) return (
+              <div style={{ padding:"20px 0" }}>
+                <div style={{ background:"rgba(16,185,129,0.12)", borderRadius:"20px", padding:"20px", border:"1px solid rgba(16,185,129,0.3)", textAlign:"center", marginBottom:"16px" }}>
+                  <p style={{ fontSize:"40px", margin:"0 0 8px" }}>✅</p>
+                  <p style={{ fontWeight:900, fontSize:"18px", color:"#059669", margin:"0 0 6px" }}>Sessione completata!</p>
+                  <p style={{ fontSize:"15px", fontWeight:800, color: luce?"#0a0a20":"white", margin:0 }}>Punteggio giorno: {(garaSessione?.sessione?.punteggio_giorno || 0)} pt</p>
+                </div>
+                <p style={{ fontSize:"13px", color: luce?"rgba(0,0,30,0.5)":"rgba(255,255,255,0.5)", fontWeight:700, textAlign:"center" }}>Prossima sessione: {gOggi===5?"lunedì":"domani"}</p>
+              </div>
+            );
+
+            return (
+              <div style={{ padding:"10px 0" }}>
+                {garaSessioneLoading ? (
+                  <p style={{ textAlign:"center", color: luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.4)", padding:24 }}>Caricamento sessione...</p>
+                ) : garaSessione ? (
+                  <>
+                    <div style={{ background:"linear-gradient(145deg,#FFB800,#FF6B00)", borderRadius:"20px", padding:"20px", marginBottom:"16px", color:"#111" }}>
+                      <p style={{ fontWeight:900, fontSize:"18px", margin:"0 0 6px" }}>Sessione di oggi 📚</p>
+                      <p style={{ fontSize:"14px", fontWeight:700, margin:"0 0 14px", opacity:0.75 }}>
+                        {garaSessione.quiz?.length || 0} quiz a risposta multipla
+                        {garaSessione.esercizio_quaderno ? " + esercizio quaderno" : ""}
+                      </p>
+                      <button onClick={avviaGaraQuiz} style={{ width:"100%", background:"rgba(0,0,0,0.2)", border:"2px solid rgba(0,0,0,0.25)", borderRadius:"14px", padding:"14px", color:"#111", fontFamily:"'Nunito'", fontWeight:900, fontSize:"16px", cursor:"pointer" }}>
+                        Inizia la sessione →
+                      </button>
+                    </div>
+                    <p style={{ fontSize:"12px", color: luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.4)", fontWeight:700, textAlign:"center" }}>Rispondi veloce per più punti! ⚡</p>
+                  </>
+                ) : (
+                  <div style={{ textAlign:"center", padding:"20px 0" }}>
+                    <button onClick={caricaGaraSessioneOggi} style={{ ...S.btn, ...S.btnP, width:"auto", padding:"12px 24px" }}>
+                      Carica sessione di oggi
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {garaTab === "classifica" && (() => {
+            const classeCorrente = garaIscrizione?.classe || CLASSI_GARA_KEYS[0];
+            return (
+              <div>
+                <div style={{ display:"flex", gap:6, marginBottom:14, overflowX:"auto", paddingBottom:4 }}>
+                  {CLASSI_GARA_KEYS.map(k => (
+                    <button key={k} onClick={() => { setGaraClassificaClasse(k); caricaGaraClassifica(k); }} style={{ flexShrink:0, padding:"7px 12px", borderRadius:"20px", background: (garaClassificaClasse||classeCorrente)===k?"linear-gradient(135deg,#FFB800,#FF6B00)":luce?"rgba(0,0,0,0.06)":"rgba(255,255,255,0.08)", color: (garaClassificaClasse||classeCorrente)===k?"#111":luce?"rgba(0,0,30,0.6)":"rgba(255,255,255,0.6)", border:"none", fontFamily:"'Nunito'", fontWeight:800, fontSize:"11px", cursor:"pointer" }}>
+                      {CLASSI_GARA_MAP[k].replace("ª Elementare","ªE").replace("ª Media","ªM")}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ background: luce?"white":"rgba(255,255,255,0.04)", borderRadius:"18px", overflow:"hidden", border:`1px solid ${luce?"rgba(0,0,0,0.08)":"rgba(255,255,255,0.08)"}` }}>
+                  {garaClassifica.length === 0 ? (
+                    <p style={{ textAlign:"center", color: luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.4)", padding:"24px", fontWeight:700 }}>Nessun iscritto ancora</p>
+                  ) : garaClassifica.map((u, i) => {
+                    const isMio = garaIscrizione?.nickname === u.nickname;
+                    return (
+                      <div key={i} style={{ padding:"12px 16px", display:"flex", alignItems:"center", gap:12, background: isMio?"linear-gradient(135deg,rgba(255,183,0,0.15),rgba(255,107,0,0.1))":i%2===0?(luce?"white":"transparent"):(luce?"rgba(0,0,0,0.02)":"rgba(255,255,255,0.02)"), borderBottom: i<garaClassifica.length-1?`1px solid ${luce?"rgba(0,0,0,0.05)":"rgba(255,255,255,0.05)"}`:undefined, border: isMio?`1.5px solid rgba(255,183,0,0.5)`:undefined, borderRadius: isMio?"12px":undefined, margin: isMio?"4px":undefined }}>
+                        <p style={{ fontWeight:900, fontSize:"16px", color:i===0?"#FFD700":i===1?"#C0C0C0":i===2?"#CD7F32":"#FFB800", margin:0, minWidth:28 }}>#{u.posizione}</p>
+                        <p style={{ fontWeight:800, fontSize:"14px", margin:0, flex:1, color: luce?"#0a0a20":"white" }}>{u.nickname}{isMio?" ★":""}</p>
+                        <p style={{ fontWeight:900, fontSize:"14px", color:"#FFB800", margin:0 }}>{u.punteggio} pt</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
+          {garaTab === "risultati" && (() => {
+            const isc = garaIscrizione;
+            if (!isc) return <p style={{ textAlign:"center", padding:24, color: luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.4)" }}>Nessun dato disponibile</p>;
+            return (
+              <div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:14 }}>
+                  {[
+                    { label:"Posizione", valore:`#${isc.posizione_classifica||"—"}`, colore:"#FFB800" },
+                    { label:"Punteggio totale", valore:`${isc.punteggio_totale||0} pt`, colore:"#6C47FF" },
+                    { label:"Classe", valore: CLASSI_GARA_MAP[isc.classe]||isc.classe, colore:"#10b981" },
+                    { label:"Nickname", valore: isc.nickname, colore:"#f59e0b" },
+                  ].map(k => (
+                    <div key={k.label} style={{ background: luce?"white":"rgba(255,255,255,0.04)", border:`1px solid ${luce?"rgba(0,0,0,0.08)":"rgba(255,255,255,0.08)"}`, borderRadius:"14px", padding:"14px", textAlign:"center" }}>
+                      <p style={{ fontSize:"20px", fontWeight:900, color:k.colore, margin:"0 0 4px" }}>{k.valore}</p>
+                      <p style={{ fontSize:"10px", color: luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.4)", fontWeight:700, margin:0, textTransform:"uppercase", letterSpacing:"0.5px" }}>{k.label}</p>
+                    </div>
+                  ))}
+                </div>
+                {isc.data_inizio_gara && (
+                  <div style={{ background: luce?"rgba(0,0,0,0.03)":"rgba(255,255,255,0.04)", borderRadius:"14px", padding:"14px 16px", border:`1px solid ${luce?"rgba(0,0,0,0.07)":"rgba(255,255,255,0.07)"}` }}>
+                    <p style={{ fontWeight:800, fontSize:"13px", marginBottom:8 }}>📅 Date gara</p>
+                    <p style={{ fontSize:"13px", fontWeight:600, color: luce?"rgba(0,0,30,0.6)":"rgba(255,255,255,0.6)", margin:"0 0 4px" }}>Inizio: {new Date(isc.data_inizio_gara).toLocaleDateString("it-IT")}</p>
+                    <p style={{ fontSize:"13px", fontWeight:600, color: luce?"rgba(0,0,30,0.6)":"rgba(255,255,255,0.6)", margin:0 }}>Fine: {new Date(isc.data_fine_gara).toLocaleDateString("it-IT")}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {garaTab === "regole" && (
+            <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+              <div style={{ background: luce?"white":"rgba(255,255,255,0.04)", borderRadius:"18px", padding:"18px", border:`1px solid ${luce?"rgba(0,0,0,0.08)":"rgba(255,255,255,0.08)"}` }}>
+                <p style={{ fontWeight:900, fontSize:"16px", marginBottom:10 }}>📖 Come funziona</p>
+                <p style={{ fontSize:"13px", fontWeight:600, color: luce?"rgba(0,0,30,0.7)":"rgba(255,255,255,0.7)", lineHeight:1.7, margin:0 }}>
+                  Le Olimpiadi dello Studio sono una competizione di preparazione scolastica.<br/>
+                  Ogni giorno dal lunedì al venerdì hai una sessione con:<br/>
+                  • Quiz a risposta multipla (rispondi veloce per più punti!)<br/>
+                  • Esercizi sul quaderno da fotografare (lun, mar, mer)<br/>
+                  La competizione dura 2 settimane (10 sessioni totali).<br/>
+                  Vince chi accumula più punti!
+                </p>
+              </div>
+              <div style={{ background: luce?"white":"rgba(255,255,255,0.04)", borderRadius:"18px", padding:"18px", border:`1px solid ${luce?"rgba(0,0,0,0.08)":"rgba(255,255,255,0.08)"}` }}>
+                <p style={{ fontWeight:900, fontSize:"16px", marginBottom:10 }}>⚡ Come si calcolano i punti</p>
+                {[
+                  ["Quiz veloce (< 10s)", "10 punti", "#10b981"],
+                  ["Quiz normale (< 30s)", "7 punti", "#f59e0b"],
+                  ["Quiz lento (> 30s)", "5 punti", "#6366f1"],
+                  ["Risposta sbagliata", "0 punti", "#ef4444"],
+                  ["Esercizio perfetto (0 errori)", "20 punti", "#10b981"],
+                  ["Esercizio (1-2 errori)", "15 punti", "#f59e0b"],
+                  ["Esercizio (3-4 errori)", "10 punti", "#6366f1"],
+                  ["Esercizio (5+ errori)", "5 punti", "#ef4444"],
+                ].map(([label, valore, colore]) => (
+                  <div key={label} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", paddingBottom:8, marginBottom:8, borderBottom:`1px solid ${luce?"rgba(0,0,0,0.05)":"rgba(255,255,255,0.05)"}` }}>
+                    <p style={{ fontSize:"13px", fontWeight:600, margin:0, color: luce?"rgba(0,0,30,0.7)":"rgba(255,255,255,0.7)" }}>{label}</p>
+                    <p style={{ fontSize:"14px", fontWeight:900, margin:0, color:colore }}>{valore}</p>
+                  </div>
+                ))}
+              </div>
+              <div style={{ background: luce?"white":"rgba(255,255,255,0.04)", borderRadius:"18px", padding:"18px", border:`1px solid ${luce?"rgba(0,0,0,0.08)":"rgba(255,255,255,0.08)"}` }}>
+                <p style={{ fontWeight:900, fontSize:"16px", marginBottom:10 }}>🎁 Premi</p>
+                {[
+                  ["🥇 1° posto", "2 mesi gratis", "#FFD700"],
+                  ["🥈 2° posto", "1 mese e mezzo gratis", "#C0C0C0"],
+                  ["🥉 3° posto", "1 mese gratis", "#CD7F32"],
+                  ["4°–6° posto", "2 settimane gratis", "#6C47FF"],
+                  ["7°–10° posto", "1 settimana gratis", "#6C47FF"],
+                ].map(([pos, premio, colore]) => (
+                  <div key={pos} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", paddingBottom:8, marginBottom:8, borderBottom:`1px solid ${luce?"rgba(0,0,0,0.05)":"rgba(255,255,255,0.05)"}` }}>
+                    <p style={{ fontSize:"14px", fontWeight:800, margin:0, color:colore }}>{pos}</p>
+                    <p style={{ fontSize:"13px", fontWeight:700, margin:0, color: luce?"rgba(0,0,30,0.7)":"rgba(255,255,255,0.7)" }}>{premio}</p>
+                  </div>
+                ))}
+                <p style={{ fontSize:"11px", color: luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.35)", fontWeight:600, margin:"4px 0 0", textAlign:"center" }}>Classifica separata per ogni anno scolastico</p>
+              </div>
+              <div style={{ background:"rgba(108,71,255,0.1)", borderRadius:"16px", padding:"14px 16px", border:"1px solid rgba(108,71,255,0.3)" }}>
+                <p style={{ fontWeight:800, fontSize:"13px", color: luce?"#3b1fa8":"#a78bfa", margin:0 }}>📅 La classifica finale viene pubblicata il 20 luglio 2026. I premi vengono assegnati automaticamente.</p>
+              </div>
+              <div style={{ background: luce?"rgba(0,0,0,0.03)":"rgba(255,255,255,0.03)", borderRadius:"14px", padding:"14px 16px", border:`1px solid ${luce?"rgba(0,0,0,0.07)":"rgba(255,255,255,0.07)"}` }}>
+                <p style={{ fontWeight:900, fontSize:"12px", color: luce?"rgba(0,0,30,0.5)":"rgba(255,255,255,0.4)", margin:"0 0 8px", textTransform:"uppercase", letterSpacing:"0.5px" }}>Nota Legale</p>
+                <p style={{ fontSize:"11px", fontWeight:600, color: luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.35)", margin:0, lineHeight:1.7 }}>
+                  I premi delle Olimpiadi dello Studio consistono esclusivamente in estensioni gratuite dell'abbonamento Lexyo e non hanno valore monetario convertibile.
+                  Le Olimpiadi dello Studio sono un benefit riservato agli abbonati Lexyo.<br/>
+                  © 2026 Lexyo.it
+                </p>
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
+    );
+  }
+
+  // ── Schermata Quiz Gara ────────────────────────────────────────
+  if (screen === "gara_quiz") {
+    const quiz = garaSessione?.quiz?.[garaQuizIdx];
+    if (!quiz) return <div style={{ ...S.app, display:"flex", alignItems:"center", justifyContent:"center" }}><p>Nessun quiz disponibile</p></div>;
+
+    const tot = garaSessione.quiz.length;
+    const progress = ((garaQuizIdx) / tot) * 100;
+    const timerPct = (garaTimer / 30) * 100;
+    const timerColore = garaTimer > 15 ? "#10b981" : garaTimer > 5 ? "#f59e0b" : "#ef4444";
+    const r = 24; const c = 2 * Math.PI * r;
+
+    const MATERIE_COLORI = { matematica:"#6366f1", italiano:"#ec4899", scienze:"#10b981", storia:"#f59e0b", geografia:"#0ea5e9" };
+    const materiaColore = MATERIE_COLORI[quiz.materia?.toLowerCase()] || "#6C47FF";
+
+    return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <Head><title>Lexyo — Quiz Olimpiadi</title></Head>
+        <style>{`
+          @keyframes flashVerde { 0%,100%{background:#0f172a} 50%{background:rgba(16,185,129,0.3)} }
+          @keyframes flashRosso { 0%,100%{background:#0f172a} 50%{background:rgba(239,68,68,0.3)} }
+          @keyframes puntiFly { 0%{transform:translateY(0);opacity:1} 100%{transform:translateY(-40px);opacity:0} }
+        `}</style>
+
+        {/* Header */}
+        <div style={{ padding:"12px 18px", background: luce?"white":"rgba(26,27,58,0.98)", borderBottom:`1px solid ${luce?"rgba(0,0,0,0.07)":"rgba(255,255,255,0.07)"}`, display:"flex", alignItems:"center", gap:12, flexShrink:0 }}>
+          <p style={{ fontWeight:900, fontSize:"15px", flex:1, margin:0 }}>Domanda {garaQuizIdx+1} / {tot}</p>
+          <p style={{ fontWeight:900, fontSize:"14px", color:"#FFB800", margin:0 }}>{garaPunteggiSessione} pt</p>
+          {/* Timer circolare */}
+          <svg width="56" height="56" style={{ flexShrink:0 }}>
+            <circle cx="28" cy="28" r={r} fill="none" stroke={luce?"rgba(0,0,0,0.1)":"rgba(255,255,255,0.1)"} strokeWidth="3" />
+            <circle cx="28" cy="28" r={r} fill="none" stroke={timerColore} strokeWidth="3" strokeDasharray={c} strokeDashoffset={c*(1-timerPct/100)} transform="rotate(-90 28 28)" style={{ transition:"stroke-dashoffset 1s linear, stroke 0.3s" }} />
+            <text x="28" y="33" textAnchor="middle" style={{ fontSize:"14px", fontWeight:900, fill: luce?"#0a0a20":"white", fontFamily:"'Nunito'" }}>{garaTimer}</text>
+          </svg>
+        </div>
+
+        {/* Barra progresso */}
+        <div style={{ height:"3px", background: luce?"rgba(0,0,0,0.07)":"rgba(255,255,255,0.07)", flexShrink:0 }}>
+          <div style={{ height:"100%", width:`${progress}%`, background:"linear-gradient(90deg,#FFB800,#FF6B00)", transition:"width 0.3s" }} />
+        </div>
+
+        <div style={{ flex:1, overflowY:"auto", padding:"18px 16px", display:"flex", flexDirection:"column", gap:14 }}>
+          {/* Materia pill */}
+          <div style={{ display:"flex", justifyContent:"center" }}>
+            <span style={{ background:`${materiaColore}22`, color:materiaColore, border:`1px solid ${materiaColore}55`, borderRadius:"20px", padding:"4px 14px", fontSize:"12px", fontWeight:800 }}>{quiz.materia}</span>
+          </div>
+
+          {/* Flash risposta */}
+          {garaFlashRisposta && (
+            <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:50, background: garaFlashRisposta==="corretto"?"rgba(16,185,129,0.15)":"rgba(239,68,68,0.15)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <p style={{ fontSize:"60px" }}>{garaFlashRisposta==="corretto"?"✅":"❌"}</p>
+            </div>
+          )}
+
+          {/* Domanda */}
+          <p style={{ fontSize:"18px", fontWeight:800, lineHeight:1.5, textAlign:"center", margin:"10px 0" }}>{quiz.domanda}</p>
+
+          {/* Opzioni 2x2 */}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+            {(quiz.opzioni||[]).map((opt, i) => {
+              const rispCorretta = garaRisultatoQuiz?.risposta_corretta;
+              let bgOpt = luce?"white":"rgba(255,255,255,0.07)";
+              let borderOpt = luce?"rgba(0,0,0,0.1)":"rgba(255,255,255,0.12)";
+              if (garaRispostaData !== null) {
+                if (i === rispCorretta) { bgOpt="rgba(16,185,129,0.2)"; borderOpt="#10b981"; }
+                else if (i === garaRispostaData && garaRispostaData !== rispCorretta) { bgOpt="rgba(239,68,68,0.2)"; borderOpt="#ef4444"; }
+              }
+              return (
+                <button key={i} onClick={() => garaRispostaData===null && rispondiGaraQuiz(i)} style={{ padding:"16px 12px", borderRadius:"16px", background:bgOpt, border:`2px solid ${borderOpt}`, fontFamily:"'Nunito'", fontWeight:700, fontSize:"14px", cursor: garaRispostaData!==null?"default":"pointer", color: luce?"#0a0a20":"white", textAlign:"left", lineHeight:1.4, transition:"all 0.2s" }}>
+                  <span style={{ fontSize:"12px", fontWeight:900, color: luce?"rgba(0,0,30,0.35)":"rgba(255,255,255,0.35)", display:"block", marginBottom:4 }}>{["A","B","C","D"][i]}</span>
+                  {opt}
+                </button>
+              );
+            })}
+          </div>
+
+          {garaRisultatoQuiz && garaRisultatoQuiz.punti_guadagnati > 0 && (
+            <p style={{ textAlign:"center", fontWeight:900, fontSize:"22px", color:"#FFB800", animation:"puntiFly 1s ease forwards" }}>+{garaRisultatoQuiz.punti_guadagnati} punti!</p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Schermata Esercizio Quaderno ───────────────────────────────
+  if (screen === "gara_quaderno") {
+    return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <Head><title>Lexyo — Esercizio Quaderno</title></Head>
+        <div style={S.hdr}>
+          <div style={{ flex:1 }}>
+            <p style={{ fontWeight:900, fontSize:"17px", margin:0 }}>📝 Esercizio sul quaderno</p>
+            <p style={{ fontSize:"11px", color: luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.4)", fontWeight:600 }}>Svolgi e fotografa</p>
+          </div>
+        </div>
+        <div style={{ flex:1, overflowY:"auto", padding:"20px 18px", display:"flex", flexDirection:"column", gap:16 }}>
+          <div style={{ background: luce?"white":"rgba(255,255,255,0.05)", borderRadius:"20px", padding:"20px", border:`1px solid ${luce?"rgba(0,0,0,0.08)":"rgba(255,255,255,0.1)"}` }}>
+            <p style={{ fontWeight:800, fontSize:"13px", color:"#f59e0b", marginBottom:10, textTransform:"uppercase", letterSpacing:"0.5px" }}>Esercizio di oggi</p>
+            <p style={{ fontSize:"16px", fontWeight:700, lineHeight:1.7, margin:0 }}>{garaQuaderno?.testo_esercizio_quaderno || garaQuaderno?.domanda}</p>
+          </div>
+
+          <div style={{ background:"rgba(108,71,255,0.08)", borderRadius:"14px", padding:"14px 16px", border:"1px solid rgba(108,71,255,0.2)" }}>
+            <p style={{ fontSize:"13px", fontWeight:700, color: luce?"#3b1fa8":"#a78bfa", margin:0, lineHeight:1.6 }}>
+              📋 Svolgi l'esercizio sul quaderno, poi fotografalo.<br/>
+              ⏰ Hai tempo fino a mezzanotte di oggi.
+            </p>
+          </div>
+
+          {garaQuadernoLoading ? (
+            <div style={{ textAlign:"center", padding:"20px" }}>
+              <p style={{ fontSize:"40px", margin:"0 0 10px" }}>🤖</p>
+              <p style={{ fontWeight:800, fontSize:"16px", margin:0 }}>Lex sta correggendo...</p>
+            </div>
+          ) : garaQuadernoRisultato ? (
+            <div style={{ background:"rgba(16,185,129,0.12)", borderRadius:"20px", padding:"20px", border:"1px solid rgba(16,185,129,0.35)" }}>
+              <p style={{ fontWeight:900, fontSize:"20px", color:"#10b981", margin:"0 0 6px" }}>+{garaQuadernoRisultato.punti} punti!</p>
+              <p style={{ fontSize:"14px", fontWeight:700, margin:"0 0 10px", lineHeight:1.5 }}>{garaQuadernoRisultato.correzione}</p>
+              <p style={{ fontSize:"15px", color:"#059669", fontWeight:700, margin:0 }}>💬 {garaQuadernoRisultato.incoraggiamento}</p>
+            </div>
+          ) : (
+            <div>
+              <label style={{ display:"block", width:"100%", padding:"20px", background:"linear-gradient(135deg,#6C47FF,#9B3FD4)", borderRadius:"18px", textAlign:"center", cursor:"pointer", color:"white", fontFamily:"'Nunito'", fontWeight:900, fontSize:"17px", boxShadow:"0 6px 20px rgba(108,71,255,0.4)" }}>
+                📸 Scatta foto del quaderno
+                <input type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={e => { if (e.target.files?.[0]) correggiGaraQuaderno(e.target.files[0]); }} />
+              </label>
+              <button onClick={() => { setGaraSessioneRisultato({ punteggio_quiz: garaPunteggiSessione, punteggio_quaderno: 0 }); setScreen("gara_risultato"); }} style={{ ...S.btn, ...S.btnS, marginTop:12, fontSize:"13px" }}>
+                Salta quaderno (0 punti)
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Schermata Risultato Sessione ───────────────────────────────
+  if (screen === "gara_risultato") {
+    const isc = garaIscrizione;
+    const totSessione = (garaSessioneRisultato?.punteggio_quiz||0) + (garaSessioneRisultato?.punteggio_quaderno||0);
+    const testoWhatsapp = `🏆 ${isc?.nickname||"Io"} è #${isc?.posizione_classifica||"—"} nelle Olimpiadi dello Studio!\nStudia con Lexyo ogni giorno e scala la classifica.\nIscriviti anche tu: https://app.lexyo.it/olimpiadi`;
+
+    return (
+      <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
+        <Head><title>Lexyo — Risultato Sessione</title></Head>
+        <div style={{ flex:1, overflowY:"auto", padding:"20px 18px" }}>
+
+          <div style={{ textAlign:"center", marginBottom:"24px" }}>
+            <p style={{ fontSize:"52px", margin:"0 0 12px" }}>🎉</p>
+            <p style={{ fontWeight:900, fontSize:"22px", marginBottom:6 }}>Sessione completata!</p>
+            <p style={{ fontSize:"32px", fontWeight:900, color:"#FFB800", margin:0 }}>+{totSessione} punti</p>
+          </div>
+
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:20 }}>
+            <div style={{ background: luce?"white":"rgba(255,255,255,0.05)", borderRadius:"16px", padding:"14px", textAlign:"center", border:`1px solid ${luce?"rgba(0,0,0,0.08)":"rgba(255,255,255,0.08)"}` }}>
+              <p style={{ fontSize:"22px", fontWeight:900, color:"#6C47FF", margin:"0 0 4px" }}>{garaSessioneRisultato?.punteggio_quiz||0}</p>
+              <p style={{ fontSize:"11px", color: luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.4)", fontWeight:700, margin:0 }}>Punti quiz</p>
+            </div>
+            <div style={{ background: luce?"white":"rgba(255,255,255,0.05)", borderRadius:"16px", padding:"14px", textAlign:"center", border:`1px solid ${luce?"rgba(0,0,0,0.08)":"rgba(255,255,255,0.08)"}` }}>
+              <p style={{ fontSize:"22px", fontWeight:900, color:"#10b981", margin:"0 0 4px" }}>{garaSessioneRisultato?.punteggio_quaderno||0}</p>
+              <p style={{ fontSize:"11px", color: luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.4)", fontWeight:700, margin:0 }}>Punti quaderno</p>
+            </div>
+          </div>
+
+          {isc && (
+            <div style={{ background:"linear-gradient(135deg,#2D1B69,#1A1040)", borderRadius:"20px", padding:"20px", marginBottom:20, textAlign:"center" }}>
+              <p style={{ fontSize:"10px", fontWeight:800, color:"rgba(255,255,255,0.5)", letterSpacing:"1px", margin:"0 0 8px", textTransform:"uppercase" }}>La tua posizione</p>
+              <p style={{ fontSize:"28px", fontWeight:900, color:"white", margin:"0 0 4px" }}>{isc.nickname} è <span style={{ color:"#FFB800" }}>#{isc.posizione_classifica||"—"}</span> in Italia! 🏆</p>
+              <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.6)", fontWeight:600, margin:"0 0 4px" }}>Olimpiadi dello Studio · {CLASSI_GARA_MAP[isc.classe]||isc.classe}</p>
+              <p style={{ fontSize:"14px", fontWeight:800, color:"#FFB800", margin:0 }}>{isc.punteggio_totale||0} punti accumulati</p>
+              <p style={{ fontSize:"11px", color:"rgba(255,255,255,0.35)", marginTop:8, margin:"8px 0 0" }}>app.lexyo.it/olimpiadi</p>
+            </div>
+          )}
+
+          <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:16 }}>
+            <button onClick={() => window.open("https://wa.me/?text=" + encodeURIComponent(testoWhatsapp))} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:10, padding:"14px", borderRadius:"14px", background:"#25D366", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"15px", cursor:"pointer" }}>
+              <img src="https://cdn.simpleicons.org/whatsapp/ffffff" width="22" height="22" alt="WhatsApp" />
+              Condividi su WhatsApp
+            </button>
+            <button onClick={() => { const url="https://app.lexyo.it/olimpiadi"; window.open("https://www.facebook.com/sharer/sharer.php?u="+encodeURIComponent(url)); }} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:10, padding:"14px", borderRadius:"14px", background:"#1877F2", border:"none", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"15px", cursor:"pointer" }}>
+              <img src="https://cdn.simpleicons.org/facebook/ffffff" width="22" height="22" alt="Facebook" />
+              Condividi su Facebook
+            </button>
+          </div>
+
+          <button onClick={() => { setGaraTab("sessione"); goScreen("olimpiadi_home"); }} style={{ ...S.btn, ...S.btnP }}>
+            Torna alla home gara →
+          </button>
+        </div>
       </div>
     );
   }
