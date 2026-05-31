@@ -1,6 +1,3 @@
-[functions]
-  directory = "netlify/functions"
-
 [[redirects]]
   from = "http://app.lexyo.it/*"
   to = "https://app.lexyo.it/:splat"
