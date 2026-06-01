@@ -2,7 +2,8 @@ import { createClient } from "@supabase/supabase-js";
 
 const getSupabase = () => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
-const GIORNI_LAVORATIVI = [1, 2, 3, 4, 5]; // lun-ven
+const GIORNI_LAVORATIVI = [1, 2, 3, 4, 5];
+const QUIZ_PER_SESSIONE = 25;
 
 function calcolaGiornoNumero(dataInizio, oggi) {
   const start = new Date(dataInizio);
@@ -10,11 +11,19 @@ function calcolaGiornoNumero(dataInizio, oggi) {
   let count = 0;
   const d = new Date(start);
   while (d <= end) {
-    const dayOfWeek = d.getDay();
-    if (GIORNI_LAVORATIVI.includes(dayOfWeek)) count++;
+    if (GIORNI_LAVORATIVI.includes(d.getDay())) count++;
     d.setDate(d.getDate() + 1);
   }
   return count;
+}
+
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
 }
 
 export default async function handler(req, res) {
@@ -67,12 +76,13 @@ export default async function handler(req, res) {
       return res.json({ sessione_completata: true, sessione, quiz: [], esercizio_quaderno: null, giorno_numero: giornoNumero });
     }
 
+    // Logica giorno: settimana 1 = giorni 1-5, settimana 2 = giorni 6-10
     const settimana = giornoNumero <= 5 ? 1 : 2;
     const giornoDellaSettimana = giornoNumero <= 5 ? giornoNumero : giornoNumero - 5;
-    const GIORNI_NOME = ["", "lunedi", "martedi", "mercoledi", "giovedi", "venerdi"];
-    const giornoNome = GIORNI_NOME[giornoDellaSettimana];
 
-    const { data: quiz } = await sb
+    // Prende i quiz del giorno specifico — shuffle + limite a 25
+    // (funziona anche se nel DB ci sono duplicati da generazioni multiple)
+    const { data: tuttiQuizDelGiorno } = await sb
       .from("gara_quiz")
       .select("*")
       .eq("classe", iscrizione.classe)
@@ -80,6 +90,9 @@ export default async function handler(req, res) {
       .eq("giorno_numero", giornoDellaSettimana)
       .eq("tipo", "quiz");
 
+    const quizDiOggi = shuffleArray(tuttiQuizDelGiorno || []).slice(0, QUIZ_PER_SESSIONE);
+
+    // Esercizio quaderno del giorno specifico (prende il primo disponibile)
     const { data: esercizi } = await sb
       .from("gara_quiz")
       .select("*")
@@ -88,14 +101,20 @@ export default async function handler(req, res) {
       .eq("giorno_numero", giornoDellaSettimana)
       .eq("tipo", "quaderno");
 
+    const esercizioQuaderno = esercizi && esercizi.length > 0
+      ? shuffleArray(esercizi)[0]
+      : null;
+
+    const GIORNI_NOME = ["", "lunedi", "martedi", "mercoledi", "giovedi", "venerdi"];
+
     return res.json({
       sessione_completata: false,
       sessione: sessione || null,
-      quiz: quiz || [],
-      esercizio_quaderno: esercizi?.[0] || null,
+      quiz: quizDiOggi,
+      esercizio_quaderno: esercizioQuaderno,
       giorno_numero: giornoNumero,
       settimana,
-      giorno_della_settimana: giornoNome,
+      giorno_della_settimana: GIORNI_NOME[giornoDellaSettimana],
       data_sessione: oggi,
       iscrizione,
     });

@@ -8,15 +8,12 @@ const getSupabase = () => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, pro
 const GIORNI = ["lunedi", "martedi", "mercoledi", "giovedi", "venerdi"];
 const GIORNI_CON_QUADERNO = ["lunedi", "martedi", "mercoledi"];
 
-// Estrai JSON array dalla risposta di Claude, anche se contiene testo extra
 function parseJsonArray(testo) {
   const t = testo.trim();
-  // Prova prima il match diretto dell'array
   const match = t.match(/\[[\s\S]*\]/);
   if (match) {
     try { return JSON.parse(match[0]); } catch {}
   }
-  // Prova rimuovendo backtick markdown
   const clean = t.replace(/^```json\s*/i, "").replace(/\s*```$/, "").trim();
   return JSON.parse(clean);
 }
@@ -44,17 +41,13 @@ Rispondi SOLO con un array JSON valido e completo. Nessun testo prima o dopo:
     messages: [{ role: "user", content: prompt }],
   });
 
-  const testo = response.content[0].text;
-  const stopReason = response.stop_reason;
-
-  // Se Claude si è fermato per max_tokens, il JSON è troncato
-  if (stopReason === "max_tokens") {
-    throw new Error(`Risposta troncata (max_tokens raggiunto). Riprova.`);
+  if (response.stop_reason === "max_tokens") {
+    throw new Error("Risposta troncata (max_tokens raggiunto). Riprova.");
   }
 
-  const arr = parseJsonArray(testo);
+  const arr = parseJsonArray(response.content[0].text);
   if (!Array.isArray(arr) || arr.length === 0) {
-    throw new Error(`JSON non valido o array vuoto. Risposta: ${testo.slice(0, 100)}`);
+    throw new Error(`JSON non valido o array vuoto. Risposta: ${response.content[0].text.slice(0, 100)}`);
   }
   return arr;
 }
@@ -95,43 +88,69 @@ export default async function handler(req, res) {
     for (let giornoIdx = 0; giornoIdx < GIORNI.length; giornoIdx++) {
       const giorno = GIORNI[giornoIdx];
       const giornoNumero = giornoIdx + 1;
-      const numDomande = giorno === "venerdi" ? 20 : 15; // Ridotto per evitare troncamento
+      const numDomande = giorno === "venerdi" ? 20 : 15;
 
-      // Quiz a risposta multipla
+      // ── Quiz a risposta multipla ──
       try {
-        const quiz = await generaQuiz(classe, settimana, giorno, numDomande);
-        const rows = quiz.map(q => ({
-          classe, settimana,
-          giorno_settimana: giorno,
-          giorno_numero: giornoNumero,
-          tipo: "quiz",
-          domanda: q.domanda,
-          opzioni: q.opzioni,
-          risposta_corretta: Number(q.risposta_corretta),
-          materia: q.materia,
-        }));
-        const { error } = await sb.from("gara_quiz").insert(rows);
-        if (error) throw new Error(`DB: ${error.message}`);
-        quiz_generati += rows.length;
+        // Evita duplicati: controlla se esistono già quiz per questa combinazione
+        const { count: esistenti } = await sb
+          .from("gara_quiz")
+          .select("id", { count: "exact", head: true })
+          .eq("classe", classe)
+          .eq("settimana", settimana)
+          .eq("giorno_numero", giornoNumero)
+          .eq("tipo", "quiz");
+
+        if (esistenti > 0) {
+          // Già generati — salta senza errore
+          quiz_generati += esistenti;
+        } else {
+          const quiz = await generaQuiz(classe, settimana, giorno, numDomande);
+          const rows = quiz.map(q => ({
+            classe, settimana,
+            giorno_settimana: giorno,
+            giorno_numero: giornoNumero,
+            tipo: "quiz",
+            domanda: q.domanda,
+            opzioni: q.opzioni,
+            risposta_corretta: Number(q.risposta_corretta),
+            materia: q.materia,
+          }));
+          const { error } = await sb.from("gara_quiz").insert(rows);
+          if (error) throw new Error(`DB: ${error.message}`);
+          quiz_generati += rows.length;
+        }
       } catch (e) {
         errori.push(`Quiz ${classe} sett.${settimana} ${giorno}: ${e.message}`);
       }
 
-      // Esercizio quaderno (lun/mar/mer)
+      // ── Esercizio quaderno (lun/mar/mer) ──
       if (GIORNI_CON_QUADERNO.includes(giorno)) {
         try {
-          const es = await generaQuaderno(classe, giorno);
-          const { error } = await sb.from("gara_quiz").insert({
-            classe, settimana,
-            giorno_settimana: giorno,
-            giorno_numero: giornoNumero,
-            tipo: "quaderno",
-            domanda: es.testo_esercizio,
-            materia: es.materia,
-            testo_esercizio_quaderno: es.testo_esercizio,
-          });
-          if (error) throw new Error(`DB: ${error.message}`);
-          quiz_generati++;
+          const { count: esistentiQ } = await sb
+            .from("gara_quiz")
+            .select("id", { count: "exact", head: true })
+            .eq("classe", classe)
+            .eq("settimana", settimana)
+            .eq("giorno_numero", giornoNumero)
+            .eq("tipo", "quaderno");
+
+          if (esistentiQ > 0) {
+            quiz_generati += esistentiQ;
+          } else {
+            const es = await generaQuaderno(classe, giorno);
+            const { error } = await sb.from("gara_quiz").insert({
+              classe, settimana,
+              giorno_settimana: giorno,
+              giorno_numero: giornoNumero,
+              tipo: "quaderno",
+              domanda: es.testo_esercizio,
+              materia: es.materia,
+              testo_esercizio_quaderno: es.testo_esercizio,
+            });
+            if (error) throw new Error(`DB: ${error.message}`);
+            quiz_generati++;
+          }
         } catch (e) {
           errori.push(`Quaderno ${classe} sett.${settimana} ${giorno}: ${e.message}`);
         }
