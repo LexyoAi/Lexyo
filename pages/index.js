@@ -632,6 +632,8 @@ export default function Home() {
     setGaraRispostaData(rispostaIdx);
     const quiz = garaSessione.quiz[garaQuizIdx];
     const token = await getAccessToken();
+
+    let puntiUltimo = 0;
     try {
       const r = await fetch("/api/gara-salva-risposta", {
         method: "POST",
@@ -639,32 +641,52 @@ export default function Home() {
         body: JSON.stringify({ quiz_id: quiz.id, risposta_data: rispostaIdx, tempo_risposta_secondi: tempoImpiegato, giorno_numero: garaSessione.giorno_numero }),
       });
       const d = await r.json();
+      puntiUltimo = d.punti_guadagnati || 0;
       setGaraRisultatoQuiz(d);
-      setGaraPunteggiSessione(p => p + (d.punti_guadagnati || 0));
+      setGaraPunteggiSessione(p => p + puntiUltimo);
       setGaraFlashRisposta(d.corretta ? "corretto" : "sbagliato");
       if (d.corretta && garaIscrizione) {
         setGaraIscrizione(prev => ({ ...prev, punteggio_totale: d.punteggio_totale_aggiornato }));
       }
     } catch {}
-    setTimeout(() => {
-      setGaraFlashRisposta(null);
-      setGaraRispostaData(null);
-      setGaraRisultatoQuiz(null);
-      const prossimo = garaQuizIdx + 1;
-      if (prossimo >= garaSessione.quiz.length) {
+
+    const prossimo = garaQuizIdx + 1;
+    const isUltimaDomanda = prossimo >= garaSessione.quiz.length;
+
+    // Se è l'ultima domanda, segna i quiz come completati SUBITO (siamo in contesto async)
+    if (isUltimaDomanda) {
+      const punteggioFinalQuiz = garaPunteggiSessione + puntiUltimo;
+      fetch("/api/gara-completa-sessione", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          giorno_numero: garaSessione.giorno_numero,
+          punteggio_quiz: punteggioFinalQuiz,
+          classe: garaIscrizione?.classe,
+        }),
+      }).catch(() => {});
+
+      setTimeout(() => {
+        setGaraFlashRisposta(null);
+        setGaraRispostaData(null);
+        setGaraRisultatoQuiz(null);
         if (garaSessione.esercizio_quaderno) {
           setGaraQuaderno(garaSessione.esercizio_quaderno);
           setScreen("gara_quaderno");
         } else {
-          const storico = garaSessStoricoList;
-          setGaraSessioneRisultato({ punteggio_quiz: garaPunteggiSessione + (garaRisultatoQuiz?.punti_guadagnati || 0), punteggio_quaderno: 0 });
+          setGaraSessioneRisultato({ punteggio_quiz: punteggioFinalQuiz, punteggio_quaderno: 0 });
           setScreen("gara_risultato");
         }
-      } else {
+      }, 1800);
+    } else {
+      setTimeout(() => {
+        setGaraFlashRisposta(null);
+        setGaraRispostaData(null);
+        setGaraRisultatoQuiz(null);
         setGaraQuizIdx(prossimo);
         setGaraTimer(30);
-      }
-    }, 1800);
+      }, 1800);
+    }
   };
 
   const correggiGaraQuaderno = (file) => {

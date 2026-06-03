@@ -72,7 +72,8 @@ export default async function handler(req, res) {
       .eq("giorno_numero", giornoNumero)
       .maybeSingle();
 
-    if (sessione?.quiz_completato && sessione?.quaderno_completato) {
+    // Sessione bloccata se i quiz sono già stati completati oggi
+    if (sessione?.quiz_completato) {
       return res.json({ sessione_completata: true, sessione, quiz: [], esercizio_quaderno: null, giorno_numero: giornoNumero });
     }
 
