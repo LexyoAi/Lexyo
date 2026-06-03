@@ -54,9 +54,10 @@ async function generaQuaderno(classe, giorno) {
 Rispondi SOLO con oggetto JSON valido, nessun testo:
 {"testo_esercizio":"string","materia":"${materia}","tipo":"quaderno","soluzione_modello":"string"}`;
 
+  // Haiku per quaderni: più veloce (2-3 sec), rispetta il timeout Netlify
   const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 1000,
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 800,
     messages: [{ role: "user", content: prompt }],
   });
 
