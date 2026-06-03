@@ -402,25 +402,34 @@ function TabGara({ accessToken }) {
   useEffect(() => { caricaStats(); }, []);
 
   async function generaQuiz() {
-    if (!confirm("Genera quiz per tutte le classi?\nFarà 12 chiamate sequenziali (6 classi × 2 settimane).\nNon chiudere la pagina.")) return;
+    if (!confirm("Genera quiz per tutte le classi?\nFarà 60 chiamate (6 classi × 2 settimane × 5 giorni).\nI giorni già presenti verranno saltati automaticamente.\nNon chiudere la pagina.")) return;
     setGenLoading(true);
     setGenResult(null);
 
+    // Una chiamata per ogni giorno — così ogni request sta nei 26 secondi di Netlify
     const combinazioni = [];
-    for (const c of CLASSI_GARA) for (const s of [1, 2]) combinazioni.push({ classe: c, settimana: s });
+    for (const c of CLASSI_GARA)
+      for (const s of [1, 2])
+        for (const g of [1, 2, 3, 4, 5])
+          combinazioni.push({ classe: c, settimana: s, giorno_numero: g });
 
     let totaleGenerati = 0;
     const tuttiErrori = [];
+    const GIORNI_LABEL = ["", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì"];
 
     for (let i = 0; i < combinazioni.length; i++) {
-      const { classe, settimana } = combinazioni[i];
-      setGenProgress({ step: i + 1, totale: combinazioni.length, corrente: `${classe.replace("ª_","ª ")} — Settimana ${settimana}` });
+      const { classe, settimana, giorno_numero } = combinazioni[i];
+      const label = `${classe.replace("ª_","ª ")} · Sett.${settimana} · ${GIORNI_LABEL[giorno_numero]}`;
+      setGenProgress({ step: i + 1, totale: combinazioni.length, corrente: label });
+
       try {
-        const r = await callAdmin("admin-genera-quiz-gara", accessToken, { classe, settimana });
+        const r = await callAdmin("admin-genera-quiz-gara", accessToken, { classe, settimana, giorno_numero });
         totaleGenerati += r.quiz_generati || 0;
-        if (r.errori?.length) tuttiErrori.push(...r.errori);
+        // Filtra i messaggi "già presenti" dagli errori veri
+        const erroriVeri = (r.errori || []).filter(e => !e.startsWith("ℹ️"));
+        if (erroriVeri.length) tuttiErrori.push(...erroriVeri);
       } catch (e) {
-        tuttiErrori.push(`${classe} sett.${settimana}: ${e.message}`);
+        tuttiErrori.push(`${label}: ${e.message}`);
       }
     }
 
