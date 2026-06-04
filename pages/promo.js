@@ -51,7 +51,7 @@ export default function Promo() {
   return (
     <>
       <Head>
-        <title>Lexyo — Prova Gratis 3 Giorni</title>
+        <title>Lexyo — Prova Gratis</title>
         <meta name="robots" content="noindex, nofollow" />
       </Head>
 
@@ -96,7 +96,7 @@ export default function Promo() {
             color: ORO,
             marginBottom: "28px",
           }}>
-            🎁 3 giorni gratis — nessuna carta richiesta
+            🎁 Prova gratis — nessuna carta richiesta
           </div>
 
           {/* H1 */}
@@ -159,10 +159,10 @@ export default function Promo() {
                 letterSpacing: "-0.3px",
               }}
             >
-              🎓 Inizia gratis — 3 giorni →
+              🎓 Inizia gratis →
             </button>
             <p style={{ marginTop: "14px", fontSize: "13px", color: "rgba(255,255,255,0.45)" }}>
-              Nessuna carta di credito &bull; Cancelli quando vuoi &bull; GDPR
+              Nessuna carta richiesta &bull; Cancelli quando vuoi &bull; GDPR
             </p>
           </div>
         </section>
@@ -477,7 +477,7 @@ export default function Promo() {
                 color: "rgba(255,255,255,0.55)",
                 marginBottom: "28px",
               }}>
-                /mese &nbsp;·&nbsp; Dopo i 3 giorni gratis
+                /mese &nbsp;·&nbsp; Dopo la prova gratuita
               </div>
 
               <div style={{ textAlign: "left", display: "flex", flexDirection: "column", gap: "13px", marginBottom: "28px" }}>
@@ -518,11 +518,11 @@ export default function Promo() {
                   letterSpacing: "-0.3px",
                 }}
               >
-                🎓 Inizia gratis — 3 giorni →
+                🎓 Inizia gratis →
               </button>
 
               <p style={{ marginTop: "14px", fontSize: "13px", color: "rgba(255,255,255,0.38)" }}>
-                Nessuna carta di credito richiesta per il trial
+                Nessuna carta richiesta
               </p>
             </div>
           </div>
@@ -584,7 +584,7 @@ export default function Promo() {
               letterSpacing: "-0.2px",
             }}
           >
-            ⚡ Prova gratis 3 giorni — Inizia adesso
+            ⚡ Prova gratis — Inizia adesso
           </button>
         </div>
       )}

@@ -94,7 +94,7 @@ export default function Landing({ onEntra }) {
     <>
       <Head>
         <title>Lexyo — Il Professore AI per i Bambini Italiani | Compiti, Quiz, Interrogazioni</title>
-        <meta name="description" content="Lexyo è l'app AI che aiuta i bambini delle elementari e medie con i compiti. Foto compiti, interrogazioni orali, quiz MIUR. Prova gratis 3 giorni senza carta di credito." />
+        <meta name="description" content="Lexyo è l'app AI che aiuta i bambini delle elementari e medie con i compiti. Foto compiti, interrogazioni orali, quiz MIUR. Prova gratis senza carta di credito." />
         <meta name="keywords" content="app compiti bambini, professore AI italiano, aiuto compiti elementari, ripetizioni online bambini, app studio scuola media, intelligenza artificiale educativa, app educativa italiana, compiti AI, studio intelligente, Lexyo" />
         <meta name="author" content="Lexyo.it" />
         <meta name="robots" content="index, follow" />
@@ -103,7 +103,7 @@ export default function Landing({ onEntra }) {
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta property="og:title" content="Lexyo — Il professore AI di tuo figlio" />
-        <meta property="og:description" content="Sempre paziente. Sempre disponibile. Non dà le risposte — insegna a trovarle. Prova gratis 3 giorni." />
+        <meta property="og:description" content="Sempre paziente. Sempre disponibile. Non dà le risposte — insegna a trovarle. Prova gratis." />
         <meta property="og:image" content="https://app.lexyo.it/icons/icon-512.png" />
         <meta property="og:url" content="https://app.lexyo.it" />
         <meta property="og:type" content="website" />
@@ -288,14 +288,14 @@ export default function Landing({ onEntra }) {
             📲 Installa l'App
           </button>
           <button onClick={onEntra} className="btn-cta" style={{ background:"linear-gradient(135deg,#6366f1,#8b5cf6)", border:"none", borderRadius:"12px", padding:"10px 24px", color:"white", fontFamily:"'Plus Jakarta Sans'", fontWeight:700, fontSize:"14px" }}>
-            Inizia Gratis →
+            Prova Gratis →
           </button>
         </div>
       </nav>
 
       {refBanner && (
         <div style={{ background:"linear-gradient(135deg,#6C47FF,#FF4B8B)", padding:"12px 20px", textAlign:"center", borderRadius:"0 0 12px 12px", marginBottom:"0" }}>
-          <p style={{ color:"white", fontWeight:800, fontSize:"15px" }}>👋 Il tuo amico ti ha invitato! Inizia gratis per 3 giorni 🎁</p>
+          <p style={{ color:"white", fontWeight:800, fontSize:"15px" }}>👋 Il tuo amico ti ha invitato! Inizia gratis 🎁</p>
         </div>
       )}
 
@@ -334,7 +334,7 @@ export default function Landing({ onEntra }) {
 
           <div style={{ display:"flex", flexDirection:"column", gap:"10px", maxWidth:"380px", margin:"0 auto 24px" }}>
             <button onClick={onEntra} className="btn-cta" style={{ padding:"18px 28px", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", border:"none", borderRadius:"16px", color:"white", fontFamily:"'Plus Jakarta Sans'", fontWeight:800, fontSize:"17px" }}>
-              Inizia gratis — 3 giorni
+              Prova gratis
             </button>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"6px", flexWrap:"wrap" }}>
               {["poi 12,90€/mese","annulla quando vuoi","GDPR"].map((t,i) => (
@@ -395,7 +395,7 @@ export default function Landing({ onEntra }) {
             <strong style={{ fontSize:"clamp(20px, 3vw, 26px)", color:"#0D0F2B", letterSpacing:"-0.5px" }}>Lex insegna a trovarle.</strong>
           </p>
           <button onClick={onEntra} className="btn-cta" style={{ padding:"16px 40px", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", border:"none", borderRadius:"14px", color:"white", fontFamily:"'Plus Jakarta Sans'", fontWeight:800, fontSize:"16px", boxShadow:"0 8px 32px rgba(99,102,241,0.4)", position:"relative", zIndex:1 }}>
-            Prova gratis 3 giorni →
+            Prova gratis →
           </button>
         </div>
       </section>
@@ -505,7 +505,7 @@ export default function Landing({ onEntra }) {
                   ))}
                 </div>
                 <button onClick={onEntra} className="btn-cta" style={{ display:"inline-flex", alignItems:"center", gap:"8px", padding:"14px 28px", background:"rgba(0,0,0,0.18)", border:"2px solid rgba(0,0,0,0.2)", borderRadius:"14px", color:"#1a0a00", fontFamily:"'Plus Jakarta Sans'", fontWeight:900, fontSize:"15px", cursor:"pointer" }}>
-                  Prova gratis adesso →
+                  Prova gratis →
                 </button>
               </div>
               <div style={{ display:"flex", flexDirection:"column", gap:"12px", minWidth:"200px" }}>
@@ -565,7 +565,7 @@ export default function Landing({ onEntra }) {
                   ))}
                 </div>
                 <button onClick={onEntra} className="btn-cta" style={{ display:"inline-flex", alignItems:"center", gap:"8px", padding:"14px 28px", background:"rgba(255,255,255,0.18)", border:"2px solid rgba(255,255,255,0.3)", borderRadius:"14px", color:"white", fontFamily:"'Plus Jakarta Sans'", fontWeight:900, fontSize:"15px", cursor:"pointer" }}>
-                  Prova gratis adesso →
+                  Prova gratis →
                 </button>
               </div>
               <div style={{ display:"flex", flexDirection:"column", gap:"10px", minWidth:"190px" }}>
@@ -746,16 +746,15 @@ export default function Landing({ onEntra }) {
               <div style={{ position:"absolute", top:"-14px", left:"50%", transform:"translateX(-50%)", background:"#10b981", borderRadius:"100px", padding:"5px 18px", fontSize:"11px", fontWeight:900, whiteSpace:"nowrap", color:"white" }}>
                 PROVA GRATUITA
               </div>
-              <p style={{ fontSize:"11px", fontWeight:800, color:"#8892AE", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"18px", marginTop:"8px" }}>3 giorni gratis</p>
+              <p style={{ fontSize:"11px", fontWeight:800, color:"#8892AE", textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:"18px", marginTop:"8px" }}>Prova gratuita</p>
               <div style={{ marginBottom:"8px" }}>
                 <span style={{ fontSize:"52px", fontWeight:900, letterSpacing:"-2px", color:"#0D0F2B" }}>0€</span>
-                <span style={{ fontSize:"17px", color:"#8892AE", marginLeft:"8px" }}>per 3 giorni</span>
               </div>
               <p style={{ fontSize:"13px", color:"#44476A", marginBottom:"26px", lineHeight:1.6 }}>
                 Accesso completo a tutte le funzioni. Nessuna carta richiesta.
               </p>
               <button onClick={onEntra} className="btn-cta" style={{ width:"100%", padding:"13px", background:"rgba(16,185,129,0.1)", border:"1px solid rgba(16,185,129,0.3)", borderRadius:"12px", color:"#059669", fontFamily:"'Plus Jakarta Sans'", fontWeight:800, fontSize:"14px" }}>
-                Prova adesso — è gratis →
+                Prova gratis →
               </button>
               <p style={{ fontSize:"11px", color:"#8892AE", textAlign:"center", marginTop:"12px" }}>
                 Disdici quando vuoi. Nessun vincolo.

@@ -2178,8 +2178,8 @@ export default function Home() {
           </div>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"12px", marginTop:"8px" }}>
             <div>
-              <p style={{ fontWeight:900, fontSize:"22px", color: luce ? "#0a0a20" : "white" }}>0€ <span style={{ fontSize:"14px", color: luce ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.4)", fontWeight:600 }}>per 3 giorni</span></p>
-              <p style={{ color:"#059669", fontSize:"13px", fontWeight:700 }}>Accesso completo — nessuna carta</p>
+              <p style={{ fontWeight:900, fontSize:"22px", color: luce ? "#0a0a20" : "white" }}>Gratis</p>
+              <p style={{ color:"#059669", fontSize:"13px", fontWeight:700 }}>Accesso completo — nessuna carta richiesta</p>
             </div>
             <span style={{ fontSize:"28px" }}>🎁</span>
           </div>
@@ -2192,9 +2192,9 @@ export default function Home() {
             </div>
           )}
           <button onClick={avviaTrialConVerifica} disabled={trialCheckLoading} style={{ ...S.btn, background: luce ? "rgba(16,185,129,0.15)" : "rgba(16,185,129,0.12)", border:"1px solid rgba(16,185,129,0.4)", color:"#059669", marginTop:"14px", opacity: trialCheckLoading ? 0.6 : 1 }}>
-            {trialCheckLoading ? "Verifica in corso…" : "Prova adesso — è gratis →"}
+            {trialCheckLoading ? "Verifica in corso…" : "Prova gratis →"}
           </button>
-          <p style={{ fontSize:"11px", color: luce ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.25)", textAlign:"center", marginTop:"10px" }}>Disdici quando vuoi. Nessun vincolo.</p>
+          <p style={{ fontSize:"12px", color:"#059669", textAlign:"center", marginTop:"8px", fontWeight:800 }}>Nessuna carta richiesta</p>
         </div>
         )}
 
@@ -2277,13 +2277,13 @@ export default function Home() {
           <div style={{ background:"linear-gradient(135deg,#10b981,#059669)", borderRadius:"24px", padding:"18px 32px", textAlign:"center", boxShadow:"0 16px 48px rgba(16,185,129,0.4)" }}>
             <p style={{ fontSize:"40px", margin:"0 0 8px" }}>🎁</p>
             <p style={{ fontWeight:900, fontSize:"22px", color:"white", margin:"0 0 4px" }}>Prova Gratuita Attiva!</p>
-            <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.85)", margin:0 }}>3 giorni gratis — nessuna carta richiesta</p>
+            <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.85)", margin:0 }}>Prova gratuita attiva — nessuna carta richiesta</p>
           </div>
         )}
       </div>
 
       <p style={{ fontSize:"15px", color:"#44476A", textAlign:"center", maxWidth:"320px", lineHeight:1.7, marginBottom:"32px" }}>
-        {piano === "premium" ? "Grazie! Hai accesso completo a tutte le funzioni di Lexyo." : "Benvenuto! Hai 3 giorni per esplorare tutto Lexyo gratuitamente."}{" "}
+        {piano === "premium" ? "Grazie! Hai accesso completo a tutte le funzioni di Lexyo." : "Benvenuto! Hai accesso gratuito per esplorare tutto Lexyo."}{" "}
         Adesso installa l'app sul tuo telefonino — è gratuita.
       </p>
 
@@ -8539,10 +8539,10 @@ export default function Home() {
       },
       {
         id: "mensile", titolo: "Mensile", badge: "⭐ Più popolare",
-        prezzo: "12,90€/mese", sub: "3 giorni gratis · Cancelli quando vuoi",
+        prezzo: "12,90€/mese", sub: "Prova gratis · Cancelli quando vuoi",
         bg: "linear-gradient(145deg,#6C47FF,#9B3FD4)", colore: "#6C47FF",
         features: ["✅ Tutto Lexyo incluso", "✅ Olimpiadi incluse gratis", "✅ Foto, quiz, interrogazioni", "✅ Inglese con Lex"],
-        cta: "Inizia gratis 3 giorni →",
+        cta: "Inizia gratis →",
       },
       {
         id: "annuale", titolo: "Annuale", badge: "🏆 Miglior valore",
@@ -8588,7 +8588,7 @@ export default function Home() {
               </div>
             </div>
           ))}
-          <p style={{ fontSize:"11px", color: luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.35)", textAlign:"center", fontWeight:600, lineHeight:1.5 }}>Pagamento sicuro via Stripe · Nessuna carta per il trial mensile</p>
+          <p style={{ fontSize:"12px", color:"#059669", textAlign:"center", fontWeight:800, lineHeight:1.5 }}>Nessuna carta richiesta · Cancelli quando vuoi</p>
         </div>
       </div>
     );
