@@ -2,7 +2,6 @@ import { createClient } from "@supabase/supabase-js";
 
 const getSupabase = () => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
-// Data fissa di fine Olimpiadi — tutti gli iscritti hanno accesso fino a questa data
 const DATA_FINE_OLIMPIADI = "2026-07-20";
 
 function getNextMonday(fromDate) {
@@ -32,15 +31,7 @@ export default async function handler(req, res) {
   if (nickClean.length < 3) return res.status(400).json({ errore: "Nickname troppo corto" });
 
   try {
-    const { data: profilo } = await sb
-      .from("profili")
-      .select("abbonamento_attivo,is_admin")
-      .ilike("email", user.email)
-      .maybeSingle();
-
-    const isAbbonato = profilo?.abbonamento_attivo === true || profilo?.is_admin === true;
-    if (!isAbbonato) return res.status(403).json({ errore: "Solo gli abbonati possono partecipare gratis" });
-
+    // Basta essere loggati — le Olimpiadi sono gratis per tutti
     const { data: nickExist } = await sb
       .from("gara_iscrizioni")
       .select("id")

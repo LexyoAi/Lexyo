@@ -2759,15 +2759,12 @@ export default function Home() {
           </button>
         )}
 
-        {/* ── CARD GRAN PREMIO STUDIO ── */}
+        {/* ── CARD OLIMPIADI DELLO STUDIO ── */}
         {(() => {
           const fineGara = new Date("2026-07-21");
-          const oggi20 = new Date();
-          if (oggi20 > fineGara) return null;
+          if (new Date() > fineGara) return null;
           const isIscrittoOlimpiadi = garaIscrizione && (garaIscrizione.pagamento_confermato || garaIscrizione.abbonato_gratis);
-          const isAbbonato = piano === "premium" || isAdmin;
-          const isAbbStatoNonIscr = isAbbonato && !isIscrittoOlimpiadi;
-          const destinazione = isIscrittoOlimpiadi ? "olimpiadi_home" : isAbbStatoNonIscr ? "olimpiadi_iscrizione" : "olimpiadi_piani";
+          const destinazione = isIscrittoOlimpiadi ? "olimpiadi_home" : "olimpiadi_iscrizione";
           return (
             <button className="hcard" onClick={() => goScreen(destinazione)} style={{ width:"100%", marginBottom:"14px", padding:"0", borderRadius:"22px", background:"linear-gradient(145deg,#FFB800,#FF6B00)", boxShadow:"0 6px 18px rgba(255,107,0,0.4), inset 0 -3px 0 rgba(0,0,0,0.15)", border:"none", cursor:"pointer", "--card-border":"linear-gradient(135deg,#FFE500,#FF3D00)" }}>
               <div className="card-shine" />
@@ -2778,15 +2775,13 @@ export default function Home() {
                   <p style={{ fontSize:"15px", fontWeight:900, color:"#111", marginBottom:"3px" }}>Olimpiadi dello Studio</p>
                   {isIscrittoOlimpiadi ? (
                     <p style={{ fontSize:"11px", fontWeight:800, color:"rgba(0,0,0,0.6)" }}>#{garaIscrizione.posizione_classifica || "—"} — {garaIscrizione.nickname}</p>
-                  ) : isAbbStatoNonIscr ? (
-                    <p style={{ fontSize:"11px", fontWeight:800, color:"rgba(0,0,0,0.6)" }}>Sei abbonato — partecipa gratis!</p>
                   ) : (
-                    <p style={{ fontSize:"11px", fontWeight:800, color:"rgba(0,0,0,0.6)" }}>Scopri quanto è preparato tuo figlio a livello nazionale</p>
+                    <p style={{ fontSize:"11px", fontWeight:800, color:"rgba(0,0,0,0.6)" }}>Gratis · Scopri dove si classifica tuo figlio in Italia</p>
                   )}
                 </div>
                 <div style={{ background:"rgba(0,0,0,0.15)", borderRadius:"20px", padding:"4px 12px", textAlign:"center", flexShrink:0 }}>
                   <p style={{ fontSize:"10px", fontWeight:900, color:"#111", margin:0, whiteSpace:"nowrap" }}>
-                    {isIscrittoOlimpiadi ? (garaSessione?.sessione_completata ? "✅ Completata oggi" : "Sessione ⚡") : isAbbStatoNonIscr ? "Incluso ✅" : "Da 4,99€ · 2026"}
+                    {isIscrittoOlimpiadi ? (garaSessione?.sessione_completata ? "✅ Completata oggi" : "Sessione ⚡") : "🎉 Gratis!"}
                   </p>
                 </div>
               </div>
@@ -8607,17 +8602,23 @@ export default function Home() {
     }) || CLASSI_GARA_KEYS[0];
     if (!garaClasseScelta) setGaraClasseScelta(classePresel);
 
-    const isAbbonato = garaAccesso?.puoPartecipareGratis;
-    const nickValido = /^[a-zA-Z0-9À-ÿ]{3,20}$/.test(garaNickname);
-
     return (
       <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
-        <Head><title>Lexyo — Iscriviti alla Gara</title></Head>
+        <Head><title>Lexyo — Olimpiadi dello Studio</title></Head>
         <div style={S.hdr}>
           <button onClick={() => goScreen("home")} style={S.back}>←</button>
-          <div><p style={{ fontWeight:900, fontSize:"17px" }}>🏅 Olimpiadi dello Studio</p><p style={{ fontSize:"11px", color:"rgba(255,255,255,0.4)", fontWeight:600 }}>Iscrizione</p></div>
+          <div>
+            <p style={{ fontWeight:900, fontSize:"17px" }}>🏅 Olimpiadi dello Studio</p>
+            <p style={{ fontSize:"11px", color: luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.4)", fontWeight:600 }}>Iscrizione gratuita</p>
+          </div>
         </div>
         <div style={{ flex:1, overflowY:"auto", padding:"20px 18px" }}>
+
+          {/* Banner gratis */}
+          <div style={{ background:"rgba(16,185,129,0.1)", borderRadius:"16px", padding:"14px 16px", marginBottom:"20px", border:"1px solid rgba(16,185,129,0.3)", display:"flex", alignItems:"center", gap:10 }}>
+            <span style={{ fontSize:22 }}>🎉</span>
+            <p style={{ fontWeight:800, fontSize:"14px", color:"#059669", margin:0 }}>Le Olimpiadi sono gratis per tutti!</p>
+          </div>
 
           <p style={{ fontSize:"12px", fontWeight:800, color: luce?"rgba(0,0,30,0.45)":"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px" }}>Seleziona la classe</p>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:"20px" }}>
@@ -8628,7 +8629,7 @@ export default function Home() {
             ))}
           </div>
 
-          <p style={{ fontSize:"12px", fontWeight:800, color: luce?"rgba(0,0,30,0.45)":"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"8px" }}>Scegli il tuo nickname</p>
+          <p style={{ fontSize:"12px", fontWeight:800, color: luce?"rgba(0,0,30,0.45)":"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"8px" }}>Scegli il nickname</p>
           <div style={{ position:"relative", marginBottom:"6px" }}>
             <input
               value={garaNickname}
@@ -8641,28 +8642,11 @@ export default function Home() {
           </div>
           {garaNicknameOk === false && <p style={{ fontSize:"12px", color:"#dc2626", fontWeight:700, marginBottom:"6px" }}>Nickname già in uso. Scegline un altro.</p>}
           {garaNickname.length >= 3 && <p style={{ fontSize:"12px", color: luce?"rgba(0,0,30,0.5)":"rgba(255,255,255,0.5)", fontWeight:600, marginBottom:"16px" }}>Apparirai in classifica come: <strong>{garaNickname}</strong></p>}
-          <p style={{ fontSize:"11px", color: luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.35)", fontWeight:600, marginBottom:"20px", lineHeight:1.5 }}>⚠️ Nessun dato personale · Niente parolacce · Max 20 caratteri</p>
+          <p style={{ fontSize:"11px", color: luce?"rgba(0,0,30,0.4)":"rgba(255,255,255,0.35)", fontWeight:600, marginBottom:"24px", lineHeight:1.5 }}>⚠️ Il nickname è pubblico · Niente dati personali · Max 20 caratteri</p>
 
-          {isAbbonato ? (
-            <div>
-              <div style={{ background:"rgba(16,185,129,0.12)", borderRadius:"14px", padding:"14px 16px", marginBottom:"16px", border:"1px solid rgba(16,185,129,0.35)" }}>
-                <p style={{ fontWeight:900, fontSize:"15px", color:"#059669", margin:0 }}>🎉 Sei abbonato! Partecipi gratis.</p>
-              </div>
-              <button onClick={iscriviGaraGratis} disabled={!garaNicknameOk || garaLoading} style={{ ...S.btn, background: !garaNicknameOk||garaLoading?"rgba(16,185,129,0.4)":"linear-gradient(135deg,#10b981,#059669)", opacity: !garaNicknameOk||garaLoading?0.6:1 }}>
-                {garaLoading ? "Iscrizione..." : "Conferma iscrizione →"}
-              </button>
-            </div>
-          ) : (
-            <div>
-              <div style={{ background:"rgba(255,183,0,0.1)", borderRadius:"14px", padding:"14px 16px", marginBottom:"16px", border:"1px solid rgba(255,183,0,0.35)" }}>
-                <p style={{ fontWeight:900, fontSize:"22px", color:"#d97706", margin:"0 0 6px" }}>4,99€</p>
-                <p style={{ fontSize:"13px", color: luce?"rgba(0,0,0,0.6)":"rgba(255,255,255,0.6)", fontWeight:600, margin:0 }}>Pagamento unico · Gara completa (10 sessioni) · Classifica live · Premi reali</p>
-              </div>
-              <button onClick={iscriviGaraPagamento} disabled={!garaNicknameOk || garaLoading} style={{ ...S.btn, ...S.btnP, opacity: !garaNicknameOk||garaLoading?0.5:1 }}>
-                {garaLoading ? "Reindirizzamento..." : "🏆 Paga e partecipa — 4,99€"}
-              </button>
-            </div>
-          )}
+          <button onClick={iscriviGaraGratis} disabled={!garaNicknameOk || garaLoading} style={{ ...S.btn, background: !garaNicknameOk||garaLoading?"rgba(16,185,129,0.4)":"linear-gradient(135deg,#10b981,#059669)" }}>
+            {garaLoading ? "Iscrizione..." : "🏅 Iscriviti gratis alle Olimpiadi →"}
+          </button>
         </div>
       </div>
     );
