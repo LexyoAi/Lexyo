@@ -1346,7 +1346,7 @@ export default function Home() {
           }
           // Accesso automatico dopo registrazione (o se email già registrata)
           const { error: loginError } = await doLogin(email.trim(), password.trim());
-          if (loginError) setAuthError("Email già registrata. Controlla la password.");
+          if (loginError) { setAuthError("Account creato! Ora clicca su 'Accedi' e inserisci email e password."); setAuthMode("login"); }
         }
       } else {
         const { error: loginError } = await doLogin(email.trim(), password.trim());
@@ -2049,7 +2049,7 @@ export default function Home() {
       <div style={{ width:"100%", maxWidth:"380px", display:"flex", flexDirection:"column", gap:"12px" }}>
         <div style={{ display:"flex", gap:"8px" }}>
           {["login","register"].map(m => (
-            <button key={m} onClick={() => { setAuthMode(m); setAuthError(""); setAuthSuccess(""); }} style={{ flex:1, padding:"10px", borderRadius:"10px", background:authMode===m?"rgba(99,102,241,0.2)":"rgba(255,255,255,0.04)", border:`1px solid ${authMode===m?"#6366f1":"rgba(255,255,255,0.08)"}`, color:authMode===m?"white":"rgba(255,255,255,0.4)", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer" }}>
+            <button key={m} onClick={() => { setAuthMode(m); setAuthError(""); setAuthSuccess(""); }} style={{ flex:1, padding:"10px", borderRadius:"10px", background:authMode===m?"rgba(99,102,241,0.2)":luce?"rgba(0,0,0,0.05)":"rgba(255,255,255,0.04)", border:`1px solid ${authMode===m?"#6366f1":luce?"rgba(0,0,0,0.12)":"rgba(255,255,255,0.08)"}`, color:authMode===m?luce?"#3730a3":"white":luce?"rgba(0,0,30,0.5)":"rgba(255,255,255,0.4)", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer" }}>
               {m==="login"?"Accedi":"Registrati"}
             </button>
           ))}
@@ -2089,13 +2089,13 @@ export default function Home() {
           <div style={{ display:"flex", flexDirection:"column", gap:"10px", padding:"14px 16px", background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:"12px" }}>
             <label style={{ display:"flex", gap:"10px", alignItems:"flex-start", cursor:"pointer" }}>
               <input type="checkbox" checked={accettaTermini} onChange={e => setAccettaTermini(e.target.checked)} style={{ marginTop:"2px", accentColor:"#6366f1", width:"16px", height:"16px", flexShrink:0, cursor:"pointer" }} />
-              <span style={{ fontSize:"12px", color:"rgba(255,255,255,0.65)", lineHeight:1.55, fontWeight:600 }}>
-                Ho letto e accetto i <a href="/termini" target="_blank" rel="noreferrer" style={{ color:"#a78bfa" }}>Termini di Servizio</a> e la <a href="/privacy" target="_blank" rel="noreferrer" style={{ color:"#a78bfa" }}>Privacy Policy</a> <span style={{ color:"#ef4444" }}>*</span>
+              <span style={{ fontSize:"12px", color: luce ? "rgba(0,0,30,0.7)" : "rgba(255,255,255,0.65)", lineHeight:1.55, fontWeight:600 }}>
+                Ho letto e accetto i <a href="/termini" target="_blank" rel="noreferrer" style={{ color:"#6C47FF" }}>Termini di Servizio</a> e la <a href="/privacy" target="_blank" rel="noreferrer" style={{ color:"#6C47FF" }}>Privacy Policy</a> <span style={{ color:"#ef4444" }}>*</span>
               </span>
             </label>
             <label style={{ display:"flex", gap:"10px", alignItems:"flex-start", cursor:"pointer" }}>
               <input type="checkbox" checked={marketingConsent} onChange={e => setMarketingConsent(e.target.checked)} style={{ marginTop:"2px", accentColor:"#6366f1", width:"16px", height:"16px", flexShrink:0, cursor:"pointer" }} />
-              <span style={{ fontSize:"12px", color:"rgba(255,255,255,0.4)", lineHeight:1.55, fontWeight:600 }}>
+              <span style={{ fontSize:"12px", color: luce ? "rgba(0,0,30,0.45)" : "rgba(255,255,255,0.4)", lineHeight:1.55, fontWeight:600 }}>
                 Acconsento a ricevere aggiornamenti e offerte via email (facoltativo)
               </span>
             </label>
@@ -2110,7 +2110,7 @@ export default function Home() {
             const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: "https://app.lexyo.it" });
             if (error) setAuthError(error.message);
             else setAuthSuccess("Email inviata! Controlla la tua casella di posta.");
-          }} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.35)", fontSize:"13px", fontWeight:600, cursor:"pointer", fontFamily:"'Nunito'" }}>
+          }} style={{ background:"none", border:"none", color: luce ? "rgba(0,0,30,0.45)" : "rgba(255,255,255,0.35)", fontSize:"13px", fontWeight:600, cursor:"pointer", fontFamily:"'Nunito'" }}>
             Password dimenticata?
           </button>
         )}
@@ -2143,7 +2143,7 @@ export default function Home() {
       </div>
     </div>
     {cookieBannerVisible && (
-      <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:9999, background:"rgba(9,9,24,0.97)", backdropFilter:"blur(20px)", borderTop:"1px solid rgba(99,102,241,0.3)", padding:"14px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:"12px" }}>
+      <div className="dark-overlay" style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:9999, background:"rgba(9,9,24,0.97)", backdropFilter:"blur(20px)", borderTop:"1px solid rgba(99,102,241,0.3)", padding:"14px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:"12px" }}>
         <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.65)", flex:1, lineHeight:1.55, fontWeight:500, minWidth:"200px" }}>
           🍪 Usiamo solo cookie tecnici essenziali. Nessun tracciamento, nessuna pubblicità.{" "}
           <a href="/cookie" target="_blank" rel="noreferrer" style={{ color:"#a78bfa", fontWeight:700 }}>Cookie Policy</a>{" · "}
@@ -2478,11 +2478,11 @@ export default function Home() {
       {newBadge && <div style={{ position:"fixed", top:"16px", left:"50%", transform:"translateX(-50%)", background:"linear-gradient(135deg,#f59e0b,#ef4444)", borderRadius:"20px", padding:"12px 22px", zIndex:9999, display:"flex", alignItems:"center", gap:"12px", boxShadow:"0 8px 32px rgba(0,0,0,0.5)", whiteSpace:"nowrap" }}><span style={{ fontSize:"26px" }}>{newBadge.emoji}</span><div><p style={{ fontWeight:900, fontSize:"14px" }}>Badge sbloccato!</p><p style={{ fontSize:"12px", opacity:0.9 }}>{newBadge.label}</p></div></div>}
 
       {/* overlay level-up */}
-      {levelUpAnim && <div style={{ position:"fixed", inset:0, zIndex:10000, background:"rgba(0,0,0,0.82)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"16px" }}><div style={{ animation:"levelUpPop 0.6s cubic-bezier(0.175,0.885,0.32,1.275) forwards" }}><LexChar stato="happy" size={140} /></div><div style={{ textAlign:"center" }}><p style={{ fontSize:"40px", fontWeight:900, background:"linear-gradient(135deg,#fbbf24,#f59e0b)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>LIVELLO {figlioAttivo?.livello}!</p><p style={{ fontSize:"18px", color:"rgba(255,255,255,0.85)", fontWeight:700 }}>Sei cresciuto! Continua così 💪</p></div></div>}
+      {levelUpAnim && <div className="dark-overlay" style={{ position:"fixed", inset:0, zIndex:10000, background:"rgba(0,0,0,0.82)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"16px" }}><div style={{ animation:"levelUpPop 0.6s cubic-bezier(0.175,0.885,0.32,1.275) forwards" }}><LexChar stato="happy" size={140} /></div><div style={{ textAlign:"center" }}><p style={{ fontSize:"40px", fontWeight:900, background:"linear-gradient(135deg,#fbbf24,#f59e0b)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>LIVELLO {figlioAttivo?.livello}!</p><p style={{ fontSize:"18px", color:"rgba(255,255,255,0.85)", fontWeight:700 }}>Sei cresciuto! Continua così 💪</p></div></div>}
 
       {/* overlay EVOLUZIONE LEX */}
       {lexEvoluzione && (
-        <div onClick={() => setLexEvoluzione(null)} style={{ position:"fixed", inset:0, zIndex:10001, background:"rgba(0,0,0,0.95)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"18px", cursor:"pointer" }}>
+        <div className="dark-overlay" onClick={() => setLexEvoluzione(null)} style={{ position:"fixed", inset:0, zIndex:10001, background:"rgba(0,0,0,0.95)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"18px", cursor:"pointer" }}>
           <style>{`
             @keyframes evoFlash { 0%{opacity:0} 30%{opacity:1} 60%{opacity:0.7} 100%{opacity:1} }
             @keyframes evoPop { 0%{transform:scale(0) rotate(-15deg);opacity:0} 50%{transform:scale(1.25) rotate(5deg);opacity:1} 80%{transform:scale(0.95) rotate(-2deg)} 100%{transform:scale(1) rotate(0deg);opacity:1} }
@@ -4548,12 +4548,12 @@ export default function Home() {
                   <p style={{ fontSize:"13px", color:"#10b981", fontWeight:700, lineHeight:1.6 }}>✅ {interrogValutazione}</p>
                 </div>
               )}
-              <div style={{ ...S.card, marginBottom:"16px", background:"rgba(99,102,241,0.1)", border:"1px solid rgba(99,102,241,0.3)", textAlign:"center", padding:"24px" }}>
+              <div style={{ ...S.card, marginBottom:"16px", background: luce ? "linear-gradient(135deg,#ede9fe,#ddd6fe)" : "rgba(99,102,241,0.1)", border:"1px solid rgba(99,102,241,0.3)", textAlign:"center", padding:"24px" }}>
                 <LexChar stato={interrogLexParla ? "talking" : "idle"} size={110} style={{ margin:"0 auto 12px" }} />
-                <p style={{ fontSize:"11px", fontWeight:700, color:"#a78bfa", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px" }}>
+                <p style={{ fontSize:"11px", fontWeight:700, color:"#7c3aed", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px" }}>
                   Domanda {interrogConv.length + 1} di {maxDomande}
                 </p>
-                <p style={{ fontSize:"16px", fontWeight:800, color:"white", lineHeight:1.7 }}>{interrogDomanda}</p>
+                <p style={{ fontSize:"16px", fontWeight:800, color: luce ? "#1e0a5e" : "white", lineHeight:1.7 }}>{interrogDomanda}</p>
                 <button onClick={() => riproduciAudio(interrogAudio, interrogDomanda)} style={{ marginTop:"16px", background:interrogLexParla?"rgba(16,185,129,0.2)":"linear-gradient(135deg,rgba(99,102,241,0.35),rgba(124,58,237,0.25))", border:`2px solid ${interrogLexParla?"rgba(16,185,129,0.5)":"rgba(99,102,241,0.6)"}`, borderRadius:"24px", padding:"12px 28px", color:interrogLexParla?"#10b981":"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"15px", cursor:"pointer" }}>
                   {interrogLexParla ? "🔊 Lex sta parlando..." : "▶️ Ascolta la domanda"}
                 </button>
@@ -4561,7 +4561,7 @@ export default function Home() {
               <button onClick={avviaRicognizione} style={{ ...S.btn, background:"linear-gradient(135deg,#ef4444,#dc2626)", border:"none", fontSize:"17px", padding:"20px", marginBottom:"10px", letterSpacing:"0.3px" }}>
                 🎤 Rispondi a voce
               </button>
-              <button onClick={() => { setInterrogTrascrizione(""); setInterrogFase("risposta_testo"); }} style={{ width:"100%", background:"none", border:"none", color:"rgba(255,255,255,0.3)", fontSize:"13px", fontWeight:600, cursor:"pointer", fontFamily:"'Nunito'", padding:"6px 0" }}>
+              <button onClick={() => { setInterrogTrascrizione(""); setInterrogFase("risposta_testo"); }} style={{ width:"100%", background:"none", border:"none", color: luce ? "rgba(0,0,30,0.4)" : "rgba(255,255,255,0.3)", fontSize:"13px", fontWeight:600, cursor:"pointer", fontFamily:"'Nunito'", padding:"6px 0" }}>
                 ✏️ Preferisco scrivere
               </button>
               {(!isTrial || isAdmin) && (
@@ -4581,7 +4581,7 @@ export default function Home() {
                     if (d.completato) { setInterrogValutazione(d.valutazione || ""); setInterrogVoto(d.voto); setInterrogFeedback(d.feedbackFinale || ""); setInterrogFase("voto"); addStelle(Math.max(1, (d.voto || 5) - 4)); }
                     else { setInterrogValutazione(""); setInterrogDomanda(d.prossimaDomanda || ""); setInterrogFase("domanda"); }
                   }).catch(() => { alert("Errore. Riprova."); setInterrogFase("domanda"); }));
-                }} style={{ width:"100%", background:"none", border:"1px solid rgba(255,255,255,0.1)", borderRadius:"12px", padding:"10px", color:"rgba(255,255,255,0.35)", fontSize:"12px", fontWeight:700, cursor:"pointer", fontFamily:"'Nunito'", marginTop:"6px" }}>
+                }} style={{ width:"100%", background:"none", border:`1px solid ${luce?"rgba(0,0,30,0.12)":"rgba(255,255,255,0.1)"}`, borderRadius:"12px", padding:"10px", color: luce ? "rgba(0,0,30,0.35)" : "rgba(255,255,255,0.35)", fontSize:"12px", fontWeight:700, cursor:"pointer", fontFamily:"'Nunito'", marginTop:"6px" }}>
                   ⏭ Salta questa domanda
                 </button>
               )}
@@ -6523,7 +6523,7 @@ export default function Home() {
 
         {/* Overlay nuovo livello con particelle */}
         {ripassoNuovoLivelloOverlay && (
-          <div style={{ position:"fixed", inset:0, zIndex:10000, background:"rgba(0,0,0,0.90)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"20px" }} onClick={() => setRipassoNuovoLivelloOverlay(false)}>
+          <div className="dark-overlay" style={{ position:"fixed", inset:0, zIndex:10000, background:"rgba(0,0,0,0.90)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"20px" }} onClick={() => setRipassoNuovoLivelloOverlay(false)}>
             {/* Particelle CSS */}
             {PARTICELLE.map((p, i) => (
               <div key={i} style={{ position:"absolute", top:p.top, left:p.left, width:`${p.size}px`, height:`${p.size}px`, borderRadius:"50%", background:p.color, animation:`particella ${p.dur} ${p.delay} ease-out both`, pointerEvents:"none" }} />
@@ -9054,7 +9054,7 @@ export default function Home() {
           </div>
 
           {isc && (
-            <div style={{ background:"linear-gradient(135deg,#2D1B69,#1A1040)", borderRadius:"20px", padding:"20px", marginBottom:20, textAlign:"center" }}>
+            <div className="dark-overlay" style={{ background:"linear-gradient(135deg,#2D1B69,#1A1040)", borderRadius:"20px", padding:"20px", marginBottom:20, textAlign:"center" }}>
               <p style={{ fontSize:"10px", fontWeight:800, color:"rgba(255,255,255,0.5)", letterSpacing:"1px", margin:"0 0 8px", textTransform:"uppercase" }}>La tua posizione</p>
               <p style={{ fontSize:"28px", fontWeight:900, color:"white", margin:"0 0 4px" }}>{isc.nickname} è <span style={{ color:"#FFB800" }}>#{isc.posizione_classifica||"—"}</span> in Italia! 🏆</p>
               <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.6)", fontWeight:600, margin:"0 0 4px" }}>Olimpiadi dello Studio · {CLASSI_GARA_MAP[isc.classe]||isc.classe}</p>
