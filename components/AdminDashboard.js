@@ -58,21 +58,40 @@ function StatCard({ label, valore, colore, grande }) {
 
 // ── Tab: Panoramica ──────────────────────────────────────────────────────────
 function TabPanoramica({ accessToken }) {
-  const [dati, setDati]       = useState(null);
-  const [loading, setLoading] = useState(true);
-  const intervalRef           = useRef(null);
+  const [dati, setDati]         = useState(null);
+  const [loading, setLoading]   = useState(true);
+  const [online, setOnline]     = useState(null);
+  const [onlinePulse, setOnlinePulse] = useState(false);
+  const intervalRef             = useRef(null);
+  const onlineRef               = useRef(null);
 
   async function carica() {
     try {
       const d = await callAdmin("admin-stats", accessToken);
       setDati(d);
+      setOnline(d.onlineOra ?? null);
     } catch {} finally { setLoading(false); }
+  }
+
+  async function aggiornaOnline() {
+    try {
+      const d = await callAdmin("admin-stats", accessToken);
+      const nuovoVal = d.onlineOra ?? 0;
+      setOnline(prev => {
+        if (prev !== null && nuovoVal !== prev) {
+          setOnlinePulse(true);
+          setTimeout(() => setOnlinePulse(false), 800);
+        }
+        return nuovoVal;
+      });
+    } catch {}
   }
 
   useEffect(() => {
     carica();
     intervalRef.current = setInterval(carica, 60000);
-    return () => clearInterval(intervalRef.current);
+    onlineRef.current   = setInterval(aggiornaOnline, 30000);
+    return () => { clearInterval(intervalRef.current); clearInterval(onlineRef.current); };
   }, []);
 
   if (loading) return <p style={{ textAlign: "center", color: "rgba(255,255,255,0.4)", marginTop: 40 }}>Caricamento…</p>;
@@ -80,14 +99,51 @@ function TabPanoramica({ accessToken }) {
 
   return (
     <div style={{ padding: "16px 16px 32px" }}>
+
+      {/* Utenti online — card in tempo reale */}
+      <div style={{
+        background: online > 0 ? "rgba(16,185,129,0.12)" : "rgba(255,255,255,0.04)",
+        border: `1.5px solid ${online > 0 ? "#10b981" : "rgba(255,255,255,0.1)"}`,
+        borderRadius: 16, padding: "16px 20px", marginBottom: 12,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        transition: "all 0.4s ease",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ position: "relative", width: 14, height: 14 }}>
+            <div style={{ width: 10, height: 10, borderRadius: "50%", background: online > 0 ? "#10b981" : "#6b7280", position: "absolute", top: 2, left: 2 }} />
+            {online > 0 && (
+              <div style={{ width: 14, height: 14, borderRadius: "50%", background: "rgba(16,185,129,0.4)", position: "absolute", top: 0, left: 0, animation: onlinePulse ? "none" : "onlinePing 2s ease-in-out infinite" }} />
+            )}
+          </div>
+          <div>
+            <p style={{ fontSize: 13, fontWeight: 800, color: online > 0 ? "#10b981" : "rgba(255,255,255,0.4)", margin: 0 }}>
+              Utenti attivi adesso
+            </p>
+            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", margin: 0, marginTop: 2 }}>Ultimi 15 min · aggiorna ogni 30s</p>
+          </div>
+        </div>
+        <p style={{
+          fontSize: 36, fontWeight: 900,
+          color: online > 0 ? "#10b981" : "rgba(255,255,255,0.2)",
+          margin: 0, lineHeight: 1,
+          transform: onlinePulse ? "scale(1.2)" : "scale(1)",
+          transition: "transform 0.3s ease",
+        }}>{online ?? "—"}</p>
+      </div>
+
+      <style>{`@keyframes onlinePing { 0%,100%{transform:scale(1);opacity:0.6} 50%{transform:scale(1.8);opacity:0} }`}</style>
+
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
         <div style={{ gridColumn: "1 / -1" }}>
           <StatCard label="💰 MRR — solo Stripe" valore={euro(dati.mrr)} colore="#22c55e" grande />
         </div>
-        <StatCard label="💳 Stripe"   valore={fmtNum(dati.utentiStripe)}  colore="#22c55e" />
-        <StatCard label="🎁 Manuali"  valore={fmtNum(dati.utentiManuali)} colore="#94a3b8" />
+        <StatCard label="💳 Stripe"      valore={fmtNum(dati.utentiStripe)}  colore="#22c55e" />
+        <StatCard label="🎁 Manuali"     valore={fmtNum(dati.utentiManuali)} colore="#94a3b8" />
         <StatCard label="👥 Tot. attivi" valore={fmtNum(dati.utentiPaganti)} colore={V} />
-        <StatCard label="🟡 Trial attivi" valore={fmtNum(dati.trialAttivi)} colore="#f59e0b" />
+        <StatCard label="🟡 Trial attivi (≤3gg)" valore={fmtNum(dati.trialAttivi)} colore="#f59e0b" />
+        <div style={{ gridColumn: "1 / -1" }}>
+          <StatCard label="🔴 Trial scaduti" valore={fmtNum(dati.trialScaduti)} colore="#ef4444" />
+        </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 12 }}>
         <StatCard label="Nuovi oggi"      valore={dati.nuoviOggi}  colore="#60a5fa" />
@@ -96,7 +152,7 @@ function TabPanoramica({ accessToken }) {
       </div>
       <StatCard label="📊 Totale utenti registrati" valore={fmtNum(dati.totaleUtenti)} colore="#94a3b8" />
       <p style={{ textAlign: "center", fontSize: 11, color: "rgba(255,255,255,0.25)", marginTop: 16 }}>
-        Aggiornamento automatico ogni 60s
+        Statistiche aggiornate ogni 60s · Online ogni 30s
       </p>
     </div>
   );
@@ -249,7 +305,7 @@ function TabApi({ accessToken }) {
 
       {/* Top utenti */}
       <p style={{ fontSize: 12, fontWeight: 800, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>
-        Top utenti per costo
+        Top 10 utenti per costo (30gg)
       </p>
       <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 12, overflow: "hidden" }}>
         {(dati.topUtenti || []).map((u, i) => (
