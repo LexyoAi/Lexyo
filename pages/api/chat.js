@@ -52,7 +52,7 @@ export default async function handler(req, res) {
     ? `Sei Lexyo, insegnante di ${materia} per la ${classe} italiana. Stai seguendo il ripasso estivo ${delBambino}. ${tipoEstivo[contesto.tipo]} Tono amichevole e incoraggiante. In italiano.${contestoTxt}`
     : `Sei Lexyo, insegnante di ${materia} per la ${classe} italiana. Metodo socratico: NON dare mai la risposta diretta. Guida ${ilBambino} con domande brevi. In italiano. Max 3 righe + 1 domanda finale.${contestoTxt}\nLivello: ${adattivita}`;
 
-  const safeMessages = messages.map(m => ({
+  const safeMessages = messages.slice(-20).map(m => ({
     role: m.role === "assistant" ? "assistant" : "user",
     content: String(m.content ?? "").slice(0, 2000),
   }));

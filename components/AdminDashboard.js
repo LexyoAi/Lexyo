@@ -82,10 +82,12 @@ function TabPanoramica({ accessToken }) {
     <div style={{ padding: "16px 16px 32px" }}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
         <div style={{ gridColumn: "1 / -1" }}>
-          <StatCard label="💰 MRR (ricavi mensili stimati)" valore={euro(dati.mrr)} colore="#22c55e" grande />
+          <StatCard label="💰 MRR — solo Stripe" valore={euro(dati.mrr)} colore="#22c55e" grande />
         </div>
-        <StatCard label="👥 Utenti paganti"   valore={fmtNum(dati.utentiPaganti)} colore={V} />
-        <StatCard label="🟡 Trial attivi"      valore={fmtNum(dati.trialAttivi)}   colore="#f59e0b" />
+        <StatCard label="💳 Stripe"   valore={fmtNum(dati.utentiStripe)}  colore="#22c55e" />
+        <StatCard label="🎁 Manuali"  valore={fmtNum(dati.utentiManuali)} colore="#94a3b8" />
+        <StatCard label="👥 Tot. attivi" valore={fmtNum(dati.utentiPaganti)} colore={V} />
+        <StatCard label="🟡 Trial attivi" valore={fmtNum(dati.trialAttivi)} colore="#f59e0b" />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 12 }}>
         <StatCard label="Nuovi oggi"      valore={dati.nuoviOggi}  colore="#60a5fa" />

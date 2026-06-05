@@ -36,6 +36,7 @@ export default async function handler(req, res) {
         system: [{ type: "text", text: `Verifica se una risposta è corretta. Sii oggettivo. SOLO JSON senza markdown:\n{"corretta":true,"spiegazione_breve":"max 12 parole"}` }],
         messages: [{ role: "user", content: `Domanda: "${domanda}"\nRisposta data: "${rispostaLex}"\nÈ corretta?` }],
       });
+      trackUsage("duello-lex", user.email);
       return res.json(parseJSON(r.content[0].text.trim()));
     } catch (e) {
       console.error("ERRORE [duello-lex verifica]:", e.message);

@@ -55,7 +55,7 @@ export default async function handler(req, res) {
       const priceId = process.env.STRIPE_PRICE_ID;
       if (!priceId) return res.status(500).json({ errore: "Price ID mensile non configurato" });
 
-      const { data: profilo } = await sb.from("profili").select("stripe_customer_id").ilike("email", user.email).maybeSingle();
+      const { data: profilo } = await sb.from("profili").select("stripe_customer_id").eq("email", user.email).maybeSingle();
       const customerParam = profilo?.stripe_customer_id
         ? { customer: profilo.stripe_customer_id }
         : { customer_email: user.email };
@@ -75,7 +75,7 @@ export default async function handler(req, res) {
       const priceId = process.env.STRIPE_PRICE_ID_ANNUALE;
       if (!priceId) return res.status(500).json({ errore: "Price ID annuale non configurato" });
 
-      const { data: profilo } = await sb.from("profili").select("stripe_customer_id").ilike("email", user.email).maybeSingle();
+      const { data: profilo } = await sb.from("profili").select("stripe_customer_id").eq("email", user.email).maybeSingle();
       const customerParam = profilo?.stripe_customer_id
         ? { customer: profilo.stripe_customer_id }
         : { customer_email: user.email };

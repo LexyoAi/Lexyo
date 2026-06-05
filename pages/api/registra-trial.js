@@ -29,7 +29,7 @@ export default async function handler(req, res) {
 
   if (emailAuth) {
     try {
-      await supabase.from("profili").update({ trial_avviato: true }).ilike("email", emailAuth);
+      await supabase.from("profili").update({ trial_avviato: true }).eq("email", emailAuth);
     } catch (_) {}
   }
 

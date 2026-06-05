@@ -33,7 +33,7 @@ export default async function handler(req, res) {
           const base = p.abbonamento_scadenza && new Date(p.abbonamento_scadenza) > ora
             ? new Date(p.abbonamento_scadenza) : ora;
           const nuova = new Date(base.getTime() + 30 * 86400000).toISOString();
-          await sb.from("profili").update({ abbonamento_scadenza: nuova }).ilike("email", p.email);
+          await sb.from("profili").update({ abbonamento_scadenza: nuova }).eq("email", p.email);
         }
         return res.json({ result: `+30 giorni a ${(paganti || []).length} utenti paganti` });
       }
