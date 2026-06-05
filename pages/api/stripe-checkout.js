@@ -25,7 +25,7 @@ export default async function handler(req, res) {
     const { data: profilo } = await sb
       .from("profili")
       .select("stripe_customer_id")
-      .ilike("email", user.email)
+      .eq("email", user.email)
       .maybeSingle();
 
     const customerParam = profilo?.stripe_customer_id

@@ -23,29 +23,29 @@ export default async function handler(req, res) {
         const scadenza = new Date(ora.getTime() + 30 * 86400000).toISOString();
         await sb.from("profili")
           .update({ abbonamento_attivo: true, abbonamento_scadenza: scadenza, trial_usato: true })
-          .ilike("email", email);
+          .eq("email", email.toLowerCase());
         break;
       }
       case "aggiungi_30": {
-        const { data: p } = await sb.from("profili").select("abbonamento_scadenza").ilike("email", email).maybeSingle();
+        const { data: p } = await sb.from("profili").select("abbonamento_scadenza").eq("email", email.toLowerCase()).maybeSingle();
         const base = p?.abbonamento_scadenza && new Date(p.abbonamento_scadenza) > ora
           ? new Date(p.abbonamento_scadenza)
           : ora;
         const nuova = new Date(base.getTime() + 30 * 86400000).toISOString();
         await sb.from("profili")
           .update({ abbonamento_attivo: true, abbonamento_scadenza: nuova })
-          .ilike("email", email);
+          .eq("email", email.toLowerCase());
         break;
       }
       case "reset_trial":
         await sb.from("profili")
           .update({ trial_usato: false, trial_avviato: false })
-          .ilike("email", email);
+          .eq("email", email.toLowerCase());
         break;
       case "disattiva":
         await sb.from("profili")
           .update({ abbonamento_attivo: false })
-          .ilike("email", email);
+          .eq("email", email.toLowerCase());
         break;
       default:
         return res.status(400).json({ errore: "Azione non valida" });

@@ -48,7 +48,7 @@ export default async function handler(req, res) {
 
         if (!preview) {
           // Calcola scadenza partendo dalla scadenza esistente (non la sovrascriviamo se più lunga)
-          const { data: profiloEsistente } = await sb.from("profili").select("abbonamento_scadenza").ilike("email", utente.user_email).maybeSingle();
+          const { data: profiloEsistente } = await sb.from("profili").select("abbonamento_scadenza").eq("email", utente.user_email).maybeSingle();
           const oggi = new Date();
           const baseData = profiloEsistente?.abbonamento_scadenza && new Date(profiloEsistente.abbonamento_scadenza) > oggi
             ? new Date(profiloEsistente.abbonamento_scadenza)
@@ -59,7 +59,7 @@ export default async function handler(req, res) {
           await sb.from("profili").update({
             abbonamento_attivo: true,
             abbonamento_scadenza: scadenza.toISOString(),
-          }).ilike("email", utente.user_email);
+          }).eq("email", utente.user_email);
 
           await sb.from("gara_iscrizioni").update({
             premio_assegnato: premioLabel,

@@ -33,7 +33,7 @@ async function upsertProfilo(email, fields) {
   const { data: existing } = await supabase
     .from("profili")
     .select("email")
-    .ilike("email", email)
+    .eq("email", email.trim().toLowerCase())
     .maybeSingle();
 
   if (existing) {
@@ -53,7 +53,7 @@ async function upsertProfilo(email, fields) {
         const { error: retryError } = await supabase
           .from("profili")
           .update(fields)
-          .ilike("email", email);
+          .eq("email", email.trim().toLowerCase());
         if (retryError) console.error("Supabase retry update error:", retryError.message);
       } else {
         console.error("Supabase insert error:", error.message);

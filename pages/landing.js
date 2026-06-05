@@ -33,10 +33,15 @@ export default function Landing({ onEntra }) {
 
   const handleInstallAndroid = async () => {
     if (window.__pwaInstallPrompt) {
-      window.__pwaInstallPrompt.prompt();
-      const { outcome } = await window.__pwaInstallPrompt.userChoice;
-      if (outcome === "accepted") { window.__pwaInstallPrompt = null; setPwaPromptReady(false); }
-    } else { setShowIosModal("android"); }
+      try {
+        await window.__pwaInstallPrompt.prompt();
+        await window.__pwaInstallPrompt.userChoice;
+      } catch {}
+      window.__pwaInstallPrompt = null;
+      setPwaPromptReady(false);
+    } else {
+      setShowIosModal("android");
+    }
   };
 
   useEffect(() => {
@@ -99,7 +104,7 @@ export default function Landing({ onEntra }) {
         <meta name="author" content="Lexyo.it" />
         <meta name="robots" content="index, follow" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <meta name="theme-color" content="#ffffff" />
+        <meta name="theme-color" content="#6C47FF" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta property="og:title" content="Lexyo — Il professore AI di tuo figlio" />

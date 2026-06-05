@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
+import { trackUsage } from "../../lib/track-usage";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const getSupabase = () => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
@@ -21,8 +22,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    const base64Data = foto_base64.replace(/^data:image\/[a-z]+;base64,/, "");
-    const mediaType = foto_base64.startsWith("data:image/png") ? "image/png" : "image/jpeg";
+    const mediaMatch = foto_base64.match(/^data:(image\/(?:jpeg|png|webp|gif));base64,/);
+    const mediaType = mediaMatch ? mediaMatch[1] : "image/jpeg";
+    const base64Data = foto_base64.split(",")[1];
 
     const response = await anthropic.messages.create({
       model: "claude-sonnet-4-6",
@@ -119,6 +121,7 @@ Rispondi SOLO con JSON valido, nessun testo extra:
     const nuovoPunteggio = (iscrizione?.punteggio_totale || 0) + risultato.punti;
     await sb.from("gara_iscrizioni").update({ punteggio_totale: nuovoPunteggio }).eq("user_email", user.email);
 
+    trackUsage("gara-correggi-quaderno", user.email);
     return res.json({ ...risultato, punteggio_totale_aggiornato: nuovoPunteggio });
   } catch (e) {
     console.error("gara-correggi-quaderno error:", e.message);

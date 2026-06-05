@@ -23,7 +23,7 @@ export default async function handler(req, res) {
     const { data: profilo } = await getSupabase()
       .from("profili")
       .select("is_admin")
-      .ilike("email", email.trim())
+      .eq("email", email.trim().toLowerCase())
       .maybeSingle();
 
     if (profilo?.is_admin !== true) return res.json({ autorizzato: false });

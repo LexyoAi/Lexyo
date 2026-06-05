@@ -48,7 +48,7 @@ export default async function handler(req, res) {
     });
     const topUtenti = Object.entries(byUtente)
       .map(([email, v]) => ({ email, chiamate: v.chiamate, costo: parseFloat(v.costo.toFixed(4)) }))
-      .sort((a, b) => b.costo - a.costo)
+      .sort((a, b) => b.chiamate - a.chiamate)
       .slice(0, 10);
 
     const utentiUnici       = Object.keys(byUtente).length;

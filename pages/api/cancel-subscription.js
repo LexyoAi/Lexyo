@@ -25,7 +25,7 @@ export default async function handler(req, res) {
     const { data: profilo } = await sb
       .from("profili")
       .select("email,stripe_customer_id")
-      .ilike("email", emailNorm)
+      .eq("email", emailNorm)
       .maybeSingle();
 
     let customerId = profilo?.stripe_customer_id;
@@ -38,7 +38,7 @@ export default async function handler(req, res) {
         return res.status(404).json({ errore: "Nessun account di pagamento trovato per questa email." });
       }
       customerId = customer.id;
-      await sb.from("profili").update({ stripe_customer_id: customerId }).ilike("email", emailNorm);
+      await sb.from("profili").update({ stripe_customer_id: customerId }).eq("email", emailNorm);
     }
 
     const subscriptions = await stripe.subscriptions.list({
@@ -69,7 +69,7 @@ export default async function handler(req, res) {
 
     const updateFields = { abbonamento_disdetto: true };
     if (fineperiodo) updateFields.abbonamento_scadenza = fineperiodo;
-    await sb.from("profili").update(updateFields).ilike("email", emailNorm);
+    await sb.from("profili").update(updateFields).eq("email", emailNorm);
 
     return res.json({ ok: true, fine_periodo: fineperiodo });
   } catch (e) {

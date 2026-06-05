@@ -924,9 +924,13 @@ export default function Home() {
 
   const handleInstallApp = async () => {
     if (window.__pwaInstallPrompt) {
-      window.__pwaInstallPrompt.prompt();
-      const { outcome } = await window.__pwaInstallPrompt.userChoice;
-      if (outcome === "accepted") { window.__pwaInstallPrompt = null; setPwaPromptReady(false); setInstallBannerDismissed(true); }
+      try {
+        await window.__pwaInstallPrompt.prompt();
+        await window.__pwaInstallPrompt.userChoice;
+      } catch {}
+      window.__pwaInstallPrompt = null;
+      setPwaPromptReady(false);
+      setInstallBannerDismissed(true);
     }
   };
 
@@ -2042,7 +2046,7 @@ export default function Home() {
 
   if (screen === "login") return (
     <>
-    <div style={{ ...S.app, ...S.center }}>
+    <div style={{ ...S.app, ...S.center, overflowY: "auto", justifyContent: "flex-start", paddingTop: "40px", paddingBottom: "40px" }}>
       <Head><title>Lexyo — Accesso</title></Head>
       <LexChar stato="idle" size={130} style={{ marginBottom:"16px" }} />
       <h1 style={S.title}>Area Genitore</h1>
@@ -2307,9 +2311,12 @@ export default function Home() {
         <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
           <button onClick={async () => {
             if (window.__pwaInstallPrompt) {
-              window.__pwaInstallPrompt.prompt();
-              const { outcome } = await window.__pwaInstallPrompt.userChoice;
-              if (outcome === "accepted") { window.__pwaInstallPrompt = null; setPwaPromptReady(false); }
+              try {
+                await window.__pwaInstallPrompt.prompt();
+                await window.__pwaInstallPrompt.userChoice;
+              } catch {}
+              window.__pwaInstallPrompt = null;
+              setPwaPromptReady(false);
             } else { setShowAppIosModal("android"); }
           }} style={{ width:"100%", display:"flex", alignItems:"center", gap:"14px", background:"linear-gradient(135deg,#3b82f6,#2563eb)", border:"none", borderRadius:"14px", padding:"14px 20px", color:"white", fontFamily:"'Plus Jakarta Sans',sans-serif", cursor:"pointer" }}>
             <img src="https://cdn.simpleicons.org/android/ffffff" width="30" height="30" alt="Android" style={{ objectFit:"contain", flexShrink:0 }} />
