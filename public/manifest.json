@@ -1,16 +1,28 @@
 {
-  "name": "Lexyo – Il professore AI per i tuoi figli",
+  "name": "Lexyo",
   "short_name": "Lexyo",
-  "description": "La prima app AI educativa italiana. Programma MIUR, voce italiana, zero pubblicità.",
+  "description": "Il primo professore AI per i tuoi bambini. Compiti, quiz, interrogazioni e inglese basati sul programma ministeriale.",
   "start_url": "/",
-  "scope": "/",
+  "id": "https://app.lexyo.it",
   "display": "standalone",
-  "background_color": "#6C47FF",
+  "orientation": "portrait",
   "theme_color": "#6C47FF",
-  "orientation": "portrait-primary",
-  "lang": "it",
+  "background_color": "#6C47FF",
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
-  ]
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "kids"],
+  "lang": "it",
+  "scope": "/"
 }
