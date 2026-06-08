@@ -23,7 +23,7 @@ export default async function handler(req, res) {
   try {
     const { data, hit } = await cacheGetOrFetch(key, async () => {
       const r = await client.messages.create({
-        model: "claude-haiku-4-5-20251001", max_tokens: 1000,
+        model: "claude-haiku-4-5-20251001", max_tokens: 1600,
         system: [{ type: "text", text: `Sei un insegnante che prepara un'interrogazione orale simulata di ${materiaNome} per un esame di ${classe}.\nGenera esattamente ${nDomande} domande adatte al livello, coprendo gli argomenti più importanti del programma.\nLivello studente: ${adattivita}\nRispondi SOLO con JSON senza markdown:\n{"domande":[{"id":1,"domanda":"...","suggerimento":"breve hint per orientarsi"},...]} — esattamente ${nDomande} oggetti nell'array.`, cache_control: { type: "ephemeral" } }],
         messages: [{ role: "user", content: `Prepara interrogazione di ${materiaNome} per ${classe} con ${nDomande} domande.` }],
       });

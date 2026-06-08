@@ -19,7 +19,7 @@ export default async function handler(req, res) {
 
   try {
     const r = await client.messages.create({
-      model: "claude-haiku-4-5-20251001", max_tokens: 1200,
+      model: "claude-haiku-4-5-20251001", max_tokens: 2800,
       system: [{ type: "text", text: `Sei un insegnante che corregge un'interrogazione di ${materiaNome} per un esame di ${classe}.\nValuta ogni risposta con un voto /10 e dai feedback costruttivo.\nLinguaggio adatto all'età, incoraggiante ma onesto.\nLivello studente: ${adattivita}\nRispondi SOLO con JSON senza markdown:\n{"voto_finale":8,"valutazioni":[{"domanda":"...","risposta_data":"...","voto":8,"feedback":"...","risposta_corretta":"..."},...],"commento_generale":"...","consiglio":"...","punti_forza":["...","..."],"da_ripassare":["..."]}`, cache_control: { type: "ephemeral" } }],
       messages: [{ role: "user", content: testo }],
     });

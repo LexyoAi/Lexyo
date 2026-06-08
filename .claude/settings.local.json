@@ -30,7 +30,8 @@
       "PowerShell(Get-ChildItem \"C:\\\\Users\\\\Shq\\\\Desktop\\\\maiprof\\\\public\\\\icons\" | Select-Object Name, @{N=\"KB\";E={[math]::Round\\($_.Length/1KB,1\\)}})",
       "PowerShell(\\(Get-Item \"C:\\\\Users\\\\Shq\\\\Desktop\\\\maiprof\\\\pages\\\\landing.js\"\\).Length / 1KB)",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "WebSearch"
     ]
   }
 }
