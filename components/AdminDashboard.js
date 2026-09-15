@@ -35,11 +35,18 @@ function fmtData(iso) {
   return new Date(iso).toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 function badgeUtente(u) {
-  if (u.is_admin)           return { label: "👑 Admin",    color: "#10b981" };
-  if (u.abbonamento_attivo) return { label: "🟢 Pagante",  color: "#22c55e" };
+  const ora = new Date();
+  const scadenzaOk = !u.abbonamento_scadenza || new Date(u.abbonamento_scadenza) > ora;
+  const abbAttivo  = u.abbonamento_attivo === true && scadenzaOk;
+
+  if (u.is_admin)  return { label: "👑 Admin",         color: "#10b981" };
+  if (abbAttivo)   return { label: "🟢 Pagante",        color: "#22c55e" };
+  // abbonamento_attivo=true nel DB ma scadenza passata → dato non sincronizzato
+  if (u.abbonamento_attivo && !scadenzaOk)
+                   return { label: "🟠 Stale (scaduto)", color: "#f97316" };
   if (u.trial_avviato && !u.trial_usato) return { label: "🟡 Trial", color: "#f59e0b" };
-  if (u.trial_usato)        return { label: "🔴 Scaduto",  color: "#ef4444" };
-  return                           { label: "⚪ Mai attivato", color: "#6b7280" };
+  if (u.trial_usato) return { label: "🔴 Scaduto",      color: "#ef4444" };
+  return             { label: "⚪ Mai attivato",         color: "#6b7280" };
 }
 
 // ── Componente Card stat ─────────────────────────────────────────────────────
@@ -217,7 +224,11 @@ function TabUtenti({ accessToken }) {
                 <p style={{ fontSize: 13, fontWeight: 700, color: "white", wordBreak: "break-all" }}>{u.email}</p>
                 <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>
                   Reg. {fmtData(u.created_at)}
-                  {u.abbonamento_scadenza ? ` · Scade ${fmtData(u.abbonamento_scadenza)}` : ""}
+                  {u.abbonamento_scadenza
+                    ? new Date(u.abbonamento_scadenza) > new Date()
+                      ? ` · Scade ${fmtData(u.abbonamento_scadenza)}`
+                      : ` · ⚠️ Scaduto il ${fmtData(u.abbonamento_scadenza)}`
+                    : ""}
                 </p>
               </div>
               <span style={{
@@ -357,10 +368,11 @@ function TabGestione({ accessToken, emailAdmin }) {
   }
 
   const azioni = [
-    { az: "lista_email",      label: "📧 Lista email utenti",       conf: null,                       desc: "Copia tutte le email registrate" },
-    { az: "mese_gratis_tutti",label: "🎁 Mese gratis a tutti",      conf: "Aggiungere 30 giorni a TUTTI gli utenti paganti?", desc: "+30gg a tutti gli abbonati attivi" },
-    { az: "esporta_csv",      label: "📊 Esporta CSV",              conf: null,                       desc: "Scarica file CSV con tutti i profili" },
-    { az: "svuota_cache",     label: "🔄 Svuota cache AI",          conf: "Svuotare tutta la cache AI?", desc: "Scade tutti gli entry in ai_cache" },
+    { az: "lista_email",       label: "📧 Lista email utenti",        conf: null,                                                          desc: "Copia tutte le email registrate" },
+    { az: "mese_gratis_tutti", label: "🎁 Mese gratis a tutti",       conf: "Aggiungere 30 giorni a TUTTI gli utenti paganti (validi)?",   desc: "+30gg a tutti gli abbonati attivi con scadenza futura" },
+    { az: "disattiva_stale",   label: "🟠 Disattiva abbonamenti stale", conf: "Disattivare tutti gli utenti con abbonamento scaduto nel DB?", desc: "Sincronizza DB: mette abbonamento_attivo=false dove la scadenza è passata" },
+    { az: "esporta_csv",       label: "📊 Esporta CSV",               conf: null,                                                          desc: "Scarica file CSV con tutti i profili" },
+    { az: "svuota_cache",      label: "🔄 Svuota cache AI",           conf: "Svuotare tutta la cache AI?",                                 desc: "Scade tutti gli entry in ai_cache" },
   ];
 
   return (
@@ -435,17 +447,10 @@ function TabGara({ accessToken }) {
   async function caricaStats() {
     setLoading(true);
     try {
-      const sb_url = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const promises = CLASSI_GARA.map(c =>
         fetch("/api/gara-classifica", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ classe: c }) }).then(r => r.json())
       );
       const risultati = await Promise.all(promises);
-
-      const r = await fetch("/api/admin-stats", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
-      });
-      const d = await r.json();
 
       const iscritti_per_classe = {};
       CLASSI_GARA.forEach((c, i) => {
@@ -453,7 +458,7 @@ function TabGara({ accessToken }) {
       });
       const totale_iscritti = Object.values(iscritti_per_classe).reduce((a, b) => a + b, 0);
 
-      setStats({ iscritti_per_classe, totale_iscritti, top3: risultati.map((r, i) => ({ classe: CLASSI_GARA[i], top3: (r.classifica || []).slice(0, 3) })) });
+      setStats({ iscritti_per_classe, totale_iscritti, top3: risultati.map((res, i) => ({ classe: CLASSI_GARA[i], top3: (res.classifica || []).slice(0, 3) })) });
     } catch (e) { console.error(e); } finally { setLoading(false); }
   }
 

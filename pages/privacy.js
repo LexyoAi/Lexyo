@@ -58,7 +58,7 @@ export default function Privacy() {
           <li><strong>Supabase Inc.</strong> — database e autenticazione; infrastruttura su server europei (AWS eu-west-1, Irlanda)</li>
           <li><strong>Stripe Inc.</strong> — elaborazione pagamenti; certificazione PCI-DSS Level 1</li>
           <li><strong>Anthropic PBC</strong> — intelligenza artificiale per le funzioni educative; i testi delle sessioni vengono elaborati per erogare il servizio ma non vengono usati per addestrare modelli senza consenso</li>
-          <li><strong>Vercel Inc.</strong> — hosting e delivery del servizio web</li>
+          <li><strong>Netlify Inc.</strong> — hosting e delivery del servizio web</li>
         </ul>
         <p>Tutti i fornitori sono vincolati da accordi di protezione dei dati (DPA) conformi al GDPR.</p>
 
@@ -81,7 +81,7 @@ export default function Privacy() {
         <p>Lexyo utilizza esclusivamente cookie tecnici essenziali e localStorage del browser per il funzionamento del servizio. Non utilizziamo cookie pubblicitari o di profilazione. Per maggiori informazioni consulta la nostra <a href="/cookie">Cookie Policy</a>.</p>
 
         <h2>9. Trasferimenti internazionali</h2>
-        <p>Alcuni dati possono essere trasferiti al di fuori dell'UE verso fornitori USA (Anthropic, Stripe, Vercel). Tali trasferimenti avvengono nel rispetto delle garanzie previste dal GDPR tramite <strong>Clausole Contrattuali Standard (SCC)</strong> approvate dalla Commissione Europea.</p>
+        <p>Alcuni dati possono essere trasferiti al di fuori dell'UE verso fornitori USA (Anthropic, Stripe, Netlify). Tali trasferimenti avvengono nel rispetto delle garanzie previste dal GDPR tramite <strong>Clausole Contrattuali Standard (SCC)</strong> approvate dalla Commissione Europea.</p>
 
         <h2>10. Sicurezza</h2>
         <p>Adottiamo misure tecniche e organizzative adeguate: cifratura TLS/SSL in transito, hashing bcrypt delle password, accesso ai dati limitato ai soli operatori autorizzati, monitoraggio delle anomalie.</p>

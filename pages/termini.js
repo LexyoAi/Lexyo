@@ -52,7 +52,7 @@ export default function Termini() {
 
         <h2>5. Abbonamento e pagamento</h2>
         <p><strong>Periodo di prova gratuito:</strong> 3 giorni di accesso completo senza inserimento di dati di pagamento. Al termine del trial, il servizio si disattiva automaticamente salvo sottoscrizione di un abbonamento.</p>
-        <p><strong>Abbonamento mensile:</strong> <strong>12,90€/mese</strong> (IVA inclusa) al prezzo di lancio, rinnovato automaticamente ogni mese tramite Stripe. Dopo il periodo di lancio, il prezzo standard sarà di 17,99€/mese. Chi si abbona durante il lancio mantiene il prezzo bloccato a 12,90€/mese per tutta la durata del proprio abbonamento continuativo.</p>
+        <p><strong>Abbonamento mensile:</strong> <strong>8,90€/mese</strong> (IVA inclusa) al prezzo di lancio, rinnovato automaticamente ogni mese tramite Stripe. Dopo il periodo di lancio, il prezzo standard sarà di 17,99€/mese. Chi si abbona durante il lancio mantiene il prezzo bloccato a 8,90€/mese per tutta la durata del proprio abbonamento continuativo.</p>
         <p>I pagamenti sono processati in modo sicuro da <strong>Stripe Inc.</strong> Lexyo non conserva i dati della tua carta di credito.</p>
 
         <h2>6. Disdetta e rimborsi</h2>
@@ -70,7 +70,7 @@ export default function Termini() {
 
         <h2>8. Limitazione di responsabilità</h2>
         <p>Lexyo è uno strumento di supporto allo studio e non sostituisce il giudizio professionale di insegnanti o educatori qualificati. I contenuti generati dall'AI possono contenere errori: ti invitiamo a verificare sempre le informazioni critiche con le fonti ufficiali.</p>
-        <p>Lexyo non è responsabile per eventuali danni indiretti, perdita di dati o interruzioni del servizio dovute a cause di forza maggiore o a malfunzionamenti dei servizi di terze parti (Supabase, Anthropic, Stripe, Vercel).</p>
+        <p>Lexyo non è responsabile per eventuali danni indiretti, perdita di dati o interruzioni del servizio dovute a cause di forza maggiore o a malfunzionamenti dei servizi di terze parti (Supabase, Anthropic, Stripe, Netlify).</p>
 
         <h2>9. Proprietà intellettuale</h2>
         <p>Tutti i contenuti, il codice, i design e i materiali di Lexyo sono di proprietà di Lexyo e protetti dalle leggi sul copyright. L'abbonamento ti concede una licenza non esclusiva e non trasferibile per l'uso personale e familiare del servizio.</p>

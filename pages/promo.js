@@ -159,10 +159,10 @@ export default function Promo() {
                 letterSpacing: "-0.3px",
               }}
             >
-              🎓 Inizia gratis →
+              🎓 Inizia gratis — zero rischi →
             </button>
             <p style={{ marginTop: "14px", fontSize: "13px", color: "rgba(255,255,255,0.45)" }}>
-              Nessuna carta richiesta &bull; Cancelli quando vuoi &bull; GDPR
+              Cancelli quando vuoi &bull; Nessun addebito per 3 giorni &bull; GDPR
             </p>
           </div>
         </section>
@@ -470,7 +470,7 @@ export default function Promo() {
                 lineHeight: 1,
                 marginBottom: "6px",
               }}>
-                €12,90
+                €8,90
               </div>
               <div style={{
                 fontSize: "16px",
@@ -518,11 +518,11 @@ export default function Promo() {
                   letterSpacing: "-0.3px",
                 }}
               >
-                🎓 Inizia gratis →
+                🎓 Inizia gratis — zero rischi →
               </button>
 
               <p style={{ marginTop: "14px", fontSize: "13px", color: "rgba(255,255,255,0.38)" }}>
-                Nessuna carta richiesta
+                Cancelli quando vuoi &bull; Nessun addebito per 3 giorni
               </p>
             </div>
           </div>

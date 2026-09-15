@@ -24,13 +24,19 @@ export default async function handler(req, res) {
     const inizioSett    = new Date(ora); inizioSett.setDate(ora.getDate() - 7);
     const inizioMese    = new Date(ora.getFullYear(), ora.getMonth(), 1);
 
-    const tre3giorni    = new Date(ora.getTime() - 3 * 86400000);
+    // Un abbonamento è valido solo se attivo E la scadenza non è nel passato
+    // (null = nessuna scadenza impostata → trattato come valido per retrocompatibilità)
+    const isValido = (p) =>
+      p.abbonamento_attivo === true &&
+      (!p.abbonamento_scadenza || new Date(p.abbonamento_scadenza) > ora);
 
-    const paganti       = profili.filter(p => p.abbonamento_attivo === true);
-    const pagantiStripe = profili.filter(p => p.abbonamento_attivo === true && p.stripe_customer_id);
-    const pagantiManuali= profili.filter(p => p.abbonamento_attivo === true && !p.stripe_customer_id);
-    const trialAttivi   = profili.filter(p => !p.abbonamento_attivo && !p.trial_usato && new Date(p.created_at) >= tre3giorni);
-    const trialScaduti  = profili.filter(p => !p.abbonamento_attivo && p.trial_usato === true);
+    const paganti        = profili.filter(isValido);
+    const pagantiStripe  = profili.filter(p => isValido(p) && p.stripe_customer_id);
+    const pagantiManuali = profili.filter(p => isValido(p) && !p.stripe_customer_id);
+    // Trial attivi: ha avviato il trial, non lo ha consumato, non ha abbonamento valido
+    const trialAttivi    = profili.filter(p => p.trial_avviato === true && !p.trial_usato && !isValido(p));
+    // Trial scaduti: ha consumato il trial e non ha abbonamento valido
+    const trialScaduti   = profili.filter(p => p.trial_usato === true && !isValido(p));
     const nuoviOggi     = profili.filter(p => new Date(p.created_at) >= inizioOggi);
     const nuoviSett     = profili.filter(p => new Date(p.created_at) >= inizioSett);
     const nuoviMese     = profili.filter(p => new Date(p.created_at) >= inizioMese);
@@ -41,7 +47,7 @@ export default async function handler(req, res) {
     const onlineSet = new Set((onlineRows || []).map(r => r.user_email).filter(e => e && e !== "anonimo"));
 
     return res.json({
-      mrr:             parseFloat((pagantiStripe.length * 12.90).toFixed(2)),
+      mrr:             parseFloat((pagantiStripe.length * 8.90).toFixed(2)),
       utentiPaganti:   paganti.length,
       utentiStripe:    pagantiStripe.length,
       utentiManuali:   pagantiManuali.length,

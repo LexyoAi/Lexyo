@@ -37,7 +37,7 @@ const FAQS = [
   },
   {
     q: "Quanto costa Lexyo?",
-    a: "Lexyo offre una prova gratuita senza carta di credito, dopodiché il costo è di 12,90€ al mese. Puoi annullare quando vuoi, senza vincoli. Il prezzo include l'accesso a tutte le funzioni per tutti i bambini del nucleo familiare."
+    a: "Lexyo offre una prova gratuita senza carta di credito, dopodiché il costo è di 8,90€ al mese. Puoi annullare quando vuoi, senza vincoli. Il prezzo include l'accesso a tutte le funzioni per tutti i bambini del nucleo familiare."
   },
   {
     q: "I dati dei bambini sono al sicuro?",

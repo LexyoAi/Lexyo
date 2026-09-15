@@ -434,7 +434,7 @@ export default function Home() {
     if (p === "successo") {
       setPagamentoFlash("successo");
       if (typeof fbq !== 'undefined') {
-        fbq('track', 'Purchase', {value: 12.90, currency: 'EUR'});
+        fbq('track', 'Purchase', {value: 8.90, currency: 'EUR'});
       }
       window.history.replaceState({}, "", window.location.pathname);
       // Polling: aspetta che il webhook Stripe aggiorni abbonamento_attivo su Supabase
@@ -487,7 +487,7 @@ export default function Home() {
       });
       const d = await res.json();
       if (d.url) {
-        const valore = tipo === "annuale" ? 99 : 12.90;
+        const valore = tipo === "annuale" ? 79 : 8.90;
         if (typeof fbq !== 'undefined') {
           fbq('track', 'InitiateCheckout', { value: valore, currency: 'EUR' });
         }
@@ -584,7 +584,7 @@ export default function Home() {
   };
 
   const avviaCheckoutAbbonamento = async (tipo) => {
-    if (typeof fbq !== "undefined") fbq("track", "InitiateCheckout", { value: tipo === "annuale" ? 99 : 12.90, currency: "EUR" });
+    if (typeof fbq !== "undefined") fbq("track", "InitiateCheckout", { value: tipo === "annuale" ? 79 : 8.90, currency: "EUR" });
     setGaraLoading(true);
     try {
       const token = await getAccessToken();
@@ -1047,7 +1047,7 @@ export default function Home() {
                 localStorage.removeItem("lexyo_referral_code");
               }
             } catch {}
-            if (typeof fbq !== "undefined") fbq("track", "StartTrial", { value: 0, currency: "EUR", predicted_ltv: 12.90 });
+            if (typeof fbq !== "undefined") fbq("track", "StartTrial", { value: 0, currency: "EUR", predicted_ltv: 8.90 });
           }
           const giorniEffettivi = (profilo?.trial_usato === true && !isPremium) ? 0 : giorniRimasti;
           if (profilo?.trial_usato === true && !isPremium) setTrialGiorni(0);
@@ -1345,7 +1345,7 @@ export default function Home() {
               fbq('track', 'StartTrial', {
                 value: 0,
                 currency: 'EUR',
-                predicted_ltv: 12.90
+                predicted_ltv: 8.90
               });
             }
           }
@@ -2209,7 +2209,7 @@ export default function Home() {
           {/* MENSILE */}
           <div style={{ flex:1, background: luce ? "rgba(99,102,241,0.07)" : "rgba(99,102,241,0.15)", border:"1px solid rgba(99,102,241,0.35)", borderRadius:"20px", padding:"18px 10px", display:"flex", flexDirection:"column", alignItems:"center" }}>
             <p style={{ fontSize:"11px", fontWeight:800, color: luce ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.5)", marginBottom:"10px", letterSpacing:"0.5px" }}>MENSILE</p>
-            <p style={{ fontSize:"28px", fontWeight:900, color: luce ? "#0a0a20" : "white", lineHeight:1, marginBottom:"2px" }}>12,90€</p>
+            <p style={{ fontSize:"28px", fontWeight:900, color: luce ? "#0a0a20" : "white", lineHeight:1, marginBottom:"2px" }}>8,90€</p>
             <p style={{ fontSize:"11px", color: luce ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.4)", fontWeight:600, marginBottom:"20px" }}>/ mese</p>
             <button onClick={() => avviaStripeCheckout("mensile")} disabled={!!stripeLoading} style={{ width:"100%", background:"rgba(99,102,241,0.15)", border:"1px solid rgba(99,102,241,0.4)", borderRadius:"12px", padding:"10px 6px", color: luce ? "#4f46e5" : "#a78bfa", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", cursor:"pointer", opacity: stripeLoading === "mensile" ? 0.7 : 1 }}>
               {stripeLoading === "mensile" ? "…" : "Scegli →"}
@@ -2222,17 +2222,26 @@ export default function Home() {
               ⭐ CONSIGLIATO
             </div>
             <p style={{ fontSize:"11px", fontWeight:800, color: luce ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.5)", marginBottom:"10px", letterSpacing:"0.5px", marginTop:"4px" }}>ANNUALE</p>
-            <p style={{ fontSize:"28px", fontWeight:900, color: luce ? "#0a0a20" : "white", lineHeight:1, marginBottom:"2px" }}>8,25€</p>
+            <p style={{ fontSize:"28px", fontWeight:900, color: luce ? "#0a0a20" : "white", lineHeight:1, marginBottom:"2px" }}>6,58€</p>
             <p style={{ fontSize:"11px", color: luce ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.4)", fontWeight:600, marginBottom:"2px" }}>/ mese</p>
-            <p style={{ fontSize:"11px", color:"#7c3aed", fontWeight:800, marginBottom:"8px" }}>€99 / anno</p>
+            <p style={{ fontSize:"11px", color:"#7c3aed", fontWeight:800, marginBottom:"8px" }}>€79 / anno</p>
             <div style={{ background:"rgba(16,185,129,0.12)", border:"1px solid rgba(16,185,129,0.35)", borderRadius:"100px", padding:"3px 10px", marginBottom:"14px" }}>
-              <p style={{ fontSize:"10px", color:"#059669", fontWeight:900 }}>Risparmia 36%</p>
+              <p style={{ fontSize:"10px", color:"#059669", fontWeight:900 }}>Risparmia 26%</p>
             </div>
             <button onClick={() => avviaStripeCheckout("annuale")} disabled={!!stripeLoading} style={{ width:"100%", background:"linear-gradient(135deg,#6C47FF,#9B3FD4)", border:"none", borderRadius:"12px", padding:"10px 6px", color:"white", fontFamily:"'Nunito'", fontWeight:800, fontSize:"13px", cursor:"pointer", opacity: stripeLoading === "annuale" ? 0.7 : 1 }}>
               {stripeLoading === "annuale" ? "…" : "Scegli →"}
             </button>
           </div>
 
+        </div>
+
+        {/* Box garanzia trial */}
+        <div style={{ background:"rgba(0,200,100,0.08)", border:"1px solid rgba(0,200,100,0.3)", borderRadius:"12px", padding:"12px 16px", marginTop:"12px", width:"100%" }}>
+          <p style={{ fontSize:"13px", color:"#006633", fontWeight:700, margin:0, lineHeight:1.5 }}>
+            🔒 Nessun addebito durante i 3 giorni di prova<br/>
+            ✅ Puoi cancellare in qualsiasi momento<br/>
+            💳 La carta viene richiesta solo per garantire la continuità del servizio
+          </p>
         </div>
 
         {/* Features comuni + nota lancio */}
@@ -2276,7 +2285,7 @@ export default function Home() {
           <div style={{ background:"linear-gradient(135deg,#f59e0b,#ef4444)", borderRadius:"24px", padding:"18px 32px", textAlign:"center", boxShadow:"0 16px 48px rgba(245,158,11,0.4)" }}>
             <p style={{ fontSize:"40px", margin:"0 0 8px" }}>🏆</p>
             <p style={{ fontWeight:900, fontSize:"22px", color:"white", margin:"0 0 4px" }}>Premium Attivo!</p>
-            <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.8)", margin:0 }}>Abbonamento confermato a 12,90€/mese</p>
+            <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.8)", margin:0 }}>Abbonamento confermato a 8,90€/mese</p>
           </div>
         ) : (
           <div style={{ background:"linear-gradient(135deg,#10b981,#059669)", borderRadius:"24px", padding:"18px 32px", textAlign:"center", boxShadow:"0 16px 48px rgba(16,185,129,0.4)" }}>
@@ -2287,7 +2296,15 @@ export default function Home() {
         )}
       </div>
 
-      <p style={{ fontSize:"15px", color:"#44476A", textAlign:"center", maxWidth:"320px", lineHeight:1.7, marginBottom:"32px" }}>
+      <div style={{ background:"rgba(0,200,100,0.08)", border:"1px solid rgba(0,200,100,0.3)", borderRadius:"12px", padding:"12px 16px", marginTop:"16px", width:"100%", maxWidth:"380px" }}>
+        <p style={{ fontSize:"13px", color:"#006633", fontWeight:700, margin:0, lineHeight:1.5 }}>
+          🔒 Nessun addebito durante i 3 giorni di prova<br/>
+          ✅ Puoi cancellare in qualsiasi momento<br/>
+          💳 La carta viene richiesta solo per garantire la continuità del servizio
+        </p>
+      </div>
+
+      <p style={{ fontSize:"15px", color:"#44476A", textAlign:"center", maxWidth:"320px", lineHeight:1.7, marginBottom:"32px", marginTop:"16px" }}>
         {piano === "premium" ? "Grazie! Hai accesso completo a tutte le funzioni di Lexyo." : "Benvenuto! Hai accesso gratuito per esplorare tutto Lexyo."}{" "}
         Adesso installa l'app sul tuo telefonino — è gratuita.
       </p>
@@ -5026,7 +5043,7 @@ export default function Home() {
                     <div style={{ textAlign:"center", marginBottom:"20px" }}>
                       <div style={{ fontSize:"36px", marginBottom:"10px" }}>💎</div>
                       <p style={{ fontWeight:900, fontSize:"18px", marginBottom:"4px" }}>Piano Premium Attivo</p>
-                      <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.45)" }}>12,90€/mese · rinnovo automatico</p>
+                      <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.45)" }}>8,90€/mese · rinnovo automatico</p>
                     </div>
                     <div style={{ background:"rgba(139,92,246,0.08)", border:"1px solid rgba(139,92,246,0.2)", borderRadius:"14px", padding:"16px", marginBottom:"20px" }}>
                       {["✅ Accesso completo a tutte le funzioni","✅ Foto compiti illimitate","✅ Chat AI 24/7","✅ Programma MIUR per tutte le classi","✅ Zero pubblicità per sempre"].map((t,i) => (
@@ -8547,16 +8564,16 @@ export default function Home() {
       },
       {
         id: "mensile", titolo: "Mensile", badge: "⭐ Più popolare",
-        prezzo: "12,90€/mese", sub: "Prova gratis · Cancelli quando vuoi",
+        prezzo: "8,90€/mese", sub: "Nessun addebito per 3 giorni · Cancelli quando vuoi",
         bg: "linear-gradient(145deg,#6C47FF,#9B3FD4)", colore: "#6C47FF",
         features: ["✅ Tutto Lexyo incluso", "✅ Olimpiadi incluse gratis", "✅ Foto, quiz, interrogazioni", "✅ Inglese con Lex"],
-        cta: "Inizia gratis →",
+        cta: "Inizia gratis — zero rischi →",
       },
       {
         id: "annuale", titolo: "Annuale", badge: "🏆 Miglior valore",
-        prezzo: "99€/anno", sub: "Equivale a 8,25€/mese",
+        prezzo: "79€/anno", sub: "Equivale a 6,58€/mese",
         bg: "linear-gradient(145deg,#00C070,#00A855)", colore: "#00A855",
-        features: ["✅ Tutto Lexyo incluso", "✅ Olimpiadi incluse gratis", "✅ Tutte le funzioni", "✅ Risparmia 56€"],
+        features: ["✅ Tutto Lexyo incluso", "✅ Olimpiadi incluse gratis", "✅ Tutte le funzioni", "✅ Risparmia ~28€"],
         cta: "Abbonati annuale →",
       },
     ];
@@ -8596,7 +8613,13 @@ export default function Home() {
               </div>
             </div>
           ))}
-          <p style={{ fontSize:"12px", color:"#059669", textAlign:"center", fontWeight:800, lineHeight:1.5 }}>Nessuna carta richiesta · Cancelli quando vuoi</p>
+          <div style={{ background:"rgba(0,200,100,0.08)", border:"1px solid rgba(0,200,100,0.3)", borderRadius:"12px", padding:"12px 16px", marginTop:"12px" }}>
+            <p style={{ fontSize:"13px", color:"#006633", fontWeight:700, margin:0, lineHeight:1.5 }}>
+              🔒 Nessun addebito durante i 3 giorni di prova<br/>
+              ✅ Puoi cancellare in qualsiasi momento<br/>
+              💳 La carta viene richiesta solo per garantire la continuità del servizio
+            </p>
+          </div>
         </div>
       </div>
     );

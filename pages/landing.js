@@ -342,7 +342,7 @@ export default function Landing({ onEntra }) {
               Prova gratis
             </button>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"6px", flexWrap:"wrap" }}>
-              {["poi 12,90€/mese","annulla quando vuoi","GDPR"].map((t,i) => (
+              {["poi 8,90€/mese","Cancelli quando vuoi","Nessun addebito per 3 giorni"].map((t,i) => (
                 <span key={i} style={{ fontSize:"12px", color:"#8892AE", fontWeight:500 }}>{i>0&&<span style={{ margin:"0 6px", color:"#C5C9E0" }}>·</span>}{t}</span>
               ))}
             </div>
@@ -402,6 +402,7 @@ export default function Landing({ onEntra }) {
           <button onClick={onEntra} className="btn-cta" style={{ padding:"16px 40px", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", border:"none", borderRadius:"14px", color:"white", fontFamily:"'Plus Jakarta Sans'", fontWeight:800, fontSize:"16px", boxShadow:"0 8px 32px rgba(99,102,241,0.4)", position:"relative", zIndex:1 }}>
             Prova gratis →
           </button>
+          <p style={{ fontSize:"12px", color:"#8892AE", marginTop:"10px", fontWeight:500 }}>Cancelli quando vuoi · Nessun addebito per 3 giorni</p>
         </div>
       </section>
 
@@ -512,6 +513,7 @@ export default function Landing({ onEntra }) {
                 <button onClick={onEntra} className="btn-cta" style={{ display:"inline-flex", alignItems:"center", gap:"8px", padding:"14px 28px", background:"rgba(0,0,0,0.18)", border:"2px solid rgba(0,0,0,0.2)", borderRadius:"14px", color:"#1a0a00", fontFamily:"'Plus Jakarta Sans'", fontWeight:900, fontSize:"15px", cursor:"pointer" }}>
                   Prova gratis →
                 </button>
+                <p style={{ fontSize:"12px", color:"rgba(0,0,0,0.45)", marginTop:"8px", fontWeight:500 }}>Cancelli quando vuoi · Nessun addebito per 3 giorni</p>
               </div>
               <div style={{ display:"flex", flexDirection:"column", gap:"12px", minWidth:"200px" }}>
                 {[
@@ -572,6 +574,7 @@ export default function Landing({ onEntra }) {
                 <button onClick={onEntra} className="btn-cta" style={{ display:"inline-flex", alignItems:"center", gap:"8px", padding:"14px 28px", background:"rgba(255,255,255,0.18)", border:"2px solid rgba(255,255,255,0.3)", borderRadius:"14px", color:"white", fontFamily:"'Plus Jakarta Sans'", fontWeight:900, fontSize:"15px", cursor:"pointer" }}>
                   Prova gratis →
                 </button>
+                <p style={{ fontSize:"12px", color:"rgba(255,255,255,0.5)", marginTop:"8px", fontWeight:500 }}>Cancelli quando vuoi · Nessun addebito per 3 giorni</p>
               </div>
               <div style={{ display:"flex", flexDirection:"column", gap:"10px", minWidth:"190px" }}>
                 {[
@@ -761,9 +764,13 @@ export default function Landing({ onEntra }) {
               <button onClick={onEntra} className="btn-cta" style={{ width:"100%", padding:"13px", background:"rgba(16,185,129,0.1)", border:"1px solid rgba(16,185,129,0.3)", borderRadius:"12px", color:"#059669", fontFamily:"'Plus Jakarta Sans'", fontWeight:800, fontSize:"14px" }}>
                 Prova gratis →
               </button>
-              <p style={{ fontSize:"11px", color:"#8892AE", textAlign:"center", marginTop:"12px" }}>
-                Disdici quando vuoi. Nessun vincolo.
-              </p>
+              <div style={{ background:"rgba(0,200,100,0.08)", border:"1px solid rgba(0,200,100,0.3)", borderRadius:"12px", padding:"12px 16px", marginTop:"12px" }}>
+                <p style={{ fontSize:"13px", color:"#006633", fontWeight:700, margin:0, lineHeight:1.5 }}>
+                  🔒 Nessun addebito durante i 3 giorni di prova<br/>
+                  ✅ Puoi cancellare in qualsiasi momento<br/>
+                  💳 La carta viene richiesta solo per garantire la continuità del servizio
+                </p>
+              </div>
             </div>
             {/* Premium */}
             <div style={{ background:"linear-gradient(135deg,#EEF0FF,#F4F0FF)", border:"2px solid rgba(99,102,241,0.3)", borderRadius:"22px", padding:"34px 30px", position:"relative", boxShadow:"0 8px 40px rgba(99,102,241,0.14)" }}>
@@ -772,7 +779,7 @@ export default function Landing({ onEntra }) {
               </div>
               <div style={{ textAlign:"center", marginBottom:"20px" }}>
                 <div style={{ fontSize:"clamp(42px,6vw,60px)", fontWeight:900, letterSpacing:"-2px", lineHeight:1, color:"#0D0F2B" }}>
-                  12,90€<span style={{ fontSize:"18px", color:"#8892AE", fontWeight:600 }}>/mese</span>
+                  8,90€<span style={{ fontSize:"18px", color:"#8892AE", fontWeight:600 }}>/mese</span>
                 </div>
               </div>
               <div style={{ display:"flex", flexDirection:"column", gap:"10px", marginBottom:"24px" }}>
@@ -783,9 +790,16 @@ export default function Landing({ onEntra }) {
               <button onClick={onEntra} className="btn-cta" style={{ width:"100%", padding:"15px", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", border:"none", borderRadius:"12px", color:"white", fontFamily:"'Plus Jakarta Sans'", fontWeight:800, fontSize:"15px" }}>
                 Abbonati — Offerta Lancio →
               </button>
+              <div style={{ background:"rgba(0,200,100,0.08)", border:"1px solid rgba(0,200,100,0.3)", borderRadius:"12px", padding:"12px 16px", marginTop:"12px" }}>
+                <p style={{ fontSize:"13px", color:"#006633", fontWeight:700, margin:0, lineHeight:1.5 }}>
+                  🔒 Nessun addebito durante i 3 giorni di prova<br/>
+                  ✅ Puoi cancellare in qualsiasi momento<br/>
+                  💳 La carta viene richiesta solo per garantire la continuità del servizio
+                </p>
+              </div>
               <div style={{ marginTop:"18px", background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.15)", borderRadius:"14px", padding:"16px 18px" }}>
                 <p style={{ fontSize:"14px", fontWeight:800, color:"#0D0F2B", textAlign:"center", marginBottom:"6px", lineHeight:1.5 }}>
-                  🔒 Prezzo bloccato per sempre a 12,90€/mese
+                  🔒 Prezzo bloccato per sempre a 8,90€/mese
                 </p>
                 <p style={{ fontSize:"13px", color:"#44476A", textAlign:"center", marginBottom:"10px", lineHeight:1.5 }}>
                   Solo per chi si iscrive durante il lancio.<br/>

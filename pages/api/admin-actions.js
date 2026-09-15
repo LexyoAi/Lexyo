@@ -24,18 +24,38 @@ export default async function handler(req, res) {
       }
 
       case "mese_gratis_tutti": {
-        const { data: paganti } = await sb
+        const { data: tuttiAttivi } = await sb
           .from("profili")
           .select("email,abbonamento_scadenza")
           .eq("abbonamento_attivo", true);
         const ora = new Date();
-        for (const p of paganti || []) {
+        // Solo utenti con abbonamento effettivamente valido (scadenza futura o non impostata)
+        const paganti = (tuttiAttivi || []).filter(p =>
+          !p.abbonamento_scadenza || new Date(p.abbonamento_scadenza) > ora
+        );
+        for (const p of paganti) {
           const base = p.abbonamento_scadenza && new Date(p.abbonamento_scadenza) > ora
             ? new Date(p.abbonamento_scadenza) : ora;
           const nuova = new Date(base.getTime() + 30 * 86400000).toISOString();
           await sb.from("profili").update({ abbonamento_scadenza: nuova }).eq("email", p.email);
         }
-        return res.json({ result: `+30 giorni a ${(paganti || []).length} utenti paganti` });
+        return res.json({ result: `+30 giorni a ${paganti.length} utenti paganti` });
+      }
+
+      case "disattiva_stale": {
+        // Disattiva tutti gli utenti con abbonamento_attivo=true ma scadenza nel passato
+        const { data: tuttiAttivi } = await sb
+          .from("profili")
+          .select("email,abbonamento_scadenza")
+          .eq("abbonamento_attivo", true);
+        const ora = new Date();
+        const stale = (tuttiAttivi || []).filter(p =>
+          p.abbonamento_scadenza && new Date(p.abbonamento_scadenza) <= ora
+        );
+        for (const p of stale) {
+          await sb.from("profili").update({ abbonamento_attivo: false }).eq("email", p.email);
+        }
+        return res.json({ result: `${stale.length} utenti stale disattivati` + (stale.length > 0 ? `:\n${stale.map(p => p.email).join("\n")}` : "") });
       }
 
       case "svuota_cache": {

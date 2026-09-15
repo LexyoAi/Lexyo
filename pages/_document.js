@@ -47,7 +47,7 @@ export default function Document() {
               "operatingSystem": "Web, iOS, Android",
               "offers": {
                 "@type": "Offer",
-                "price": "12.90",
+                "price": "8.90",
                 "priceCurrency": "EUR",
                 "priceValidUntil": "2027-12-31",
                 "description": "Abbonamento mensile con 3 giorni di prova gratuita",
