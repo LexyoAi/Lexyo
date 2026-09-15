@@ -2053,11 +2053,12 @@ export default function Home() {
       <p style={{ ...S.gray, marginBottom:"24px" }}>Solo il genitore si registra.<br/>Il bambino usa senza dati personali. 🔒</p>
       <div style={{ width:"100%", maxWidth:"380px", display:"flex", flexDirection:"column", gap:"12px" }}>
         <div style={{ display:"flex", gap:"8px" }}>
-          {["login","register"].map(m => (
-            <button key={m} onClick={() => { setAuthMode(m); setAuthError(""); setAuthSuccess(""); }} style={{ flex:1, padding:"10px", borderRadius:"10px", background:authMode===m?"rgba(99,102,241,0.2)":luce?"rgba(0,0,0,0.05)":"rgba(255,255,255,0.04)", border:`1px solid ${authMode===m?"#6366f1":luce?"rgba(0,0,0,0.12)":"rgba(255,255,255,0.08)"}`, color:authMode===m?luce?"#3730a3":"white":luce?"rgba(0,0,30,0.5)":"rgba(255,255,255,0.4)", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer" }}>
-              {m==="login"?"Accedi":"Registrati"}
-            </button>
-          ))}
+          <button onClick={() => { setAuthMode("login"); setAuthError(""); setAuthSuccess(""); }} style={{ flex:1, padding:"10px", borderRadius:"10px", background:authMode==="login"?"#6366f1":"transparent", border:`2px solid ${authMode==="login"?"#6366f1":"rgba(99,102,241,0.35)"}`, color:authMode==="login"?"white":luce?"#4338ca":"#a5b4fc", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer" }}>
+            Accedi
+          </button>
+          <button onClick={() => { setAuthMode("register"); setAuthError(""); setAuthSuccess(""); }} style={{ flex:1, padding:"10px", borderRadius:"10px", background:authMode==="register"?"#10b981":"transparent", border:`2px solid ${authMode==="register"?"#10b981":"rgba(16,185,129,0.35)"}`, color:authMode==="register"?"white":luce?"#059669":"#6ee7b7", fontFamily:"'Nunito'", fontWeight:800, fontSize:"14px", cursor:"pointer" }}>
+            Registrati
+          </button>
         </div>
         <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="La tua email" type="email" style={S.inp} />
         <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder={authMode==="register"?"Scegli una password (min. 6 caratteri)":"La tua password"} type="password" style={S.inp} onKeyDown={(e) => e.key==="Enter" && handleAuth()} />
