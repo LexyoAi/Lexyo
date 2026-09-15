@@ -1052,8 +1052,8 @@ export default function Home() {
           const giorniEffettivi = (profilo?.trial_usato === true && !isPremium) ? 0 : giorniRimasti;
           if (profilo?.trial_usato === true && !isPremium) setTrialGiorni(0);
           if (profilo?.trial_avviato === true) setTrialAvviato(true);
-          // Trial scaduto e non premium → mostra piano
-          if (!isPremium && giorniEffettivi === 0 && figliDB && figliDB.length > 0) {
+          // Se non ha abbonamento attivo → mostra selezione piano
+          if (!isPremium) {
             setScreen("scegli_piano");
           } else {
             setScreen("home");
@@ -1317,7 +1317,7 @@ export default function Home() {
           setFigli(figliFormattati);
           setFiglioAttivo(figliFormattati[0]);
         }
-        setScreen("home");
+        setScreen(isPremium2 ? "home" : "scegli_piano");
         return { error: null };
       };
 
