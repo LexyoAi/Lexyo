@@ -50,7 +50,7 @@ export default async function handler(req, res) {
           .eq("abbonamento_attivo", true);
         const ora = new Date();
         const stale = (tuttiAttivi || []).filter(p =>
-          p.abbonamento_scadenza && new Date(p.abbonamento_scadenza) <= ora
+          !p.abbonamento_scadenza || new Date(p.abbonamento_scadenza) <= ora
         );
         for (const p of stale) {
           await sb.from("profili").update({ abbonamento_attivo: false }).eq("email", p.email);

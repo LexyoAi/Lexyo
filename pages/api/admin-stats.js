@@ -24,11 +24,11 @@ export default async function handler(req, res) {
     const inizioSett    = new Date(ora); inizioSett.setDate(ora.getDate() - 7);
     const inizioMese    = new Date(ora.getFullYear(), ora.getMonth(), 1);
 
-    // Un abbonamento è valido solo se attivo E la scadenza non è nel passato
-    // (null = nessuna scadenza impostata → trattato come valido per retrocompatibilità)
+    // Un abbonamento è valido solo se attivo, con scadenza impostata e nel futuro
     const isValido = (p) =>
       p.abbonamento_attivo === true &&
-      (!p.abbonamento_scadenza || new Date(p.abbonamento_scadenza) > ora);
+      p.abbonamento_scadenza &&
+      new Date(p.abbonamento_scadenza) > ora;
 
     const paganti        = profili.filter(isValido);
     const pagantiStripe  = profili.filter(p => isValido(p) && p.stripe_customer_id);

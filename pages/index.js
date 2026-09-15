@@ -2184,7 +2184,7 @@ export default function Home() {
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"12px", marginTop:"8px" }}>
             <div>
               <p style={{ fontWeight:900, fontSize:"22px", color: luce ? "#0a0a20" : "white" }}>Gratis</p>
-              <p style={{ color:"#059669", fontSize:"13px", fontWeight:700 }}>Accesso completo — nessuna carta richiesta</p>
+              <p style={{ color:"#059669", fontSize:"13px", fontWeight:700 }}>Accesso completo — 3 giorni gratis</p>
             </div>
             <span style={{ fontSize:"28px" }}>🎁</span>
           </div>
@@ -2196,10 +2196,9 @@ export default function Home() {
               <p style={{ color:"#ef4444", fontSize:"13px", fontWeight:700, textAlign:"center", lineHeight:1.5 }}>{trialBlockMsg}</p>
             </div>
           )}
-          <button onClick={avviaTrialConVerifica} disabled={trialCheckLoading} style={{ ...S.btn, background: luce ? "rgba(16,185,129,0.15)" : "rgba(16,185,129,0.12)", border:"1px solid rgba(16,185,129,0.4)", color:"#059669", marginTop:"14px", opacity: trialCheckLoading ? 0.6 : 1 }}>
-            {trialCheckLoading ? "Verifica in corso…" : "Prova gratis →"}
+          <button onClick={() => avviaStripeCheckout("mensile")} disabled={!!stripeLoading} style={{ ...S.btn, background: luce ? "rgba(16,185,129,0.15)" : "rgba(16,185,129,0.12)", border:"1px solid rgba(16,185,129,0.4)", color:"#059669", marginTop:"14px", opacity: stripeLoading === "mensile" ? 0.6 : 1 }}>
+            {stripeLoading === "mensile" ? "…" : "Prova gratis →"}
           </button>
-          <p style={{ fontSize:"12px", color:"#059669", textAlign:"center", marginTop:"8px", fontWeight:800 }}>Nessuna carta richiesta</p>
         </div>
         )}
 
