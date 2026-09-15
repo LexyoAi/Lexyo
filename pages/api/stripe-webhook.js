@@ -98,6 +98,7 @@ export default async function handler(req, res) {
             stripe_customer_id: session.customer,
             trial_usato: true,
             pagamento_fallito: false,
+            piano: session.metadata?.piano || "mensile",
           });
         }
         break;
@@ -106,12 +107,15 @@ export default async function handler(req, res) {
       case "customer.subscription.created": {
         const email = await getEmailFromCustomer(obj.customer);
         if (email) {
+          const priceId = obj.items?.data?.[0]?.price?.id;
+          const piano = priceId === process.env.STRIPE_PRICE_ID_ANNUALE ? "annuale" : "mensile";
           await upsertProfilo(email, {
             stripe_customer_id: obj.customer,
             abbonamento_attivo: true,
             abbonamento_scadenza: new Date(obj.current_period_end * 1000).toISOString(),
             trial_usato: true,
             abbonamento_disdetto: false,
+            piano,
           });
         }
         break;

@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     const sb = getSupabase();
     const { data: profili } = await sb
       .from("profili")
-      .select("email,abbonamento_attivo,abbonamento_scadenza,trial_avviato,trial_usato,created_at,stripe_customer_id");
+      .select("email,abbonamento_attivo,abbonamento_scadenza,trial_avviato,trial_usato,created_at,stripe_customer_id,piano");
 
     if (!profili) return res.status(500).json({ errore: "Errore lettura DB" });
 
@@ -32,7 +32,10 @@ export default async function handler(req, res) {
 
     const paganti        = profili.filter(isValido);
     const pagantiStripe  = profili.filter(p => isValido(p) && p.stripe_customer_id);
+    const pagantiMensili = profili.filter(p => isValido(p) && p.stripe_customer_id && p.piano !== "annuale");
+    const pagantiAnnuali = profili.filter(p => isValido(p) && p.stripe_customer_id && p.piano === "annuale");
     const pagantiManuali = profili.filter(p => isValido(p) && !p.stripe_customer_id);
+    const mrr = parseFloat((pagantiMensili.length * 8.90 + pagantiAnnuali.length * (79 / 12)).toFixed(2));
     // Trial attivi: ha avviato il trial, non lo ha consumato, non ha abbonamento valido
     const trialAttivi    = profili.filter(p => p.trial_avviato === true && !p.trial_usato && !isValido(p));
     // Trial scaduti: ha consumato il trial e non ha abbonamento valido
@@ -47,9 +50,11 @@ export default async function handler(req, res) {
     const onlineSet = new Set((onlineRows || []).map(r => r.user_email).filter(e => e && e !== "anonimo"));
 
     return res.json({
-      mrr:             parseFloat((pagantiStripe.length * 8.90).toFixed(2)),
+      mrr,
       utentiPaganti:   paganti.length,
       utentiStripe:    pagantiStripe.length,
+      utentiMensili:   pagantiMensili.length,
+      utentiAnnuali:   pagantiAnnuali.length,
       utentiManuali:   pagantiManuali.length,
       trialAttivi:     trialAttivi.length,
       trialScaduti:    trialScaduti.length,
