@@ -99,7 +99,7 @@ export default function Landing({ onEntra }) {
     <>
       <Head>
         <title>Lexyo — Il Professore AI per i Bambini Italiani | Compiti, Quiz, Interrogazioni</title>
-        <meta name="description" content="Lexyo è l'app AI che aiuta i bambini delle elementari e medie con i compiti. Foto compiti, interrogazioni orali, quiz MIUR. Prova gratis senza carta di credito." />
+        <meta name="description" content="Lexyo è l'app AI che aiuta i bambini delle elementari e medie con i compiti. Foto compiti, interrogazioni orali, quiz MIUR. Prova gratis 3 giorni — nessun addebito durante il trial." />
         <meta name="keywords" content="app compiti bambini, professore AI italiano, aiuto compiti elementari, ripetizioni online bambini, app studio scuola media, intelligenza artificiale educativa, app educativa italiana, compiti AI, studio intelligente, Lexyo" />
         <meta name="author" content="Lexyo.it" />
         <meta name="robots" content="index, follow" />
@@ -759,7 +759,7 @@ export default function Landing({ onEntra }) {
                 <span style={{ fontSize:"52px", fontWeight:900, letterSpacing:"-2px", color:"#0D0F2B" }}>0€</span>
               </div>
               <p style={{ fontSize:"13px", color:"#44476A", marginBottom:"26px", lineHeight:1.6 }}>
-                Accesso completo a tutte le funzioni. Nessuna carta richiesta.
+                Accesso completo a tutte le funzioni. Nessun addebito per 3 giorni.
               </p>
               <button onClick={onEntra} className="btn-cta" style={{ width:"100%", padding:"13px", background:"rgba(16,185,129,0.1)", border:"1px solid rgba(16,185,129,0.3)", borderRadius:"12px", color:"#059669", fontFamily:"'Plus Jakarta Sans'", fontWeight:800, fontSize:"14px" }}>
                 Prova gratis →

@@ -2291,7 +2291,7 @@ export default function Home() {
           <div style={{ background:"linear-gradient(135deg,#10b981,#059669)", borderRadius:"24px", padding:"18px 32px", textAlign:"center", boxShadow:"0 16px 48px rgba(16,185,129,0.4)" }}>
             <p style={{ fontSize:"40px", margin:"0 0 8px" }}>🎁</p>
             <p style={{ fontWeight:900, fontSize:"22px", color:"white", margin:"0 0 4px" }}>Prova Gratuita Attiva!</p>
-            <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.85)", margin:0 }}>Prova gratuita attiva — nessuna carta richiesta</p>
+            <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.85)", margin:0 }}>Prova gratuita attiva — nessun addebito per 3 giorni</p>
           </div>
         )}
       </div>

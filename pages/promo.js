@@ -96,7 +96,7 @@ export default function Promo() {
             color: ORO,
             marginBottom: "28px",
           }}>
-            🎁 Prova gratis — nessuna carta richiesta
+            🎁 Prova gratis — nessun addebito per 3 giorni
           </div>
 
           {/* H1 */}

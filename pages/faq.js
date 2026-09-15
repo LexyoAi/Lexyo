@@ -37,7 +37,7 @@ const FAQS = [
   },
   {
     q: "Quanto costa Lexyo?",
-    a: "Lexyo offre una prova gratuita senza carta di credito, dopodiché il costo è di 8,90€ al mese. Puoi annullare quando vuoi, senza vincoli. Il prezzo include l'accesso a tutte le funzioni per tutti i bambini del nucleo familiare."
+    a: "Lexyo offre una prova gratuita di 3 giorni. La carta di credito viene richiesta all'iscrizione ma non viene addebitata durante il trial. Dopodiché il costo è di 8,90€ al mese. Puoi annullare quando vuoi, senza vincoli."
   },
   {
     q: "I dati dei bambini sono al sicuro?",
@@ -119,7 +119,7 @@ export default function FAQ() {
           <div style={{ marginTop: "48px", textAlign: "center", background: "linear-gradient(135deg,#6366f1,#8b5cf6)", borderRadius: "24px", padding: "40px 32px" }}>
             <p style={{ fontSize: "24px", fontWeight: 900, color: "white", marginBottom: "8px" }}>Pronto a iniziare?</p>
             <p style={{ fontSize: "15px", color: "rgba(255,255,255,0.8)", marginBottom: "6px" }}>Prova gratis</p>
-            <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", marginBottom: "24px", fontWeight: 700 }}>Nessuna carta richiesta</p>
+            <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", marginBottom: "24px", fontWeight: 700 }}>Nessun addebito per 3 giorni</p>
             <Link href="/" style={{ display: "inline-block", background: "white", border: "none", borderRadius: "14px", padding: "14px 32px", color: "#6366f1", fontFamily: "'Plus Jakarta Sans'", fontWeight: 800, fontSize: "16px", textDecoration: "none" }}>
               Prova Gratis →
             </Link>
