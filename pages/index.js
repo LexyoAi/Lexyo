@@ -1052,9 +1052,9 @@ export default function Home() {
           const giorniEffettivi = (profilo?.trial_usato === true && !isPremium) ? 0 : giorniRimasti;
           if (profilo?.trial_usato === true && !isPremium) setTrialGiorni(0);
           if (profilo?.trial_avviato === true) setTrialAvviato(true);
-          // Se non ha abbonamento attivo → mostra selezione piano
+          // Se non ha abbonamento attivo → mostra landing (capisce il prodotto) poi piano
           if (!isPremium) {
-            setScreen("scegli_piano");
+            setScreen("landing");
           } else {
             setScreen("home");
           }
@@ -1317,7 +1317,7 @@ export default function Home() {
           setFigli(figliFormattati);
           setFiglioAttivo(figliFormattati[0]);
         }
-        setScreen(isPremium2 ? "home" : "scegli_piano");
+        setScreen(isPremium2 ? "home" : "landing");
         return { error: null };
       };
 
@@ -1918,7 +1918,7 @@ export default function Home() {
     </div>
   );
 
-  if (screen === "landing") return <Landing onEntra={() => setScreen("login")} />;
+  if (screen === "landing") return <Landing onEntra={() => utente ? setScreen("scegli_piano") : setScreen("login")} />;
 
   if (screen === "splash") return (
     <div className="dark-overlay" style={{ position:"fixed", inset:0, background:"linear-gradient(180deg,#0e0e22 0%,#12112b 100%)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:0 }}>
