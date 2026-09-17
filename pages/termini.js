@@ -51,7 +51,7 @@ export default function Termini() {
         <p>L'account viene creato esclusivamente dal genitore/tutore legale con la propria email. Il bambino accede al servizio tramite l'account genitore, senza creare un proprio account. Sei responsabile della riservatezza delle credenziali di accesso e di tutte le attività svolte tramite il tuo account.</p>
 
         <h2>5. Abbonamento e pagamento</h2>
-        <p><strong>Periodo di prova gratuito:</strong> 3 giorni di accesso completo. Il metodo di pagamento viene registrato all'avvio del trial ma non viene addebitato durante il periodo di prova. Al termine del trial, il servizio si rinnova automaticamente salvo cancellazione.</p>
+        <p><strong>Periodo di prova gratuito:</strong> 3 giorni di accesso completo senza inserire la carta di credito. Al termine del trial, per continuare è necessario scegliere un piano di abbonamento.</p>
         <p><strong>Abbonamento mensile:</strong> <strong>8,90€/mese</strong> (IVA inclusa) al prezzo di lancio, rinnovato automaticamente ogni mese tramite Stripe. Dopo il periodo di lancio, il prezzo standard sarà di 17,99€/mese. Chi si abbona durante il lancio mantiene il prezzo bloccato a 8,90€/mese per tutta la durata del proprio abbonamento continuativo.</p>
         <p>I pagamenti sono processati in modo sicuro da <strong>Stripe Inc.</strong> Lexyo non conserva i dati della tua carta di credito.</p>
 

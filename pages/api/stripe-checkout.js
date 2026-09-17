@@ -35,10 +35,8 @@ export default async function handler(req, res) {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "subscription",
-      payment_method_collection: "always",
       ...customerParam,
       line_items: [{ price: priceId, quantity: 1 }],
-      subscription_data: { trial_period_days: 3 },
       success_url: "https://app.lexyo.it?pagamento=successo",
       cancel_url: "https://app.lexyo.it?pagamento=annullato",
       locale: "it",

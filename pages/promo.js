@@ -96,7 +96,7 @@ export default function Promo() {
             color: ORO,
             marginBottom: "28px",
           }}>
-            🎁 Prova gratis — nessun addebito per 3 giorni
+            🎁 Prova gratis — nessuna carta richiesta
           </div>
 
           {/* H1 */}
@@ -159,10 +159,10 @@ export default function Promo() {
                 letterSpacing: "-0.3px",
               }}
             >
-              🎓 Inizia gratis — zero rischi →
+              🎓 Inizia gratis →
             </button>
             <p style={{ marginTop: "14px", fontSize: "13px", color: "rgba(255,255,255,0.45)" }}>
-              Cancelli quando vuoi &bull; Nessun addebito per 3 giorni &bull; GDPR
+              Cancelli quando vuoi &bull; Nessuna carta richiesta &bull; GDPR
             </p>
           </div>
         </section>
@@ -518,11 +518,11 @@ export default function Promo() {
                   letterSpacing: "-0.3px",
                 }}
               >
-                🎓 Inizia gratis — zero rischi →
+                🎓 Inizia gratis →
               </button>
 
               <p style={{ marginTop: "14px", fontSize: "13px", color: "rgba(255,255,255,0.38)" }}>
-                Cancelli quando vuoi &bull; Nessun addebito per 3 giorni
+                Cancelli quando vuoi &bull; Nessuna carta richiesta
               </p>
             </div>
           </div>

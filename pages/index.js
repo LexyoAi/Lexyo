@@ -2197,8 +2197,8 @@ export default function Home() {
               <p style={{ color:"#ef4444", fontSize:"13px", fontWeight:700, textAlign:"center", lineHeight:1.5 }}>{trialBlockMsg}</p>
             </div>
           )}
-          <button onClick={() => avviaStripeCheckout("mensile")} disabled={!!stripeLoading} style={{ ...S.btn, background: luce ? "rgba(16,185,129,0.15)" : "rgba(16,185,129,0.12)", border:"1px solid rgba(16,185,129,0.4)", color:"#059669", marginTop:"14px", opacity: stripeLoading === "mensile" ? 0.6 : 1 }}>
-            {stripeLoading === "mensile" ? "…" : "Prova gratis →"}
+          <button onClick={avviaTrialConVerifica} disabled={trialCheckLoading} style={{ ...S.btn, background: luce ? "rgba(16,185,129,0.15)" : "rgba(16,185,129,0.12)", border:"1px solid rgba(16,185,129,0.4)", color:"#059669", marginTop:"14px", opacity: trialCheckLoading ? 0.6 : 1 }}>
+            {trialCheckLoading ? "Verifica..." : "Prova gratis →"}
           </button>
         </div>
         )}
@@ -2233,15 +2233,6 @@ export default function Home() {
             </button>
           </div>
 
-        </div>
-
-        {/* Box garanzia trial */}
-        <div style={{ background:"rgba(0,200,100,0.08)", border:"1px solid rgba(0,200,100,0.3)", borderRadius:"12px", padding:"12px 16px", marginTop:"12px", width:"100%" }}>
-          <p style={{ fontSize:"13px", color:"#006633", fontWeight:700, margin:0, lineHeight:1.5 }}>
-            🔒 Nessun addebito durante i 3 giorni di prova<br/>
-            ✅ Puoi cancellare in qualsiasi momento<br/>
-            💳 La carta viene richiesta solo per garantire la continuità del servizio
-          </p>
         </div>
 
         {/* Features comuni + nota lancio */}
@@ -2291,17 +2282,9 @@ export default function Home() {
           <div style={{ background:"linear-gradient(135deg,#10b981,#059669)", borderRadius:"24px", padding:"18px 32px", textAlign:"center", boxShadow:"0 16px 48px rgba(16,185,129,0.4)" }}>
             <p style={{ fontSize:"40px", margin:"0 0 8px" }}>🎁</p>
             <p style={{ fontWeight:900, fontSize:"22px", color:"white", margin:"0 0 4px" }}>Prova Gratuita Attiva!</p>
-            <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.85)", margin:0 }}>Prova gratuita attiva — nessun addebito per 3 giorni</p>
+            <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.85)", margin:0 }}>Prova gratuita attiva — nessuna carta richiesta</p>
           </div>
         )}
-      </div>
-
-      <div style={{ background:"rgba(0,200,100,0.08)", border:"1px solid rgba(0,200,100,0.3)", borderRadius:"12px", padding:"12px 16px", marginTop:"16px", width:"100%", maxWidth:"380px" }}>
-        <p style={{ fontSize:"13px", color:"#006633", fontWeight:700, margin:0, lineHeight:1.5 }}>
-          🔒 Nessun addebito durante i 3 giorni di prova<br/>
-          ✅ Puoi cancellare in qualsiasi momento<br/>
-          💳 La carta viene richiesta solo per garantire la continuità del servizio
-        </p>
       </div>
 
       <p style={{ fontSize:"15px", color:"#44476A", textAlign:"center", maxWidth:"320px", lineHeight:1.7, marginBottom:"32px", marginTop:"16px" }}>
@@ -8564,10 +8547,10 @@ export default function Home() {
       },
       {
         id: "mensile", titolo: "Mensile", badge: "⭐ Più popolare",
-        prezzo: "8,90€/mese", sub: "Nessun addebito per 3 giorni · Cancelli quando vuoi",
+        prezzo: "8,90€/mese", sub: "Nessuna carta richiesta · Cancelli quando vuoi",
         bg: "linear-gradient(145deg,#6C47FF,#9B3FD4)", colore: "#6C47FF",
         features: ["✅ Tutto Lexyo incluso", "✅ Olimpiadi incluse gratis", "✅ Foto, quiz, interrogazioni", "✅ Inglese con Lex"],
-        cta: "Inizia gratis — zero rischi →",
+        cta: "Inizia gratis →",
       },
       {
         id: "annuale", titolo: "Annuale", badge: "🏆 Miglior valore",
@@ -8613,13 +8596,6 @@ export default function Home() {
               </div>
             </div>
           ))}
-          <div style={{ background:"rgba(0,200,100,0.08)", border:"1px solid rgba(0,200,100,0.3)", borderRadius:"12px", padding:"12px 16px", marginTop:"12px" }}>
-            <p style={{ fontSize:"13px", color:"#006633", fontWeight:700, margin:0, lineHeight:1.5 }}>
-              🔒 Nessun addebito durante i 3 giorni di prova<br/>
-              ✅ Puoi cancellare in qualsiasi momento<br/>
-              💳 La carta viene richiesta solo per garantire la continuità del servizio
-            </p>
-          </div>
         </div>
       </div>
     );

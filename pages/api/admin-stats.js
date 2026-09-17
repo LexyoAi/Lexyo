@@ -13,11 +13,14 @@ export default async function handler(req, res) {
 
   try {
     const sb = getSupabase();
-    const { data: profili } = await sb
+    const { data: profili, error: profiliError } = await sb
       .from("profili")
-      .select("email,abbonamento_attivo,abbonamento_scadenza,trial_avviato,trial_usato,created_at,stripe_customer_id,piano");
+      .select("email,abbonamento_attivo,abbonamento_scadenza,trial_avviato,trial_usato,created_at,stripe_customer_id");
 
-    if (!profili) return res.status(500).json({ errore: "Errore lettura DB" });
+    if (profiliError || !profili) {
+      console.error("[admin-stats] select error:", profiliError?.message);
+      return res.status(500).json({ errore: "Errore lettura DB" });
+    }
 
     const ora = new Date();
     const inizioOggi    = new Date(ora.toDateString());
@@ -30,10 +33,19 @@ export default async function handler(req, res) {
       p.abbonamento_scadenza &&
       new Date(p.abbonamento_scadenza) > ora;
 
+    // Stima piano dalla durata residua della scadenza:
+    // annuale = scadenza > 45 giorni nel futuro (piano da 365gg)
+    // mensile = scadenza entro 45 giorni (piano da ~30gg)
+    const isAnnuale = (p) => {
+      if (!p.abbonamento_scadenza) return false;
+      const giorniResidui = (new Date(p.abbonamento_scadenza) - ora) / 86400000;
+      return giorniResidui > 45;
+    };
+
     const paganti        = profili.filter(isValido);
     const pagantiStripe  = profili.filter(p => isValido(p) && p.stripe_customer_id);
-    const pagantiMensili = profili.filter(p => isValido(p) && p.stripe_customer_id && p.piano !== "annuale");
-    const pagantiAnnuali = profili.filter(p => isValido(p) && p.stripe_customer_id && p.piano === "annuale");
+    const pagantiAnnuali = profili.filter(p => isValido(p) && p.stripe_customer_id && isAnnuale(p));
+    const pagantiMensili = profili.filter(p => isValido(p) && p.stripe_customer_id && !isAnnuale(p));
     const pagantiManuali = profili.filter(p => isValido(p) && !p.stripe_customer_id);
     const mrr = parseFloat((pagantiMensili.length * 8.90 + pagantiAnnuali.length * (79 / 12)).toFixed(2));
     // Trial attivi: ha avviato il trial, non lo ha consumato, non ha abbonamento valido
