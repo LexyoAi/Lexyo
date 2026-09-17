@@ -27,8 +27,7 @@ export default function Document() {
         <meta name="twitter:title" content="Lexyo — Il professore AI di tuo figlio" />
         <meta name="twitter:description" content="Sempre paziente. Sempre disponibile. Non dà le risposte — insegna a trovarle." />
         <meta name="twitter:image" content="https://app.lexyo.it/icons/icon-512.png" />
-        <link rel="canonical" href="https://app.lexyo.it" />
-        <link rel="preload" as="image" href="/icons/icon-192.png" />
+<link rel="preload" as="image" href="/icons/icon-192.png" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />

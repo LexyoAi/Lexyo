@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import Head from "next/head";
 import PROGRAMMA from "../data/programma";
@@ -473,6 +473,21 @@ export default function Home() {
     }
   }, []);
 
+  const showErrToast = (msg) => {
+    let t = document.getElementById("__lex_toast");
+    if (!t) {
+      t = document.createElement("div");
+      t.id = "__lex_toast";
+      t.style.cssText = "position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#ef4444;color:#fff;padding:12px 20px;border-radius:14px;font-size:14px;font-weight:700;z-index:99999;max-width:90vw;text-align:center;box-shadow:0 4px 20px rgba(239,68,68,0.5);pointer-events:none;transition:opacity 0.2s";
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.opacity = "1";
+    t.style.display = "block";
+    clearTimeout(window.__lexToastTimer);
+    window.__lexToastTimer = setTimeout(() => { t.style.opacity = "0"; setTimeout(() => { t.style.display = "none"; }, 200); }, 3500);
+  };
+
   const avviaStripeCheckout = async (tipo = "mensile") => {
     setStripeLoading(tipo);
     try {
@@ -493,11 +508,11 @@ export default function Home() {
         }
         window.location.href = d.url;
       } else {
-        alert("Errore Stripe: " + (d.errore || "Riprova"));
+        showErrToast("Errore Stripe: " + (d.errore || "Riprova"));
         setStripeLoading(false);
       }
     } catch {
-      alert("Errore di connessione. Riprova.");
+      showErrToast("Errore di connessione. Riprova.");
       setStripeLoading(false);
     }
   };
@@ -577,9 +592,9 @@ export default function Home() {
         setGaraAccesso({ accesso: true, tipo: "abbonato", iscrizione: d.iscrizione });
         setScreen("olimpiadi_home");
       } else {
-        alert(d.errore || "Errore. Riprova.");
+        showErrToast(d.errore || "Errore. Riprova.");
       }
-    } catch { alert("Errore di connessione."); }
+    } catch { showErrToast("Errore di connessione."); }
     setGaraLoading(false);
   };
 
@@ -595,8 +610,8 @@ export default function Home() {
       });
       const d = await r.json();
       if (d.url) window.location.href = d.url;
-      else { alert(d.errore || "Errore Stripe"); setGaraLoading(false); }
-    } catch { alert("Errore di connessione."); setGaraLoading(false); }
+      else { showErrToast(d.errore || "Errore Stripe"); setGaraLoading(false); }
+    } catch { showErrToast("Errore di connessione."); setGaraLoading(false); }
   };
 
   const iscriviGaraPagamento = async () => {
@@ -612,8 +627,8 @@ export default function Home() {
       });
       const d = await r.json();
       if (d.url) window.location.href = d.url;
-      else { alert(d.errore || "Errore Stripe"); setGaraLoading(false); }
-    } catch { alert("Errore di connessione."); setGaraLoading(false); }
+      else { showErrToast(d.errore || "Errore Stripe"); setGaraLoading(false); }
+    } catch { showErrToast("Errore di connessione."); setGaraLoading(false); }
   };
 
   const avviaGaraQuiz = async () => {
@@ -716,7 +731,7 @@ export default function Home() {
           setGaraIscrizione(prev => ({ ...prev, punteggio_totale: d.punteggio_totale_aggiornato }));
           setGaraSessioneRisultato({ punteggio_quiz: garaPunteggiSessione, punteggio_quaderno: d.punti });
           setTimeout(() => setScreen("gara_risultato"), 2500);
-        } catch { alert("Errore correzione. Riprova."); }
+        } catch { showErrToast("Errore correzione. Riprova."); }
         setGaraQuadernoLoading(false);
       };
       img.src = ev.target.result;
@@ -788,8 +803,8 @@ export default function Home() {
       });
       const d = await res.json();
       if (d.domande) setTrasformaQuizDomande(d.domande);
-      else { alert("Errore caricamento quiz"); setScreen("trasforma_lex"); }
-    } catch { alert("Errore di rete"); setScreen("trasforma_lex"); }
+      else { showErrToast("Errore caricamento quiz"); setScreen("trasforma_lex"); }
+    } catch { showErrToast("Errore di rete"); setScreen("trasforma_lex"); }
   };
 
   const completaTrasformaQuiz = async (punteggio, isBonus) => {
@@ -871,7 +886,7 @@ export default function Home() {
       setShowFormCompito(false);
     } catch (e) {
       console.error("aggiungiCompito:", e);
-      alert("Errore nel salvare il compito. Riprova.");
+      showErrToast("Errore nel salvare il compito. Riprova.");
     }
     setSalvaCompitoLoading(false);
   };
@@ -1018,7 +1033,7 @@ export default function Home() {
             });
             const pd = await pr.json();
             if (pd.profilo) profilo = pd.profilo;
-            else console.warn("[init] profilo non trovato per", session.user.email);
+            else console.warn("[init] profilo non trovato");
           } catch (pe) { console.error("[init] get-profilo error:", pe.message); }
           const isPremium = profilo?.abbonamento_attivo === true || profilo?.is_admin === true;
           if (profilo) {
@@ -1563,7 +1578,12 @@ export default function Home() {
       return;
     }
     if (s === "olimpiadi_home") { setGaraTab("sessione"); caricaGaraSessioneOggi(); }
-    if (s === "olimpiadi_iscrizione") { setGaraNickname(""); setGaraNicknameOk(null); setGaraQuadernoRisultato(null); }
+    if (s === "olimpiadi_iscrizione") {
+      setGaraNickname(""); setGaraNicknameOk(null); setGaraQuadernoRisultato(null);
+      const mClasse = { "3E":"3ª_elementare","4E":"4ª_elementare","5E":"5ª_elementare","1M":"1ª_media","2M":"2ª_media","3M":"3ª_media" };
+      const presel = CLASSI_GARA_KEYS.find(k => mClasse[figlioAttivo?.classe] === k) || CLASSI_GARA_KEYS[0];
+      setGaraClasseScelta(presel);
+    }
     if (s === "olimpiadi_piani") { setGaraLoading(false); }
     setScreen(s);
   };
@@ -1623,9 +1643,9 @@ export default function Home() {
         body: JSON.stringify({ argomento, materia: MATERIE[materiaKey]?.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M", nome: figlioAttivo?.nome || "", accessToken: token }),
       });
       const d = await res.json();
-      if (d.errore) { setRipassoEstateState(null); setScreen("estate"); alert(d.errore); return; }
+      if (d.errore) { setRipassoEstateState(null); setScreen("estate"); showErrToast(d.errore); return; }
       setRipassoEstateState(prev => ({ ...prev, fase: "domande", domanda: d.domanda || "", audio: d.audio || null }));
-    } catch { setRipassoEstateState(null); setScreen("estate"); alert("Errore di connessione. Riprova."); }
+    } catch { setRipassoEstateState(null); setScreen("estate"); showErrToast("Errore di connessione. Riprova."); }
   };
 
   const completaRipassoEstate = (materiaKey, meseIdx, argomento, stelleVinto) => {
@@ -1790,7 +1810,7 @@ export default function Home() {
   const sbloccaSol = async () => {
     if (!photo) return;
     if (isTrial && !isAdmin && sbloccaBloccato) {
-      alert("Hai già sbloccato 3 soluzioni oggi. Torna domani oppure abbonati per soluzioni illimitate!");
+      showErrToast("Hai già sbloccato 3 soluzioni oggi. Torna domani oppure abbonati per soluzioni illimitate!");
       return;
     }
     setSbloccato(true); setFotoLoading(true);
@@ -2276,7 +2296,7 @@ export default function Home() {
           <div style={{ background:"linear-gradient(135deg,#f59e0b,#ef4444)", borderRadius:"24px", padding:"18px 32px", textAlign:"center", boxShadow:"0 16px 48px rgba(245,158,11,0.4)" }}>
             <p style={{ fontSize:"40px", margin:"0 0 8px" }}>🏆</p>
             <p style={{ fontWeight:900, fontSize:"22px", color:"white", margin:"0 0 4px" }}>Premium Attivo!</p>
-            <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.8)", margin:0 }}>Abbonamento confermato a 8,90€/mese</p>
+            <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.8)", margin:0 }}>{(() => { const sc = profiloUtente?.abbonamento_scadenza; const gg = sc ? (new Date(sc) - new Date()) / 86400000 : 0; return gg > 45 ? "Abbonamento annuale confermato a 79€/anno" : "Abbonamento mensile confermato a 8,90€/mese"; })()}</p>
           </div>
         ) : (
           <div style={{ background:"linear-gradient(135deg,#10b981,#059669)", borderRadius:"24px", padding:"18px 32px", textAlign:"center", boxShadow:"0 16px 48px rgba(16,185,129,0.4)" }}>
@@ -2677,7 +2697,7 @@ export default function Home() {
       {profiloUtente?.pagamento_fallito && piano === "premium" && (
         <div style={{ padding:"10px 20px", background: luce ? "rgba(239,68,68,0.1)" : "rgba(239,68,68,0.18)", borderBottom: luce ? "1px solid rgba(239,68,68,0.25)" : "1px solid rgba(239,68,68,0.35)", display:"flex", justifyContent:"space-between", alignItems:"center", gap:"10px" }}>
           <p style={{ fontSize:"12px", color: luce ? "#b91c1c" : "#fca5a5", fontWeight:800, lineHeight:1.4 }}>⚠️ Pagamento fallito — aggiorna il metodo di pagamento su Stripe per mantenere l'accesso</p>
-          <button onClick={avviaStripeCheckout} style={{ flexShrink:0, background:"linear-gradient(135deg,#ef4444,#dc2626)", border:"none", borderRadius:"20px", padding:"6px 14px", color:"white", fontSize:"11px", fontWeight:900, cursor:"pointer", whiteSpace:"nowrap" }}>Aggiorna →</button>
+          <button onClick={() => { const sc = profiloUtente?.abbonamento_scadenza; const gg = sc ? (new Date(sc) - new Date()) / 86400000 : 0; avviaStripeCheckout(gg > 45 ? "annuale" : "mensile"); }} style={{ flexShrink:0, background:"linear-gradient(135deg,#ef4444,#dc2626)", border:"none", borderRadius:"20px", padding:"6px 14px", color:"white", fontSize:"11px", fontWeight:900, cursor:"pointer", whiteSpace:"nowrap" }}>Aggiorna →</button>
         </div>
       )}
 
@@ -4264,12 +4284,12 @@ export default function Home() {
           body: JSON.stringify({ argomento: interrogTopicScelto, materia: mat.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M", nome: figlioAttivo?.nome || "", accessToken: token }),
         });
         const d = await res.json();
-        if (d.errore) { alert(d.errore); setInterrogFase("carica"); return; }
+        if (d.errore) { showErrToast(d.errore); setInterrogFase("carica"); return; }
         setInterrogArgomenti(d.argomenti || []);
         setInterrogDomanda(d.domanda || "");
         setInterrogAudio(d.audio || null);
         setInterrogFase("domanda");
-      } catch { alert("Errore di connessione. Riprova."); setInterrogFase("carica"); }
+      } catch { showErrToast("Errore di connessione. Riprova."); setInterrogFase("carica"); }
     };
 
     const aggiungiPhoto = (file) => {
@@ -4277,7 +4297,7 @@ export default function Home() {
       if (interrogFotos.length >= 8) return;
       compressPhoto(file, (compressed) => {
         setInterrogFotos(prev => [...prev, compressed]);
-      }, () => { alert("Foto non valida. Riprova con un'altra foto."); });
+      }, () => { showErrToast("Foto non valida. Riprova con un'altra foto."); });
     };
 
     const avviaDaFoto = async () => {
@@ -4291,12 +4311,12 @@ export default function Home() {
           body: JSON.stringify({ photos: interrogFotos, materia: mat.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M", nome: figlioAttivo?.nome || "", accessToken: token }),
         });
         const d = await res.json();
-        if (d.errore) { alert(d.errore); setInterrogFase("carica"); return; }
+        if (d.errore) { showErrToast(d.errore); setInterrogFase("carica"); return; }
         setInterrogArgomenti(d.argomenti || []);
         setInterrogDomanda(d.domanda || "");
         setInterrogAudio(d.audio || null);
         setInterrogFase("domanda");
-      } catch { alert("Errore di connessione. Riprova."); setInterrogFase("carica"); }
+      } catch { showErrToast("Errore di connessione. Riprova."); setInterrogFase("carica"); }
     };
 
     const avviaRicognizione = async () => {
@@ -4378,7 +4398,7 @@ export default function Home() {
           body: JSON.stringify({ conversazione: nuovaConv, argomenti: interrogArgomenti, materia: mat.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M", numDomande: interrogNumDomande, accessToken: token }),
         });
         const d = await res.json();
-        if (d.errore) { alert(d.errore); setInterrogFase("domanda"); return; }
+        if (d.errore) { showErrToast(d.errore); setInterrogFase("domanda"); return; }
         setInterrogAudio(d.audio || null);
         setInterrogLexParla(false);
         if (d.completato) {
@@ -4392,7 +4412,7 @@ export default function Home() {
           setInterrogDomanda(d.prossimaDomanda || "");
           setInterrogFase("domanda");
         }
-      } catch { alert("Errore. Riprova."); setInterrogFase("domanda"); }
+      } catch { showErrToast("Errore. Riprova."); setInterrogFase("domanda"); }
     };
 
     return (
@@ -4583,12 +4603,12 @@ export default function Home() {
                     method:"POST", headers:{"Content-Type":"application/json"},
                     body: JSON.stringify({ conversazione: nuovaConv, argomenti: interrogArgomenti, materia: mat.label, classe: prog?.label, sesso: figlioAttivo?.sesso || "M", numDomande: interrogNumDomande, accessToken: token }),
                   }).then(r => r.json()).then(d => {
-                    if (d.errore) { alert(d.errore); setInterrogFase("domanda"); return; }
+                    if (d.errore) { showErrToast(d.errore); setInterrogFase("domanda"); return; }
                     setInterrogAudio(d.audio || null);
                     setInterrogLexParla(false);
                     if (d.completato) { setInterrogValutazione(d.valutazione || ""); setInterrogVoto(d.voto); setInterrogFeedback(d.feedbackFinale || ""); setInterrogFase("voto"); addStelle(Math.max(1, (d.voto || 5) - 4)); }
                     else { setInterrogValutazione(""); setInterrogDomanda(d.prossimaDomanda || ""); setInterrogFase("domanda"); }
-                  }).catch(() => { alert("Errore. Riprova."); setInterrogFase("domanda"); }));
+                  }).catch(() => { showErrToast("Errore. Riprova."); setInterrogFase("domanda"); }));
                 }} style={{ width:"100%", background:"none", border:`1px solid ${luce?"rgba(0,0,30,0.12)":"rgba(255,255,255,0.1)"}`, borderRadius:"12px", padding:"10px", color: luce ? "rgba(0,0,30,0.35)" : "rgba(255,255,255,0.35)", fontSize:"12px", fontWeight:700, cursor:"pointer", fontFamily:"'Nunito'", marginTop:"6px" }}>
                   ⏭ Salta questa domanda
                 </button>
@@ -5026,7 +5046,7 @@ export default function Home() {
                     <div style={{ textAlign:"center", marginBottom:"20px" }}>
                       <div style={{ fontSize:"36px", marginBottom:"10px" }}>💎</div>
                       <p style={{ fontWeight:900, fontSize:"18px", marginBottom:"4px" }}>Piano Premium Attivo</p>
-                      <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.45)" }}>8,90€/mese · rinnovo automatico</p>
+                      <p style={{ fontSize:"13px", color:"rgba(255,255,255,0.45)" }}>{(() => { const sc = profiloUtente?.abbonamento_scadenza; const gg = sc ? (new Date(sc) - new Date()) / 86400000 : 0; return gg > 45 ? "79€/anno · rinnovo automatico" : "8,90€/mese · rinnovo automatico"; })()}</p>
                     </div>
                     <div style={{ background:"rgba(139,92,246,0.08)", border:"1px solid rgba(139,92,246,0.2)", borderRadius:"14px", padding:"16px", marginBottom:"20px" }}>
                       {["✅ Accesso completo a tutte le funzioni","✅ Foto compiti illimitate","✅ Chat AI 24/7","✅ Programma MIUR per tutte le classi","✅ Zero pubblicità per sempre"].map((t,i) => (
@@ -5235,7 +5255,7 @@ export default function Home() {
           body: JSON.stringify({ materia: matInfo.label, classe: prog2?.label, argomento: giocaArgomento, forceNew, sesso: figlioAttivo?.sesso || "M", accessToken: token }),
         });
         const d = await r.json();
-        if (d.errore || !d.domande?.length) { setSvState(null); alert("Errore: " + (d.errore || "nessuna domanda")); return; }
+        if (d.errore || !d.domande?.length) { setSvState(null); showErrToast("Errore: " + (d.errore || "nessuna domanda")); return; }
         // Mescola le opzioni in modo deterministico per metà domande
         const domande = d.domande.map((dom, i) => {
           const scambiate = i % 3 === 1;
@@ -5244,7 +5264,7 @@ export default function Home() {
             : { ...dom, corretta: 0 };
         });
         setSvState({ fase:"countdown", countdown:3, domande, corrente:0, punteggio:0, tempoRimasto:60 });
-      } catch (e) { setSvState(null); alert("Errore di rete. Riprova."); }
+      } catch (e) { setSvState(null); showErrToast("Errore di rete. Riprova."); }
     };
 
     const rispondiSv = (scelta) => {
@@ -5425,9 +5445,9 @@ export default function Home() {
           body: JSON.stringify({ materia: matInfo.label, classe: prog2?.label, argomento: giocaArgomento, sesso: figlioAttivo?.sesso || "M", accessToken: token, forceNew }),
         });
         const d = await r.json();
-        if (d.errore || !d.soggetto) { setCsState(null); alert(d.errore || "Errore. Riprova."); return; }
+        if (d.errore || !d.soggetto) { setCsState(null); showErrToast(d.errore || "Errore. Riprova."); return; }
         setCsState({ fase:"gioco", soggetto:d.soggetto, emoji:d.emoji||"🎭", indizi:d.indizi||[], spiegazione:d.spiegazione||"", indizioCorrente:0, stelleGuadagnate:5, rivelato:false });
-      } catch { setCsState(null); alert("Errore di rete."); }
+      } catch { setCsState(null); showErrToast("Errore di rete."); }
     };
 
     const verificaRisposta = async () => {
@@ -5460,7 +5480,7 @@ export default function Home() {
             setCsState(prev => prev ? { ...prev, indizioCorrente:nuovoIdx, stelleGuadagnate:Math.max(1, prev.stelleGuadagnate-1), messaggioVerifica:"❌ Non ci siamo! Ecco un altro indizio..." } : null);
           }
         }
-      } catch { alert("Errore verifica."); }
+      } catch { showErrToast("Errore verifica."); }
       setCsLoading(false);
     };
 
@@ -5804,8 +5824,8 @@ export default function Home() {
         });
         const d = await r.json();
         if(d.parole&&d.parole.length>0){ setWordGame(buildCrossword(d.parole)); setWordInputs({}); setWordVerificato(false); }
-        else { alert("Errore: " + (d.errore || "nessuna parola ricevuta")); setWordGame(null); }
-      } catch(e) { alert("Errore connessione: " + (e?.message || "riprova")); setWordGame(null); }
+        else { showErrToast("Errore: " + (d.errore || "nessuna parola ricevuta")); setWordGame(null); }
+      } catch(e) { showErrToast("Errore connessione: " + (e?.message || "riprova")); setWordGame(null); }
       setWordLoading(false);
     };
 
@@ -6377,7 +6397,7 @@ export default function Home() {
         setRipassoQuiz(domandeMescolate);
         setRipassoRisposte([]);
         setRipassoFine(false);
-      } catch (e) { alert(e.message || "Errore di connessione. Riprova."); }
+      } catch (e) { showErrToast(e.message || "Errore di connessione. Riprova."); }
       setRipassoLoading(false);
     };
 
@@ -6678,14 +6698,14 @@ export default function Home() {
         const d = await r.json();
         if (d.errore) throw new Error(d.errore);
         setEsameItaliano({ fase:"scegli_traccia", tracce: d.tracce || [] });
-      } catch (e) { alert("Errore: " + e.message); }
+      } catch (e) { showErrToast("Errore: " + e.message); }
       setEsameLoading(false);
     };
 
     const correggi = async () => {
       if (!it.traccia) return;
-      if (it.modalita === "foto" && !it.foto) return alert("Carica la foto del tema.");
-      if (it.modalita === "scrivi" && !it.testo?.trim()) return alert("Scrivi il tema.");
+      if (it.modalita === "foto" && !it.foto) return showErrToast("Carica la foto del tema.");
+      if (it.modalita === "scrivi" && !it.testo?.trim()) return showErrToast("Scrivi il tema.");
       setEsameLoading(true);
       try {
         const token = await getAccessToken();
@@ -6701,7 +6721,7 @@ export default function Home() {
         setEsameStorico(nuovoStorico);
         localStorage.setItem("lexyo_esame_storico", JSON.stringify(nuovoStorico));
         setEsameItaliano(prev => ({ ...prev, fase:"risultato", correzione: d, stelleGuadagnate: stelle }));
-      } catch (e) { alert("Errore: " + e.message); }
+      } catch (e) { showErrToast("Errore: " + e.message); }
       setEsameLoading(false);
     };
 
@@ -6888,7 +6908,7 @@ export default function Home() {
         if (d.errore) throw new Error(d.errore);
         const problemi = [...(d.problemi_matematica||[]), ...(d.domande_scienze||[]).map(ds => ({ ...ds, testo: ds.domanda, risposta_corretta: ds.risposta_modello, isScienze: true }))];
         setEsameMatematica({ fase:"prova", tipo, problemi, risposte:{}, correzioni:{}, fotoProblemi:{} });
-      } catch (e) { alert("Errore: " + e.message); }
+      } catch (e) { showErrToast("Errore: " + e.message); }
       setEsameLoading(false);
     };
 
@@ -6897,7 +6917,7 @@ export default function Home() {
       if (!prob) return;
       const risposta = mat.risposte?.[idx] || "";
       const foto = mat.fotoProblemi?.[idx] || null;
-      if (!risposta.trim() && !foto) return alert("Inserisci una risposta o fotografa i calcoli.");
+      if (!risposta.trim() && !foto) return showErrToast("Inserisci una risposta o fotografa i calcoli.");
       setEsameMatematica(prev => ({ ...prev, correzioni: { ...prev.correzioni, [idx]: { loading: true } } }));
       try {
         const corrToken = await getAccessToken();
@@ -6906,7 +6926,7 @@ export default function Home() {
         const d = await r.json();
         if (d.errore) throw new Error(d.errore);
         setEsameMatematica(prev => ({ ...prev, correzioni: { ...prev.correzioni, [idx]: { ...d, loading: false } } }));
-      } catch (e) { alert("Errore: " + e.message); setEsameMatematica(prev => ({ ...prev, correzioni: { ...prev.correzioni, [idx]: { loading: false } } })); }
+      } catch (e) { showErrToast("Errore: " + e.message); setEsameMatematica(prev => ({ ...prev, correzioni: { ...prev.correzioni, [idx]: { loading: false } } })); }
     };
 
     const mostraRisultato = () => {
@@ -7043,7 +7063,7 @@ export default function Home() {
         const d = await r.json();
         if (d.errore) throw new Error(d.errore);
         setEsameOrale({ fase:"domanda", storico:[], domandaNum:1, domandaCorrente: d.prossima_domanda, materia: d.materia, valutazionePrecedente: null, rispostaBambino:"" });
-      } catch (e) { alert("Errore: " + e.message); setEsameOrale(null); }
+      } catch (e) { showErrToast("Errore: " + e.message); setEsameOrale(null); }
     };
 
     const rispondi = async () => {
@@ -7065,7 +7085,7 @@ export default function Home() {
           setEsameStorico(nuovoStorS);
           localStorage.setItem("lexyo_esame_storico", JSON.stringify(nuovoStorS));
           setEsameOrale(prev => ({ ...prev, fase:"risultato", storico: nuovoStorico, votoFinale: d, stelleGuadagnate: stelle }));
-        } catch (e) { alert("Errore: " + e.message); }
+        } catch (e) { showErrToast("Errore: " + e.message); }
         setEsameLoading(false);
         return;
       }
@@ -7076,7 +7096,7 @@ export default function Home() {
         const d = await r.json();
         if (d.errore) throw new Error(d.errore);
         setEsameOrale(prev => ({ ...prev, fase:"domanda", domandaNum: prossimaNum, domandaCorrente: d.prossima_domanda, materia: d.materia, valutazionePrecedente: d.valutazione_precedente, rispostaBambino:"" }));
-      } catch (e) { alert("Errore: " + e.message); }
+      } catch (e) { showErrToast("Errore: " + e.message); }
     };
 
     // Intro
@@ -7297,7 +7317,7 @@ export default function Home() {
         if (d.errore) throw new Error(d.errore);
         setEsameInterrRisposta("");
         setEsameInterrState({ fase:"domanda", domande: d.domande || [], corrente:0, risposte:[] });
-      } catch(e) { alert("Errore: " + e.message); }
+      } catch(e) { showErrToast("Errore: " + e.message); }
       setEsameLoading(false);
     };
 
@@ -7311,7 +7331,7 @@ export default function Home() {
         if (d.errore) throw new Error(d.errore);
         addStelle(Math.round((d.voto_finale || 6) * 1.5));
         setEsameInterrState(prev => ({ ...prev, fase:"risultato", risultato: d }));
-      } catch(e) { alert("Errore: " + e.message); setEsameInterrState(prev => ({ ...prev, fase:"domanda" })); }
+      } catch(e) { showErrToast("Errore: " + e.message); setEsameInterrState(prev => ({ ...prev, fase:"domanda" })); }
     };
 
     const rispondi = (testo) => {
@@ -8607,7 +8627,7 @@ export default function Home() {
       const m = { "3E":"3ª_elementare","4E":"4ª_elementare","5E":"5ª_elementare","1M":"1ª_media","2M":"2ª_media","3M":"3ª_media" };
       return m[figlioAttivo?.classe] === k;
     }) || CLASSI_GARA_KEYS[0];
-    if (!garaClasseScelta) setGaraClasseScelta(classePresel);
+    const classeEffettiva = garaClasseScelta || classePresel;
 
     return (
       <div style={{ ...S.app, display:"flex", flexDirection:"column" }}>
@@ -8630,7 +8650,7 @@ export default function Home() {
           <p style={{ fontSize:"12px", fontWeight:800, color: luce?"rgba(0,0,30,0.45)":"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:"1px", marginBottom:"10px" }}>Seleziona la classe</p>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:"20px" }}>
             {CLASSI_GARA_KEYS.map(k => (
-              <button key={k} onClick={() => setGaraClasseScelta(k)} style={{ padding:"10px 6px", borderRadius:"12px", background: garaClasseScelta===k ? "rgba(108,71,255,0.15)" : luce?"rgba(0,0,0,0.04)":"rgba(255,255,255,0.06)", border:`2px solid ${garaClasseScelta===k?"#6C47FF":"transparent"}`, fontFamily:"'Nunito'", fontWeight:800, fontSize:"12px", cursor:"pointer", color: luce?"#0a0a20":"white" }}>
+              <button key={k} onClick={() => setGaraClasseScelta(k)} style={{ padding:"10px 6px", borderRadius:"12px", background: classeEffettiva===k ? "rgba(108,71,255,0.15)" : luce?"rgba(0,0,0,0.04)":"rgba(255,255,255,0.06)", border:`2px solid ${classeEffettiva===k?"#6C47FF":"transparent"}`, fontFamily:"'Nunito'", fontWeight:800, fontSize:"12px", cursor:"pointer", color: luce?"#0a0a20":"white" }}>
                 {CLASSI_GARA_MAP[k]}
               </button>
             ))}
@@ -9018,7 +9038,7 @@ export default function Home() {
                 <input type="file" accept="image/*" capture="environment" style={{ display:"none" }} onChange={e => {
                   const f = e.target.files?.[0];
                   if (!f) return;
-                  if (f.size > 10 * 1024 * 1024) { alert("La foto è troppo grande (max 10MB). Riprova con una foto più piccola."); e.target.value=""; return; }
+                  if (f.size > 10 * 1024 * 1024) { showErrToast("La foto è troppo grande (max 10MB). Riprova con una foto più piccola."); e.target.value=""; return; }
                   correggiGaraQuaderno(f);
                 }} />
               </label>

@@ -110,7 +110,7 @@ export default function AdminPin({ email, onSuccess, onBack }) {
       }}>←</button>
 
       {/* Logo */}
-      <img src="/icons/lexyo-icon-512.png" alt="Lexyo"
+      <img src="/icons/icon-512.png" alt="Lexyo"
         style={{ width: 54, height: 54, borderRadius: 14, marginBottom: 20, opacity: 0.85 }} />
 
       <p style={{ fontSize: 22, fontWeight: 900, color: "white", marginBottom: 6 }}>🔐 Accesso Riservato</p>
