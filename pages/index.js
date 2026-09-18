@@ -1067,11 +1067,11 @@ export default function Home() {
           const giorniEffettivi = (profilo?.trial_usato === true && !isPremium) ? 0 : giorniRimasti;
           if (profilo?.trial_usato === true && !isPremium) setTrialGiorni(0);
           if (profilo?.trial_avviato === true) setTrialAvviato(true);
-          // Se non ha abbonamento attivo → mostra landing (capisce il prodotto) poi piano
-          if (!isPremium) {
-            setScreen("landing");
-          } else {
+          const haTrialAttivoInit = profilo?.trial_avviato === true && profilo?.trial_usato !== true && giorniRimasti > 0;
+          if (isPremium || haTrialAttivoInit) {
             setScreen("home");
+          } else {
+            setScreen("landing");
           }
         } else {
           const params = new URLSearchParams(window.location.search);
@@ -1332,7 +1332,8 @@ export default function Home() {
           setFigli(figliFormattati);
           setFiglioAttivo(figliFormattati[0]);
         }
-        setScreen(isPremium2 ? "home" : "landing");
+        const haTrialAttivoLogin = profilo?.trial_avviato === true && profilo?.trial_usato !== true;
+        setScreen(isPremium2 || haTrialAttivoLogin ? "home" : "landing");
         return { error: null };
       };
 
@@ -1367,6 +1368,10 @@ export default function Home() {
           // Accesso automatico dopo registrazione (o se email già registrata)
           const { error: loginError } = await doLogin(email.trim(), password.trim());
           if (loginError) { setAuthError("Account creato! Ora clicca su 'Accedi' e inserisci email e password."); setAuthMode("login"); }
+          else if (!error) {
+            // Nuova registrazione reale → avvia trial automaticamente senza richiedere click
+            await avviaTrialConVerifica();
+          }
         }
       } else {
         const { error: loginError } = await doLogin(email.trim(), password.trim());
