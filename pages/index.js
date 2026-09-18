@@ -163,6 +163,7 @@ export default function Home() {
   const [mesiGratisGuadagnati, setMesiGratisGuadagnati] = useState(0);
   const [referralCopiato, setReferralCopiato] = useState("");
   const [toastReferral, setToastReferral] = useState("");
+  const [welcomeCountdown, setWelcomeCountdown] = useState(null);
   const [referralInput, setReferralInput] = useState("");
   const [referralDaUrl, setReferralDaUrl] = useState(false);
   const [materiaRipasso, setMateriaRipasso] = useState("matematica");
@@ -384,6 +385,14 @@ export default function Home() {
     window.addEventListener("pwaPromptReady", onReady);
     return () => window.removeEventListener("pwaPromptReady", onReady);
   }, []);
+
+  useEffect(() => {
+    if (screen !== "abbonamento_confermato") { setWelcomeCountdown(null); return; }
+    setWelcomeCountdown(4);
+    const interval = setInterval(() => setWelcomeCountdown(prev => (prev > 1 ? prev - 1 : 0)), 1000);
+    const nav = setTimeout(() => setScreen(figlioAttivo ? "home" : "aggiungi_figlio"), 4000);
+    return () => { clearInterval(interval); clearTimeout(nav); };
+  }, [screen, figlioAttivo]);
 
   const audioCtxRef = useRef(null);
 
@@ -2360,8 +2369,8 @@ export default function Home() {
         </div>
       </div>
 
-      <button onClick={() => setScreen(figlioAttivo ? "home" : "aggiungi_figlio")} style={{ ...S.btn, background:"rgba(0,0,0,0.06)", border:"1px solid rgba(0,0,0,0.1)", color:"#44476A", marginBottom:"24px" }}>
-        Continua senza installare →
+      <button onClick={() => setScreen(figlioAttivo ? "home" : "aggiungi_figlio")} style={{ ...S.btn, background:"linear-gradient(135deg,#6366f1,#8b5cf6)", border:"none", color:"white", marginBottom:"24px", fontSize:"15px" }}>
+        {welcomeCountdown > 0 ? `Entra nell'app tra ${welcomeCountdown}s →` : "Entra nell'app →"}
       </button>
 
       {/* Modale istruzioni */}
